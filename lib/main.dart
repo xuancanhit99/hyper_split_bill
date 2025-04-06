@@ -4,13 +4,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hyper_split_bill/app.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hyper_split_bill/injection_container.dart' as di;
-import 'core/constants.dart';
+import 'package:hyper_split_bill/core/config/app_config.dart';
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     await dotenv.load(fileName: ".env");
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    final appConfig = di.sl<AppConfig>();
+    await Supabase.initialize(
+      url: appConfig.supabaseUrl,
+      anonKey: appConfig.supabaseAnonKey,
+    );
     await di.configureDependencies();
     runApp(const MyApp());
   } catch (e) {

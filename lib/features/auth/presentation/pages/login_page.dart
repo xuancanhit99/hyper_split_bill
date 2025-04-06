@@ -36,7 +36,7 @@ class LoginPage extends StatelessWidget {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Welcome')), // Optional: Add if needed
+        // appBar: AppBar(title: const Text('Login')), // Optional: Add if needed
         body: SafeArea( // Ensure UI respects notches/status bars
           child: ListView( // Use ListView for scrolling on smaller screens
             padding: const EdgeInsets.all(24.0),
