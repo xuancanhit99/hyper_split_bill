@@ -1,11 +1,11 @@
-// lib/features/auth/data/repositories/auth_repository_impl.dart
-
 import 'package:fpdart/fpdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hyper_split_bill/core/error/failures.dart';
 import 'package:hyper_split_bill/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:hyper_split_bill/features/auth/domain/repositories/auth_repository.dart';
+import 'package:injectable/injectable.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+@LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
 
@@ -20,7 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, User?>> getCurrentUser() async {
     try {
-      final user = await remoteDataSource.getCurrentUser();
+      final user = remoteDataSource.currentUser;
       return Right(user);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -57,7 +57,7 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Right(user);
     } catch (e) {
-      return Left(AuthCredentialsFailure(e.toString()));
+      return Left(AuthServerFailure(e.toString()));
     }
   }
 

@@ -1,20 +1,25 @@
-// lib/features/auth/data/datasources/auth_remote_data_source.dart
-
+import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class AuthRemoteDataSource {
   User? get currentUser;
   Stream<User?> get authStateChanges;
-  Future<User?> getCurrentUser();
-  Future<User> signInWithPassword({required String email, required String password});
+
+  Future<User> signInWithPassword({
+    required String email,
+    required String password,
+  });
+
   Future<User> signUpWithPassword({
     required String email,
     required String password,
     Map<String, dynamic>? data,
   });
+
   Future<void> signOut();
 }
 
+@LazySingleton(as: AuthRemoteDataSource)
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final SupabaseClient _supabaseClient;
 
@@ -24,14 +29,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   User? get currentUser => _supabaseClient.auth.currentUser;
 
   @override
-  Stream<User?> get authStateChanges =>
-      _supabaseClient.auth.onAuthStateChange
-          .map((event) => event.session?.user);
-
-  @override
-  Future<User?> getCurrentUser() async {
-    return _supabaseClient.auth.currentUser;
-  }
+  Stream<User?> get authStateChanges => _supabaseClient.auth.onAuthStateChange
+      .map((event) => event.session?.user);
 
   @override
   Future<User> signInWithPassword({
