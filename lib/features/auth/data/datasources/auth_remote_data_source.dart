@@ -1,6 +1,7 @@
 // lib/features/auth/data/datasources/auth_remote_data_source.dart
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hyper_split_bill/core/error/exceptions.dart';
 
 abstract class AuthRemoteDataSource {
   User? get currentUser;
@@ -16,6 +17,8 @@ abstract class AuthRemoteDataSource {
     required String password,
     Map<String, dynamic>? data,
   });
+
+  Future<void> recoverPassword(String email);
 
   Future<void> signOut();
 }
@@ -67,6 +70,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     return response.user!;
+  }
+
+  @override
+  Future<void> recoverPassword(String email) async {
+    try {
+      // Use the email redirect URL configured in your Supabase Auth settings
+      await _supabaseClient.auth.resetPasswordForEmail(email);
+      // Note: You might need to configure redirectTo in Supabase project settings
+      // await _supabaseClient.auth.resetPasswordForEmail(email, redirectTo: 'your-app://reset-password');
+    } on AuthException catch (e) {
+      print("Supabase RecoverPassword Error: ${e.message}");
+      throw AuthServerException(e.message); // Throw custom exception
+    } catch (e) {
+      print("Unknown RecoverPassword Error: $e");
+      throw ServerException('An unexpected error occurred during password recovery.');
+    }
   }
 
   @override

@@ -33,6 +33,14 @@ class AuthSignUpRequested extends AuthEvent {
   List<Object> get props => [email, password];
 }
 
+class AuthRecoverPasswordRequested extends AuthEvent {
+  final String email;
+  const AuthRecoverPasswordRequested(this.email);
+
+  @override
+  List<Object> get props => [email];
+}
+
 
 // Triggered by UI to sign out
 class AuthSignOutRequested extends AuthEvent {}

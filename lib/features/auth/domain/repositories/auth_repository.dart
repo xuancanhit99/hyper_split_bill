@@ -27,6 +27,9 @@ abstract class AuthRepository {
     Map<String, dynamic>? data, // Optional: for additional user metadata
   });
 
+  // Recover password
+  Future<Either<Failure, void>> recoverPassword(String email);
+
   // Sign out
   Future<Either<Failure, void>> signOut();
 }

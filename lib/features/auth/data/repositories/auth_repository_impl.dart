@@ -5,6 +5,7 @@ import 'package:hyper_split_bill/features/auth/data/datasources/auth_remote_data
 import 'package:hyper_split_bill/features/auth/domain/repositories/auth_repository.dart';
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hyper_split_bill/core/error/exceptions.dart';
 
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
@@ -59,6 +60,20 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(user);
     } catch (e) {
       return Left(AuthServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> recoverPassword(String email) async {
+    try {
+      await remoteDataSource.recoverPassword(email);
+      return const Right(null); // Indicate success with Right(null) or Right(unit)
+    } on AuthServerException catch (e) {
+      return Left(AuthServerFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('An unexpected error occurred: ${e.toString()}'));
     }
   }
 

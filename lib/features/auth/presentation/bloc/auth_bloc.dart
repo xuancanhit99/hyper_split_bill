@@ -26,6 +26,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignUpRequested>(_onSignUpRequested);
     on<AuthSignOutRequested>(_onSignOutRequested);
     on<_AuthUserChanged>(_onAuthUserChanged);
+    on<AuthRecoverPasswordRequested>(_onRecoverPasswordRequested); // Register new handler
   }
 
   @override
@@ -50,6 +51,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // Handler for internal user change events from the stream
   void _onAuthUserChanged(_AuthUserChanged event, Emitter<AuthState> emit) {
     print("Auth State Changed: ${event.user?.email ?? 'Logged Out'}");
+    // If user logs in while success message is shown, transition to authenticated
     emit(event.user != null ? AuthAuthenticated(event.user!) : AuthUnauthenticated());
   }
 
@@ -118,6 +120,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             (_) {},
       );
     } // No automatic emit Authenticated on sign up, usually needs verification or triggers stream.
+  }
+
+  Future<void> _onRecoverPasswordRequested(
+      AuthRecoverPasswordRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading()); // Show loading
+    final result = await _authRepository.recoverPassword(event.email);
+    result.fold(
+          (failure) => emit(AuthFailure(failure.message)), // Emit failure on error
+          (_) => emit(AuthPasswordResetEmailSent()), // Emit success state
+    );
+    // Transition back from success/failure state after a delay? Or let UI handle it.
+    // For simplicity, we can just stay in AuthPasswordResetEmailSent/AuthFailure until next action.
   }
 
   // Handler for Sign Out attempts

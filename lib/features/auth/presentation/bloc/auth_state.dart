@@ -27,6 +27,9 @@ class AuthAuthenticated extends AuthState {
 // User is not logged in
 class AuthUnauthenticated extends AuthState {}
 
+// User has requested a password reset
+class AuthPasswordResetEmailSent extends AuthState {}
+
 // An error occurred during an auth operation
 class AuthFailure extends AuthState {
   final String message;

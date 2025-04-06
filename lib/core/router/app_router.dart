@@ -47,11 +47,11 @@ class AppRouter {
           name: AppRoutes.login, // Optional: Use names for navigation
           builder: (context, state) => const LoginPage(),
         ),
-        GoRoute(
-          path: AppRoutes.signup,
-          name: AppRoutes.signup,
-          builder: (context, state) => const SignUpPage(),
-        ),
+        // GoRoute(
+        //   path: AppRoutes.signup,
+        //   name: AppRoutes.signup,
+        //   builder: (context, state) => const SignUpPage(),
+        // ),
         // Authenticated routes (add more here)
         GoRoute(
           path: AppRoutes.home,
