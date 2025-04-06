@@ -1,3 +1,4 @@
+// lib/features/auth/domain/repositories/auth_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart'; // Can expose Supabase User directly or map
 import 'package:fpdart/fpdart.dart'; // For Either
 import 'package:hyper_split_bill/core/error/failures.dart'; // Your custom Failure class

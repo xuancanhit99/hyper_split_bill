@@ -1,3 +1,4 @@
+// lib/core/constants.dart
 /// Represents errors originating from server-side operations (API calls, database interactions).
 class ServerException implements Exception {
   final String message;

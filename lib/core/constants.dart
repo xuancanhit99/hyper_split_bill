@@ -1,3 +1,4 @@
+// lib/core/constants.dart
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 String get supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';

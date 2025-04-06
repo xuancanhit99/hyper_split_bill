@@ -1,3 +1,5 @@
+// lib/core/router/app_router.dart
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,7 +11,7 @@ import 'package:hyper_split_bill/features/auth/presentation/pages/signup_page.da
 import 'package:hyper_split_bill/features/bill_split/presentation/pages/home_page.dart';
 import 'package:hyper_split_bill/features/bill_split/presentation/pages/bill_upload_page.dart';
 import 'package:hyper_split_bill/features/bill_split/presentation/pages/bill_edit_page.dart';
-// Import other pages...
+
 
 // --- Define Route Paths ---
 class AppRoutes {

@@ -1,3 +1,4 @@
+// lib/app.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart';

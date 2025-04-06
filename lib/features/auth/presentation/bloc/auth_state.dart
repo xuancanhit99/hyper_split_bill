@@ -1,3 +1,4 @@
+// lib/features/auth/presentation/bloc/auth_state.dart
 part of 'auth_bloc.dart';
 
 abstract class AuthState extends Equatable {
