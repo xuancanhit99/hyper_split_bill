@@ -1,16 +1,14 @@
 // lib/core/router/app_router.dart
 
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Import Bloc
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc
 import 'package:hyper_split_bill/features/auth/presentation/pages/login_page.dart';
 import 'package:hyper_split_bill/features/auth/presentation/pages/signup_page.dart'; // Import SignUpPage
-import 'package:hyper_split_bill/features/bill_split/presentation/pages/home_page.dart';
-import 'package:hyper_split_bill/features/bill_split/presentation/pages/bill_upload_page.dart';
-import 'package:hyper_split_bill/features/bill_split/presentation/pages/bill_edit_page.dart';
+
+import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
 
 
 // --- Define Route Paths ---
@@ -19,11 +17,6 @@ class AppRoutes {
   static const login = '/login';
   static const signup = '/signup'; // Added signup path
   static const home = '/';
-  static const upload = '/upload';
-  static const edit = '/edit';
-  static const split = '/split';
-  static const result = '/result';
-  static const history = '/history';
 }
 
 class AppRouter {
@@ -58,20 +51,6 @@ class AppRouter {
           name: AppRoutes.home,
           builder: (context, state) => const HomePage(),
         ),
-        // GoRoute(
-        //   path: AppRoutes.upload,
-        //   name: AppRoutes.upload,
-        //   builder: (context, state) => const BillUploadPage(),
-        // ),
-        // GoRoute(
-        //   path: AppRoutes.edit, // Example: '/edit' - Adjust if using IDs
-        //   name: AppRoutes.edit,
-        //   builder: (context, state) {
-        //     final billData = state.extra as dynamic; // Cast as needed
-        //     return BillEditPage(/* pass necessary data, maybe billData */);
-        //   },
-        // ),
-        // Add other routes (Split, Result, History) here...
       ],
 
       // --- REDIRECT LOGIC ---

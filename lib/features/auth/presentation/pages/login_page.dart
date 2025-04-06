@@ -1,139 +1,133 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_login/flutter_login.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hyper_split_bill/core/router/app_router.dart';
-import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:supabase_auth_ui/supabase_auth_ui.dart';
+import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart' as app_auth;
+
+
+// No GoRouter needed here directly for navigation *within* auth,
+// but keep it in scope if needed for other actions.
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
-  // --- Helper Function for Login ---
-  Future<String?> _onLogin(LoginData data, BuildContext context) async {
-    final authBloc = context.read<AuthBloc>();
-    authBloc.add(AuthSignInRequested(email: data.name, password: data.password));
-
-    // Wait for the state change (success or failure)
-    return await authBloc.stream.firstWhere((state) {
-      return state is AuthAuthenticated || state is AuthFailure;
-    }).then((state) {
-      if (state is AuthFailure) {
-        return state.message; // Return error message to flutter_login
-      }
-      return null; // Return null on success
-    }).catchError((_) {
-      // Handle potential stream errors if needed, though unlikely here
-      return 'An unexpected error occurred.';
-    });
-    // Note: A timeout could be added here for robustness
-  }
-
-  // --- Helper Function for Signup ---
-  Future<String?> _onSignup(SignupData data, BuildContext context) async {
-    final authBloc = context.read<AuthBloc>();
-
-    // --- Password confirmation is usually handled by flutter_login's UI validation ---
-    // flutter_login typically enforces the password match *before* calling onSignup
-    // if you have configured the confirm password field correctly in the widget.
-    // However, double-checking is safe if you aren't sure about the configuration.
-    // We access the password from `data.password`. `data.confirmPassword` DOES NOT EXIST.
-    // You'd typically rely on flutter_login's internal validation for this match.
-
-    // Basic validation (should ideally be caught by form validation first)
-    if (data.name == null || data.name!.isEmpty || !data.name!.contains('@')) {
-      return "Please enter a valid email";
-    }
-    if (data.password == null || data.password!.isEmpty || data.password!.length < 6) {
-      return "Password must be at least 6 characters";
-    }
-
-    // If you *really* need to manually check confirm password here (e.g., if passing it via additionalSignupData)
-    // you would access it differently. But standard flutter_login handles this.
-    // Example *if* you passed confirm password via additionalSignupData:
-    // final confirmPassword = data.additionalSignupData?['confirm_password'];
-    // if (data.password != confirmPassword) {
-    //   return "Passwords do not match";
-    // }
-
-    authBloc.add(AuthSignUpRequested(email: data.name!, password: data.password!));
-
-    // Wait for state change (logic remains the same)
-    return await authBloc.stream.firstWhere((state) {
-      return state is AuthFailure || state is AuthAuthenticated;
-    }).then((state) {
-      if (state is AuthFailure) {
-        return state.message;
-      }
-      return null;
-    }).catchError((_) {
-      return 'An unexpected error occurred during sign up.';
-    });
-  }
-
-
-  // --- Helper Function for Password Recovery ---
-  Future<String?> _onRecoverPassword(String email, BuildContext context) async {
-    final authBloc = context.read<AuthBloc>();
-    authBloc.add(AuthRecoverPasswordRequested(email));
-
-    // Wait for state change
-    return await authBloc.stream.firstWhere((state) {
-      return state is AuthPasswordResetEmailSent || state is AuthFailure;
-    }).then((state) {
-      if (state is AuthFailure) {
-        return state.message; // Return error message
-      }
-      // Return null on success (flutter_login shows a default success message)
-      return null;
-    }).catchError((_) {
-      return 'An unexpected error occurred during password recovery.';
-    });
-  }
-
-
   @override
   Widget build(BuildContext context) {
-    // Listen for AuthFailure to show snackbars if needed (optional, flutter_login shows errors)
-    // Use BlocBuilder only if you need to react to AuthLoading *outside* flutter_login's callbacks
-    return Scaffold(
-      // No AppBar needed as flutter_login provides its own UI
-      body: FlutterLogin(
-        title: 'Hyper Split Bill', // Your App Title
-        // logo: const AssetImage('assets/images/ecorp.png'), // Add your logo asset
-        onLogin: (data) => _onLogin(data, context),
-        onSignup: (data) => _onSignup(data, context),
-        onRecoverPassword: (email) => _onRecoverPassword(email, context),
-        onSubmitAnimationCompleted: () {
-          // Navigation is handled by GoRouter redirect based on AuthBloc state.
-          // You could manually navigate here *if* redirect wasn't set up,
-          // but it's better to rely on the redirect.
-          print('Submit animation completed. Router should redirect if authenticated.');
-        },
-        // Configure theme, messages, etc.
-        theme: LoginTheme(
-          primaryColor: Theme.of(context).primaryColor,
-          // accentColor: Colors.yellow,
-          errorColor: Theme.of(context).colorScheme.error,
-          titleStyle: TextStyle(
-            // color: Colors.greenAccent,
-            // fontFamily: 'Quicksand',
-            letterSpacing: 4,
+    // Listen for specific Bloc states if needed for feedback (e.g., password reset)
+    return BlocListener<app_auth.AuthBloc, app_auth.AuthState>(
+      listener: (context, state) {
+        if (state is app_auth.AuthFailure) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text('An error occurred: ${state.message}'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+        } else if (state is app_auth.AuthPasswordResetEmailSent) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: const Text('Password recovery email sent! Check your inbox.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Welcome')), // Optional: Add if needed
+        body: SafeArea( // Ensure UI respects notches/status bars
+          child: ListView( // Use ListView for scrolling on smaller screens
+            padding: const EdgeInsets.all(24.0),
+            children: [
+              // Your App Logo or Title (Optional)
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(vertical: 40.0),
+              //   child: YourLogoWidget(), // Replace with your logo
+              // ),
+
+              // --- Supabase Auth UI Widget ---
+              SupaEmailAuth(
+                // Use Supabase.instance.client directly as intended by the library
+                isInitiallySigningIn: true,
+                // Or SupaAuthAction.signUp to start with Sign Up view
+
+                // Redirect URL for password recovery link (MUST match Supabase config)
+                // This is where Supabase redirects the user *after* they click the email link.
+                // Use custom URL scheme or Universal Links/App Links.
+                // Example using a custom scheme 'myapp':
+                // passwordResetRedirectTo: 'myapp://reset-password', // Configure this scheme in AndroidManifest/Info.plist
+
+                onSignInComplete: (AuthResponse response) {
+                  // Called on successful sign-in.
+                  // AuthBloc's stream listener and GoRouter redirect handle navigation.
+                  print('Sign In successful: ${response.user?.email}');
+                },
+                onSignUpComplete: (AuthResponse response) {
+                  // Called on successful sign-up.
+                  // If email verification is required, user might not be 'authenticated' yet.
+                  // AuthBloc stream + router redirect handles the app state change.
+                  if (response.user?.emailConfirmedAt == null && Supabase.instance.client.auth.currentSession == null) {
+                    print('Sign Up complete, email verification likely pending: ${response.user?.email}');
+                    // Optionally show a message like "Please check your email to verify your account."
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sign Up successful! Check your email for verification.'), backgroundColor: Colors.green),
+                    );
+                  } else {
+                    print('Sign Up successful and verified/logged in: ${response.user?.email}');
+                  }
+                },
+                onError: (error) {
+                  print('SupaEmailAuth Error: $error');
+                  // If you dispatch an event, use the prefix:
+                  // context.read<app_auth.AuthBloc>().add(app_auth.AuthExternalErrorOccurred(error.toString()));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error is AuthException ? error.message : 'An unexpected error occurred.'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                },
+
+                // --- Forgot Password Integration ---
+                onPasswordResetEmailSent: () {
+                  print('Password reset email request sent via SupaEmailAuth.');
+                  // Use the BlocListener above to show feedback from AuthPasswordResetEmailSent state
+                  // Or show direct feedback here:
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //    const SnackBar(content: Text('Password recovery email sent! Check your inbox.'), backgroundColor: Colors.green),
+                  // );
+                },
+                // This callback uses Supabase.instance.client.auth.resetPasswordForEmail internally
+                // We don't need to manually call our Bloc/Repository for *this specific UI action*
+
+                // --- Customization ---
+                metadataFields: [
+                  // Add extra fields for Sign Up if needed
+                  // InputMetadata(label: 'Username', key: 'username'),
+                ],
+                // Add custom widgets above or below the form
+                // BasaEmailAuth uses `Theme.of(context)` for styling. Ensure AppTheme provides good defaults.
+                // Example: Add custom spacing or a logo
+                // prependedWidgets: [
+                //    const SizedBox(height: 50),
+                //    // Your Logo Widget
+                //    const SizedBox(height: 50),
+                // ],
+              ),
+              const SizedBox(height: 20),
+              // Optional: Add links for Terms of Service / Privacy Policy
+              // Row(
+              //    mainAxisAlignment: MainAxisAlignment.center,
+              //    children: [
+              //       TextButton(onPressed: () { /* Navigate */ }, child: Text('Terms')),
+              //       Text(' | '),
+              //       TextButton(onPressed: () { /* Navigate */ }, child: Text('Privacy')),
+              //    ]
+              // )
+            ],
           ),
-          // ... other theme customizations
-        ),
-        messages: LoginMessages(
-          userHint: 'Email',
-          passwordHint: 'Password',
-          confirmPasswordHint: 'Confirm Password',
-          loginButton: 'LOG IN',
-          signupButton: 'REGISTER',
-          forgotPasswordButton: 'Forgot password?',
-          recoverPasswordButton: 'HELP ME',
-          goBackButton: 'GO BACK',
-          confirmPasswordError: 'Passwords do not match!',
-          recoverPasswordDescription: 'We will send instructions to this email to reset your password.',
-          recoverPasswordSuccess: 'Password recovery email sent successfully!', // Default message
-          // ... other custom messages
         ),
       ),
     );
