@@ -1,35 +1,28 @@
 // lib/features/auth/domain/repositories/auth_repository.dart
-import 'package:supabase_flutter/supabase_flutter.dart'; // Can expose Supabase User directly or map
 import 'package:fpdart/fpdart.dart'; // For Either
 import 'package:hyper_split_bill/core/error/failures.dart'; // Your custom Failure class
-import 'package:hyper_split_bill/features/auth/domain/entities/user_entity.dart';
+import 'package:hyper_split_bill/features/auth/domain/entities/user_entity.dart'; // Import UserEntity
 
 abstract class AuthRepository {
 
-  User? get currentUser;
+  UserEntity? get currentUserEntity;
 
-  // Stream to notify about auth changes (login, logout)
-  Stream<User?> get authStateChanges; // Exposing Supabase User directly for simplicity here
+  Stream<UserEntity?> get authEntityChanges;
 
-  // Get current user if logged in
-  Future<Either<Failure, User?>> getCurrentUser();
+  Future<Either<Failure, UserEntity?>> getCurrentUserEntity();
 
-  // Sign in with email and password
-  Future<Either<Failure, User>> signInWithPassword({
+  Future<Either<Failure, UserEntity>> signInWithPassword({
     required String email,
     required String password,
   });
 
-  // Sign up with email and password
-  Future<Either<Failure, User>> signUpWithPassword({
+  Future<Either<Failure, UserEntity>> signUpWithPassword({
     required String email,
     required String password,
-    Map<String, dynamic>? data, // Optional: for additional user metadata
+    Map<String, dynamic>? data,
   });
 
-  // Recover password
   Future<Either<Failure, void>> recoverPassword(String email);
 
-  // Sign out
   Future<Either<Failure, void>> signOut();
 }

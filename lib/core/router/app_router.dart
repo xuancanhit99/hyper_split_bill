@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc
 import 'package:hyper_split_bill/features/auth/presentation/pages/login_page.dart';
-import 'package:hyper_split_bill/features/auth/presentation/pages/signup_page.dart'; // Import SignUpPage
 
 import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
 

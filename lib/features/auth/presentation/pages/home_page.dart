@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hyper_split_bill/core/router/app_router.dart'; // Use AppRoutes from router
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
 
 class HomePage extends StatelessWidget {

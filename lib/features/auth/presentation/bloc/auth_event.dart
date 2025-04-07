@@ -1,5 +1,5 @@
 // lib/features/auth/presentation/bloc/auth_event.dart
-part of 'auth_bloc.dart';
+part of 'auth_bloc.dart'; // Keep this
 
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -8,10 +8,8 @@ abstract class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// Triggered on app start to check current auth status
 class AuthCheckRequested extends AuthEvent {}
 
-// Triggered by UI to sign in
 class AuthSignInRequested extends AuthEvent {
   final String email;
   final String password;
@@ -22,7 +20,6 @@ class AuthSignInRequested extends AuthEvent {
   List<Object> get props => [email, password];
 }
 
-// Triggered by UI to sign up
 class AuthSignUpRequested extends AuthEvent {
   final String email;
   final String password;
@@ -41,13 +38,11 @@ class AuthRecoverPasswordRequested extends AuthEvent {
   List<Object> get props => [email];
 }
 
-
-// Triggered by UI to sign out
 class AuthSignOutRequested extends AuthEvent {}
 
-// Internal event triggered by the auth state stream listener
+// Internal event now carries UserEntity?
 class _AuthUserChanged extends AuthEvent {
-  final User? user; // Supabase User object
+  final UserEntity? user; // Changed from Supabase User?
   const _AuthUserChanged(this.user);
 
   @override

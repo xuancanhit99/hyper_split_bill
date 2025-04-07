@@ -16,7 +16,7 @@ class AuthLoading extends AuthState {}
 
 // User is logged in
 class AuthAuthenticated extends AuthState {
-  final User user; // Expose Supabase User object directly
+  final UserEntity user; // Changed from Supabase User to UserEntity
 
   const AuthAuthenticated(this.user);
 
