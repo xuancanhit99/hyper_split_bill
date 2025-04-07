@@ -12,7 +12,7 @@ class ServerException implements Exception {
 /// Represents errors specific to Authentication operations originating from the server.
 /// Inherits from ServerException for categorization.
 class AuthServerException extends ServerException {
-  const AuthServerException(String message) : super(message);
+  const AuthServerException(super.message);
 
   @override
   String toString() => 'AuthServerException: $message';

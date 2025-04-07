@@ -8,7 +8,7 @@ import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
 import 'package:hyper_split_bill/features/auth/presentation/pages/login_page.dart';
 
 import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
-
+import 'package:hyper_split_bill/features/auth/presentation/pages/reset_password_page.dart'; // Added import
 
 // --- Define Route Paths ---
 class AppRoutes {
@@ -16,6 +16,10 @@ class AppRoutes {
   static const login = '/login';
   static const signup = '/signup'; // Added signup path
   static const home = '/';
+  static const upload = '/upload'; // Added route
+  static const history = '/history'; // Added route
+  static const resetPassword =
+      '/reset-password'; // Added route for password reset page
 }
 
 class AppRouter {
@@ -50,6 +54,37 @@ class AppRouter {
           name: AppRoutes.home,
           builder: (context, state) => const HomePage(),
         ),
+        // TODO: Replace with actual page widgets once created
+        GoRoute(
+          path: AppRoutes.upload,
+          name: AppRoutes.upload,
+          builder:
+              (context, state) => const Scaffold(
+                body: Center(child: Text('Upload Page Placeholder')),
+              ), // Placeholder
+        ),
+        GoRoute(
+          path: AppRoutes.history,
+          name: AppRoutes.history,
+          builder:
+              (context, state) => const Scaffold(
+                body: Center(child: Text('History Page Placeholder')),
+              ), // Placeholder
+        ),
+        GoRoute(
+          path: AppRoutes.resetPassword,
+          name: AppRoutes.resetPassword,
+          // This page is typically reached via deep link
+          builder: (context, state) {
+            // Potentially extract token/params from state.uri if needed,
+            // but SupaResetPassword usually handles it automatically via session recovery.
+            // Ensure ResetPasswordPage is imported.
+            // Assuming ResetPasswordPage is in:
+            // import 'package:hyper_split_bill/features/auth/presentation/pages/reset_password_page.dart';
+            // If not, add the import at the top of the file.
+            return const ResetPasswordPage();
+          },
+        ),
       ],
 
       // --- REDIRECT LOGIC ---
@@ -57,8 +92,13 @@ class AppRouter {
         final currentState = authBloc.state; // Get current Bloc state
         final loggingIn = state.matchedLocation == AppRoutes.login;
         final signingUp = state.matchedLocation == AppRoutes.signup;
+        final resettingPassword =
+            state.matchedLocation ==
+            AppRoutes.resetPassword; // Check for reset page
         final isPublicRoute =
-            loggingIn || signingUp; // Add other public routes here if any
+            loggingIn ||
+            signingUp ||
+            resettingPassword; // Add resetPassword as a public-accessible route (via deep link)
 
         debugPrint(
           "Redirect Check: Current State: ${currentState.runtimeType}, Location: ${state.matchedLocation}, IsPublic: $isPublicRoute",
@@ -74,7 +114,9 @@ class AppRouter {
         if (currentState is AuthAuthenticated) {
           // If user is on login or signup page, redirect to home
           if (isPublicRoute) {
-            debugPrint("Redirecting authenticated user from public route to home");
+            debugPrint(
+              "Redirecting authenticated user from public route to home",
+            );
             return AppRoutes.home;
           }
         }

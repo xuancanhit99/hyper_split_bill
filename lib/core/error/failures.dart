@@ -11,22 +11,22 @@ abstract class Failure extends Equatable {
 
 // General failures
 class ServerFailure extends Failure {
-  const ServerFailure(String message) : super(message);
+  const ServerFailure(super.message);
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure(String message) : super(message);
+  const CacheFailure(super.message);
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure(String message) : super(message);
+  const NetworkFailure(super.message);
 }
 
 // Specific Auth Failures can be added if needed, mapping from Supabase errors
 class AuthCredentialsFailure extends Failure {
-  const AuthCredentialsFailure(String message) : super(message);
+  const AuthCredentialsFailure(super.message);
 }
 
 class AuthServerFailure extends Failure {
-  const AuthServerFailure(String message) : super(message);
+  const AuthServerFailure(super.message);
 }

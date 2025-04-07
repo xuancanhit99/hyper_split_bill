@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart'; // Correct import
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart';
@@ -27,14 +26,18 @@ class ResetPasswordPage extends StatelessWidget {
             // automatically handled by Supabase.initialize when the app
             // resumes from the deep link. SupaResetPassword relies on this
             // session recovery. You don't typically pass the token manually here.
-
-            onSuccess: (UserResponse response) { // Receives UserResponse on success
-              debugPrint('Password reset successful for user: ${response.user?.id}');
+            onSuccess: (UserResponse response) {
+              // Receives UserResponse on success
+              debugPrint(
+                'Password reset successful for user: ${response.user?.id}',
+              );
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
                   const SnackBar(
-                    content: Text('Password updated successfully! You can now log in.'),
+                    content: Text(
+                      'Password updated successfully! You can now log in.',
+                    ),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -47,7 +50,11 @@ class ResetPasswordPage extends StatelessWidget {
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
                   SnackBar(
-                    content: Text(error is AuthException ? error.message : 'Failed to update password.'),
+                    content: Text(
+                      error is AuthException
+                          ? error.message
+                          : 'Failed to update password.',
+                    ),
                     backgroundColor: Theme.of(context).colorScheme.error,
                   ),
                 );

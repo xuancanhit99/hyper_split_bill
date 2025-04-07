@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
-import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart' as app_auth;
-
+import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
+    as app_auth;
 
 // No GoRouter needed here directly for navigation *within* auth,
 // but keep it in scope if needed for other actions.
@@ -30,7 +29,9 @@ class LoginPage extends StatelessWidget {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                content: const Text('Password recovery email sent! Check your inbox.'),
+                content: const Text(
+                  'Password recovery email sent! Check your inbox.',
+                ),
                 backgroundColor: Colors.green,
               ),
             );
@@ -38,8 +39,10 @@ class LoginPage extends StatelessWidget {
       },
       child: Scaffold(
         // appBar: AppBar(title: const Text('Login')), // Optional: Add if needed
-        body: SafeArea( // Ensure UI respects notches/status bars
-          child: ListView( // Use ListView for scrolling on smaller screens
+        body: SafeArea(
+          // Ensure UI respects notches/status bars
+          child: ListView(
+            // Use ListView for scrolling on smaller screens
             padding: const EdgeInsets.all(24.0),
             children: [
               // Your App Logo or Title (Optional)
@@ -52,6 +55,7 @@ class LoginPage extends StatelessWidget {
               SupaEmailAuth(
                 // Use Supabase.instance.client directly as intended by the library
                 isInitiallySigningIn: true,
+
                 // Or SupaAuthAction.signUp to start with Sign Up view
 
                 // Redirect URL for password recovery link (MUST match Supabase config)
@@ -59,7 +63,6 @@ class LoginPage extends StatelessWidget {
                 // Use custom URL scheme or Universal Links/App Links.
                 // Example using a custom scheme 'myapp':
                 // passwordResetRedirectTo: 'myapp://reset-password', // Configure this scheme in AndroidManifest/Info.plist
-
                 onSignInComplete: (AuthResponse response) {
                   // Called on successful sign-in.
                   // AuthBloc's stream listener and GoRouter redirect handle navigation.
@@ -69,14 +72,24 @@ class LoginPage extends StatelessWidget {
                   // Called on successful sign-up.
                   // If email verification is required, user might not be 'authenticated' yet.
                   // AuthBloc stream + router redirect handles the app state change.
-                  if (response.user?.emailConfirmedAt == null && Supabase.instance.client.auth.currentSession == null) {
-                    debugPrint('Sign Up complete, email verification likely pending: ${response.user?.email}');
+                  if (response.user?.emailConfirmedAt == null &&
+                      Supabase.instance.client.auth.currentSession == null) {
+                    debugPrint(
+                      'Sign Up complete, email verification likely pending: ${response.user?.email}',
+                    );
                     // Optionally show a message like "Please check your email to verify your account."
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Sign Up successful! Check your email for verification.'), backgroundColor: Colors.green),
+                      const SnackBar(
+                        content: Text(
+                          'Sign Up successful! Check your email for verification.',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                   } else {
-                    debugPrint('Sign Up successful and verified/logged in: ${response.user?.email}');
+                    debugPrint(
+                      'Sign Up successful and verified/logged in: ${response.user?.email}',
+                    );
                   }
                 },
                 onError: (error) {
@@ -85,7 +98,11 @@ class LoginPage extends StatelessWidget {
                   // context.read<app_auth.AuthBloc>().add(app_auth.AuthExternalErrorOccurred(error.toString()));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(error is AuthException ? error.message : 'An unexpected error occurred.'),
+                      content: Text(
+                        error is AuthException
+                            ? error.message
+                            : 'An unexpected error occurred.',
+                      ),
                       backgroundColor: Theme.of(context).colorScheme.error,
                     ),
                   );
@@ -93,7 +110,9 @@ class LoginPage extends StatelessWidget {
 
                 // --- Forgot Password Integration ---
                 onPasswordResetEmailSent: () {
-                  debugPrint('Password reset email request sent via SupaEmailAuth.');
+                  debugPrint(
+                    'Password reset email request sent via SupaEmailAuth.',
+                  );
                   // Use the BlocListener above to show feedback from AuthPasswordResetEmailSent state
                   // Or show direct feedback here:
                   // ScaffoldMessenger.of(context).showSnackBar(

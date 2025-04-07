@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hyper_split_bill/core/router/app_router.dart'; // Added import for AppRoutes
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
 
 class HomePage extends StatelessWidget {
@@ -28,24 +29,29 @@ class HomePage extends StatelessWidget {
                 // Show confirmation dialog before signing out
                 showDialog(
                   context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Confirm Sign Out'),
-                    content: const Text('Are you sure you want to sign out?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: const Text('Cancel'),
+                  builder:
+                      (dialogContext) => AlertDialog(
+                        title: const Text('Confirm Sign Out'),
+                        content: const Text(
+                          'Are you sure you want to sign out?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                              // Dispatch sign out event
+                              context.read<AuthBloc>().add(
+                                AuthSignOutRequested(),
+                              );
+                            },
+                            child: const Text('Sign Out'),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(dialogContext).pop();
-                          // Dispatch sign out event
-                          context.read<AuthBloc>().add(AuthSignOutRequested());
-                        },
-                        child: const Text('Sign Out'),
-                      ),
-                    ],
-                  ),
                 );
               },
             ),
@@ -67,22 +73,27 @@ class HomePage extends StatelessWidget {
                 icon: const Icon(Icons.add_a_photo_outlined), // Changed icon
                 label: const Text('Split a New Bill'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
                   textStyle: Theme.of(context).textTheme.titleMedium,
                 ),
                 onPressed: () {
                   // Navigate to the bill upload page using router path/name
-                  // context.push(AppRoutes.upload);
+                  context.push(AppRoutes.upload); // Uncommented
                 },
               ),
               const SizedBox(height: 20),
               // Optional: Button to view history (uncomment when ready)
-              // TextButton(
-              //   onPressed: () {
-              //      context.push(AppRoutes.history);
-              //   },
-              //   child: const Text('View Bill History'),
-              // )
+              TextButton(
+                // Uncommented
+                onPressed: () {
+                  // Uncommented
+                  context.push(AppRoutes.history); // Uncommented
+                }, // Uncommented
+                child: const Text('View Bill History'), // Uncommented
+              ), // Removed comment marker
             ],
           ),
         ),
