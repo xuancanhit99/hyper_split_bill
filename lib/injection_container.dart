@@ -10,6 +10,7 @@ import 'package:hyper_split_bill/core/router/app_router.dart';
 import 'package:hyper_split_bill/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:hyper_split_bill/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hyper_split_bill/features/auth/domain/repositories/auth_repository.dart';
+import 'package:hyper_split_bill/core/config/app_config.dart';
 
 import 'injection_container.config.dart';
 
@@ -17,11 +18,28 @@ final sl = GetIt.instance;
 
 @InjectableInit()
 Future<void> configureDependencies() async {
-  // External
-  sl.registerLazySingleton(() => Supabase.instance.client);
-  sl.registerLazySingleton(() => http.Client());
 
-  // Core
+  sl.init();
+
+  // Register external dependencies first
+  _registerExternalDependencies();
+
+
+  // Register manual dependencies that might not work with @injectable
+  _registerThemes();
+
+  // Register AppRouter after AuthBloc is available
+  sl.registerLazySingleton(() => AppRouter(sl<AuthBloc>()));
+}
+
+
+void _registerExternalDependencies() {
+  // Register Supabase client - this must be available via GetIt for other dependencies
+  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
+  sl.registerLazySingleton(() => http.Client());
+}
+
+void _registerThemes() {
   sl.registerLazySingleton<ThemeData>(
         () => AppTheme.lightTheme,
     instanceName: 'lightTheme',
@@ -30,16 +48,4 @@ Future<void> configureDependencies() async {
         () => AppTheme.darkTheme,
     instanceName: 'darkTheme',
   );
-
-  // Features - Auth
-  sl.registerLazySingleton<AuthRemoteDataSource>(
-        () => AuthRemoteDataSourceImpl(sl()),
-  );
-  sl.registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(remoteDataSource: sl()),
-  );
-  sl.registerFactory(() => AuthBloc(sl()));
-
-  // Router
-  sl.registerLazySingleton(() => AppRouter(sl()));
 }

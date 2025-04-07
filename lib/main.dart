@@ -10,12 +10,12 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     await dotenv.load(fileName: ".env");
+    await di.configureDependencies();
     final appConfig = di.sl<AppConfig>();
     await Supabase.initialize(
       url: appConfig.supabaseUrl,
       anonKey: appConfig.supabaseAnonKey,
     );
-    await di.configureDependencies();
     runApp(const MyApp());
   } catch (e) {
     debugPrint('Error initializing app: $e');
