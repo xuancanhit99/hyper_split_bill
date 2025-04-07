@@ -75,12 +75,12 @@ flutter_native_splash:
 
   android_12:
     image: assets/logo/android12splash-bill.png
-    icon_background_color: "#ffffff"
+    # icon_background_color: "#ffffff" # Removed, usually not needed with image
     image_dark: assets/logo/android12splash-bill.png
-    icon_background_color_dark: "#000000"
+    # icon_background_color_dark: "#000000" # Removed, usually not needed with image_dark
 
   web: false
-  fullscreen: true
+  fullscreen: false # Changed to false for better compatibility with Android 12+ standard behavior
 
 
 # For information on the generic Dart part of this file, see the
