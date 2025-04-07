@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:hyper_split_bill/features/auth/domain/entities/user_entity.dart';
 import 'package:hyper_split_bill/features/auth/domain/repositories/auth_repository.dart';
@@ -43,7 +44,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   void _onAuthUserChanged(_AuthUserChanged event, Emitter<AuthState> emit) {
-    print("Auth Entity Changed: ${event.user?.email ?? 'Logged Out'}");
+    debugPrint("Auth Entity Changed: ${event.user?.email ?? 'Logged Out'}");
     emit(event.user != null ? AuthAuthenticated(event.user!) : AuthUnauthenticated());
   }
 
@@ -58,7 +59,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
       (failure) => emit(AuthFailure(failure.message)),
       (userEntity) {
-        print("Sign In successful for ${userEntity.email}, waiting for stream update.");
+        debugPrint("Sign In successful for ${userEntity.email}, waiting for stream update.");
       },
     );
   }
@@ -73,7 +74,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
       (failure) => emit(AuthFailure(failure.message)),
       (userEntity) {
-        print("Sign Up successful for ${userEntity.email}, waiting for stream update.");
+        debugPrint("Sign Up successful for ${userEntity.email}, waiting for stream update.");
       },
     );
   }
@@ -94,11 +95,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await _authRepository.signOut();
     result.fold(
       (failure) {
-        print("Sign Out failed: ${failure.message}");
+        debugPrint("Sign Out failed: ${failure.message}");
         emit(AuthFailure(failure.message));
       },
       (_) {
-        print("Sign Out successful, waiting for stream update.");
+        debugPrint("Sign Out successful, waiting for stream update.");
       },
     );
   }

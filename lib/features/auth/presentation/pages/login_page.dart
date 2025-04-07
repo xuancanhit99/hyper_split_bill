@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart' as app_auth;
@@ -62,24 +63,24 @@ class LoginPage extends StatelessWidget {
                 onSignInComplete: (AuthResponse response) {
                   // Called on successful sign-in.
                   // AuthBloc's stream listener and GoRouter redirect handle navigation.
-                  print('Sign In successful: ${response.user?.email}');
+                  debugPrint('Sign In successful: ${response.user?.email}');
                 },
                 onSignUpComplete: (AuthResponse response) {
                   // Called on successful sign-up.
                   // If email verification is required, user might not be 'authenticated' yet.
                   // AuthBloc stream + router redirect handles the app state change.
                   if (response.user?.emailConfirmedAt == null && Supabase.instance.client.auth.currentSession == null) {
-                    print('Sign Up complete, email verification likely pending: ${response.user?.email}');
+                    debugPrint('Sign Up complete, email verification likely pending: ${response.user?.email}');
                     // Optionally show a message like "Please check your email to verify your account."
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Sign Up successful! Check your email for verification.'), backgroundColor: Colors.green),
                     );
                   } else {
-                    print('Sign Up successful and verified/logged in: ${response.user?.email}');
+                    debugPrint('Sign Up successful and verified/logged in: ${response.user?.email}');
                   }
                 },
                 onError: (error) {
-                  print('SupaEmailAuth Error: $error');
+                  debugPrint('SupaEmailAuth Error: $error');
                   // If you dispatch an event, use the prefix:
                   // context.read<app_auth.AuthBloc>().add(app_auth.AuthExternalErrorOccurred(error.toString()));
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +93,7 @@ class LoginPage extends StatelessWidget {
 
                 // --- Forgot Password Integration ---
                 onPasswordResetEmailSent: () {
-                  print('Password reset email request sent via SupaEmailAuth.');
+                  debugPrint('Password reset email request sent via SupaEmailAuth.');
                   // Use the BlocListener above to show feedback from AuthPasswordResetEmailSent state
                   // Or show direct feedback here:
                   // ScaffoldMessenger.of(context).showSnackBar(

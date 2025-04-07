@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc
@@ -60,7 +61,7 @@ class AppRouter {
         final isPublicRoute =
             loggingIn || signingUp; // Add other public routes here if any
 
-        print(
+        debugPrint(
           "Redirect Check: Current State: ${currentState.runtimeType}, Location: ${state.matchedLocation}, IsPublic: $isPublicRoute",
         ); // Debugging
 
@@ -74,7 +75,7 @@ class AppRouter {
         if (currentState is AuthAuthenticated) {
           // If user is on login or signup page, redirect to home
           if (isPublicRoute) {
-            print("Redirecting authenticated user from public route to home");
+            debugPrint("Redirecting authenticated user from public route to home");
             return AppRoutes.home;
           }
         }
@@ -83,13 +84,13 @@ class AppRouter {
             currentState is AuthFailure) {
           // If user is NOT on a public route, redirect to login
           if (!isPublicRoute) {
-            print("Redirecting unauthenticated user to login");
+            debugPrint("Redirecting unauthenticated user to login");
             return AppRoutes.login;
           }
         }
 
         // No redirect needed
-        print("No redirect needed.");
+        debugPrint("No redirect needed.");
         return null;
       },
       errorBuilder:

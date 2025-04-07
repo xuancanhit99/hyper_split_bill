@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart'; // Correct import
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart';
@@ -28,7 +29,7 @@ class ResetPasswordPage extends StatelessWidget {
             // session recovery. You don't typically pass the token manually here.
 
             onSuccess: (UserResponse response) { // Receives UserResponse on success
-              print('Password reset successful for user: ${response.user?.id}');
+              debugPrint('Password reset successful for user: ${response.user?.id}');
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
@@ -41,7 +42,7 @@ class ResetPasswordPage extends StatelessWidget {
               context.go(AppRoutes.login);
             },
             onError: (error) {
-              print('SupaResetPassword Error: $error');
+              debugPrint('SupaResetPassword Error: $error');
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(

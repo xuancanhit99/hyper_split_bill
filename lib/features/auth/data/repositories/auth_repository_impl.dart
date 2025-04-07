@@ -1,11 +1,12 @@
 // lib/features/auth/data/repositories/auth_repository_impl.dart
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hyper_split_bill/core/error/failures.dart';
 import 'package:hyper_split_bill/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:hyper_split_bill/features/auth/domain/entities/user_entity.dart';
 import 'package:hyper_split_bill/features/auth/domain/repositories/auth_repository.dart';
 import 'package:injectable/injectable.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show AuthException, User;
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 import 'package:hyper_split_bill/core/error/exceptions.dart';
 
 @LazySingleton(as: AuthRepository)
@@ -29,8 +30,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final userEntity = _mapSupabaseUserToEntity(remoteDataSource.currentUser);
       return Right(userEntity);
-    } catch (e) {
-      return Left(ServerFailure('Failed to get current user: ${e.toString()}'));
+    } catch (e, s) {
+      debugPrint('Unexpected error in getCurrentUserEntity: $e\nStackTrace: $s');
+      return Left(ServerFailure('Failed to get current user info. Please try again later.'));
     }
   }
 
@@ -45,12 +47,13 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
       );
       return Right(UserEntity.fromSupabaseUser(supabaseUser));
-    } on AuthException catch (e) {
+    } on AuthServerException catch (e) {
       return Left(AuthCredentialsFailure(e.message));
     } on ServerException catch(e) {
       return Left(AuthCredentialsFailure(e.message));
-    } catch (e) {
-      return Left(AuthCredentialsFailure('An unexpected error occurred during sign in: ${e.toString()}'));
+    } catch (e, s) {
+      debugPrint('Unexpected error in signInWithPassword: $e\nStackTrace: $s');
+      return Left(AuthCredentialsFailure('An unexpected error occurred during sign in. Please check your connection or try again later.'));
     }
   }
 
@@ -67,12 +70,13 @@ class AuthRepositoryImpl implements AuthRepository {
         data: data,
       );
       return Right(UserEntity.fromSupabaseUser(supabaseUser));
-    } on AuthException catch (e) {
+    } on AuthServerException catch (e) {
       return Left(AuthServerFailure(e.message));
     } on ServerException catch(e) {
       return Left(AuthServerFailure(e.message));
-    } catch (e) {
-      return Left(AuthServerFailure('An unexpected error occurred during sign up: ${e.toString()}'));
+    } catch (e, s) {
+      debugPrint('Unexpected error in signUpWithPassword: $e\nStackTrace: $s');
+      return Left(AuthServerFailure('An unexpected error occurred during sign up. Please try again later.'));
     }
   }
 
@@ -85,8 +89,9 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(AuthServerFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('An unexpected error occurred: ${e.toString()}'));
+    } catch (e, s) {
+      debugPrint('Unexpected error in recoverPassword: $e\nStackTrace: $s');
+      return Left(ServerFailure('An unexpected error occurred while recovering password. Please try again later.'));
     }
   }
 
@@ -95,8 +100,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await remoteDataSource.signOut();
       return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure('Failed to sign out: ${e.toString()}'));
+    } catch (e, s) {
+      debugPrint('Unexpected error in signOut: $e\nStackTrace: $s');
+      return Left(ServerFailure('Failed to sign out. Please check your connection or try again later.'));
     }
   }
 }
