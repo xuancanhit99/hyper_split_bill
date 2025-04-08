@@ -78,17 +78,21 @@ class OcrDataSourceImpl implements OcrDataSource {
           }
         } catch (_) {
           // Ignore parsing error, use default detail
+          print(
+              "OCR Error Response Body: ${response.body}"); // Log raw error body
         }
         // Consider mapping status codes to more specific exceptions if needed
         throw ServerException('OCR request failed: $detail');
       }
-    } on SocketException {
-      throw const NetworkException(
+    } on SocketException catch (e, s) {
+      print("OCR SocketException: $e\nStackTrace: $s");
+      throw NetworkException(
           'Network error: Could not connect to OCR service.');
-    } on http.ClientException catch (e) {
+    } on http.ClientException catch (e, s) {
+      print("OCR ClientException: $e\nStackTrace: $s");
       throw NetworkException('Network error during OCR request: ${e.message}');
-    } catch (e) {
-      // Log the error e.toString()
+    } catch (e, s) {
+      print("OCR Unexpected Error: $e\nStackTrace: $s");
       throw ServerException(
           'An unexpected error occurred during OCR processing: ${e.runtimeType}');
     }

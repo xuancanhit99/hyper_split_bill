@@ -7,7 +7,7 @@ import 'package:injectable/injectable.dart';
 
 // Use case for processing a bill image using OCR.
 @lazySingleton // Register with GetIt
-@lazySingleton
+// Removed duplicate annotation
 class ProcessBillOcrUseCase {
   // Inject OcrDataSource directly. Alternatively, create an OcrRepository.
   final OcrDataSource ocrDataSource;
@@ -27,13 +27,16 @@ class ProcessBillOcrUseCase {
       );
       // TODO: Add any domain-level processing/validation of the extracted text if needed.
       return Right(extractedText);
-    } on ServerException catch (e) {
-      // Map specific data layer exceptions to domain failures
+    } on ServerException catch (e, s) {
+      print("ProcessBillOcrUseCase caught ServerException: $e\nStackTrace: $s");
       return Left(ServerFailure('OCR Service Error: ${e.message}'));
-    } on NetworkException catch (e) {
+    } on NetworkException catch (e, s) {
+      print(
+          "ProcessBillOcrUseCase caught NetworkException: $e\nStackTrace: $s");
       return Left(NetworkFailure('OCR Network Error: ${e.message}'));
-    } catch (e) {
-      // Catch-all for unexpected errors during OCR processing in the use case layer
+    } catch (e, s) {
+      print(
+          "ProcessBillOcrUseCase caught Unexpected Error: $e\nStackTrace: $s");
       return Left(
           ServerFailure('Unexpected OCR processing error: ${e.runtimeType}'));
     }
