@@ -4,10 +4,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc
-import 'package:hyper_split_bill/features/auth/presentation/pages/login_page.dart';
+import 'package:hyper_split_bill/features/auth/presentation/pages/auth_page.dart';
 
 import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
-import 'package:hyper_split_bill/features/auth/presentation/pages/reset_password_page.dart'; // Added import
+// Removed import for reset_password_page.dart
 
 // --- Define Route Paths ---
 class AppRoutes {
@@ -18,7 +18,7 @@ class AppRoutes {
   static const upload = '/upload'; // Added route
   static const history = '/history'; // Added route
   static const resetPassword =
-      '/reset-password'; // Added route for password reset page
+      '/reset-password'; // Path kept for potential future use, but route removed
 }
 
 class AppRouter {
@@ -57,33 +57,31 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.upload,
           name: AppRoutes.upload,
-          builder:
-              (context, state) => const Scaffold(
-                body: Center(child: Text('Upload Page Placeholder')),
-              ), // Placeholder
+          builder: (context, state) => const Scaffold(
+            body: Center(child: Text('Upload Page Placeholder')),
+          ), // Placeholder
         ),
         GoRoute(
           path: AppRoutes.history,
           name: AppRoutes.history,
-          builder:
-              (context, state) => const Scaffold(
-                body: Center(child: Text('History Page Placeholder')),
-              ), // Placeholder
+          builder: (context, state) => const Scaffold(
+            body: Center(child: Text('History Page Placeholder')),
+          ), // Placeholder
         ),
-        GoRoute(
-          path: AppRoutes.resetPassword,
-          name: AppRoutes.resetPassword,
-          // This page is typically reached via deep link
-          builder: (context, state) {
-            // Potentially extract token/params from state.uri if needed,
-            // but SupaResetPassword usually handles it automatically via session recovery.
-            // Ensure ResetPasswordPage is imported.
-            // Assuming ResetPasswordPage is in:
-            // import 'package:hyper_split_bill/features/auth/presentation/pages/reset_password_page.dart';
-            // If not, add the import at the top of the file.
-            return const ResetPasswordPage();
-          },
-        ),
+        // GoRoute(
+        //   path: AppRoutes.resetPassword,
+        //   name: AppRoutes.resetPassword,
+        //   // This page is typically reached via deep link
+        //   builder: (context, state) {
+        //     // Potentially extract token/params from state.uri if needed,
+        //     // but SupaResetPassword usually handles it automatically via session recovery.
+        //     // Ensure ResetPasswordPage is imported.
+        //     // Assuming ResetPasswordPage is in:
+        //     // import 'package:hyper_split_bill/features/auth/presentation/pages/reset_password_page.dart';
+        //     // If not, add the import at the top of the file.
+        //     return const ResetPasswordPage();
+        //   },
+        // ),
       ],
 
       // --- REDIRECT LOGIC ---
@@ -91,11 +89,9 @@ class AppRouter {
         final currentState = authBloc.state; // Get current Bloc state
         final loggingIn = state.matchedLocation == AppRoutes.login;
         final signingUp = state.matchedLocation == AppRoutes.signup;
-        final resettingPassword =
-            state.matchedLocation ==
+        final resettingPassword = state.matchedLocation ==
             AppRoutes.resetPassword; // Check for reset page
-        final isPublicRoute =
-            loggingIn ||
+        final isPublicRoute = loggingIn ||
             signingUp ||
             resettingPassword; // Add resetPassword as a public-accessible route (via deep link)
 
@@ -133,11 +129,10 @@ class AppRouter {
         debugPrint("No redirect needed.");
         return null;
       },
-      errorBuilder:
-          (context, state) => Scaffold(
-            // Basic error page
-            body: Center(child: Text('Page not found: ${state.error}')),
-          ),
+      errorBuilder: (context, state) => Scaffold(
+        // Basic error page
+        body: Center(child: Text('Page not found: ${state.error}')),
+      ),
     );
   }
 }
@@ -149,8 +144,8 @@ class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
     _subscription = stream.asBroadcastStream().listen(
-      (dynamic _) => notifyListeners(),
-    );
+          (dynamic _) => notifyListeners(),
+        );
   }
 
   @override

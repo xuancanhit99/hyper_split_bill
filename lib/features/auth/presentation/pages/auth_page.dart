@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
     as app_auth;
+// Import the common header widget
+import 'package:hyper_split_bill/common/header_form.dart';
 
 // No GoRouter needed here directly for navigation *within* auth,
 // but keep it in scope if needed for other actions.
@@ -45,11 +47,19 @@ class LoginPage extends StatelessWidget {
             // Use ListView for scrolling on smaller screens
             padding: const EdgeInsets.all(24.0),
             children: [
-              // Your App Logo or Title (Optional)
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(vertical: 40.0),
-              //   child: YourLogoWidget(), // Replace with your logo
-              // ),
+              // --- Header ---
+              const HeaderForm(
+                image: 'assets/logo/mirea.png',
+                title: 'Welcome Back!',
+                subtitle: 'Sign in or create an account to get started.',
+                // Center align the header content
+                crossAxisAlignment: CrossAxisAlignment.center,
+                textAlign: TextAlign.center,
+                heightBetween: 20, // Keep existing spacing or adjust as needed
+              ),
+              const SizedBox(height: 32.0), // Spacing after header
+
+              // Your App Logo or Title (Optional) - Removed redundant comment block
 
               // --- Supabase Auth UI Widget ---
               SupaEmailAuth(
