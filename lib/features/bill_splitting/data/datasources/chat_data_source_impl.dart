@@ -56,8 +56,14 @@ class ChatDataSourceImpl implements ChatDataSource {
       final responseBody = utf8.decode(response.bodyBytes);
 
       if (response.statusCode == 200) {
-        // Return the full response body string for the UseCase to parse
-        return responseBody;
+        final decodedResponse =
+            json.decode(responseBody) as Map<String, dynamic>;
+        if (decodedResponse.containsKey('response_text')) {
+          return decodedResponse['response_text'] as String;
+        } else {
+          throw const ServerException(
+              'Chat API response missing "response_text" field.');
+        }
       } else {
         String detail = 'HTTP Error ${response.statusCode}';
         try {

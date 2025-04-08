@@ -253,8 +253,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
         margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
         padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
         decoration: BoxDecoration(
+          // Custom blue for user, theme color for bot
           color: isUser
-              ? Theme.of(context).colorScheme.primaryContainer
+              ? const Color(0xFF0084FF) // Facebook Messenger blue
               : Theme.of(context).colorScheme.secondaryContainer,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16.0),
@@ -266,8 +267,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
         child: Text(
           message.text,
           style: TextStyle(
+            // White text for user bubble, theme color for bot
             color: isUser
-                ? Theme.of(context).colorScheme.onPrimaryContainer
+                ? Colors.white
                 : Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),

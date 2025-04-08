@@ -16,23 +16,21 @@ class StructureBillDataUseCase {
   Future<Either<Failure, String>> call({required String ocrText}) async {
     // --- Define the Prompt ---
     const String detailedPrompt = """
-Analyze the following bill text extracted via OCR and return ONLY a valid JSON object containing the structured data.
-Do not include any explanatory text before or after the JSON object.
-Do not use markdown code blocks (like ```json).
-The JSON object MUST have the following fields:
-- "bill_date": (string, format YYYY-MM-DD, try to infer from text, otherwise null)
-- "description": (string, optional, try to infer store name or a general description)
-- "currency_code": (string, e.g., "USD", "VND", try to infer, default to "USD" if unsure)
-- "subtotal_amount": (number, subtotal before tax/tip/discount, null if not found)
-- "tax_amount": (number, total tax amount, null if not found)
-- "tip_amount": (number, total tip amount, null if not found)
-- "discount_amount": (number, total discount amount, null if not found)
-- "total_amount": (number, the final total amount paid, should be present)
-- "items": (array of objects, each with "description": string, "quantity": number, "unit_price": number, "total_price": number)
+Analyze the following bill text extracted via OCR. Return ONLY a valid JSON object with the structured data.
+NO explanatory text, NO markdown code blocks.
+JSON fields MUST be:
+- "bill_date": (string, YYYY-MM-DD or null)
+- "description": (string or null)
+- "currency_code": (string, e.g., "USD", "RUB", "VND", infer or default to "USD")
+- "subtotal_amount": (number or null)
+- "tax_amount": (number or null)
+- "tip_amount": (number or null)
+- "discount_amount": (number or null)
+- "total_amount": (number, MUST be present)
+- "items": (array of objects: {"description": string, "quantity": number, "unit_price": number, "total_price": number})
 
-Extract the items listed on the bill. For each item, determine its description, quantity (default to 1 if not specified), unit price (if available), and total price. If only the total price for an item line is available, use that for "total_price" and potentially estimate "unit_price" if quantity is known. If quantity or unit price is ambiguous, make a reasonable guess or omit the field. Ensure the sum of "total_price" for all items is reasonably close to the "subtotal_amount" if available.
-
-If any required numeric field (like total_amount) cannot be found or parsed, return a JSON object with an "error" field describing the issue, e.g., {"error": "Could not determine total amount"}.
+Extract items with description, quantity (default 1), unit_price (if available), and total_price. Estimate where necessary.
+If total_amount cannot be parsed, return {"error": "Could not determine total amount"}.
 """;
 
     try {
