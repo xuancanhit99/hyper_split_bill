@@ -8,17 +8,17 @@ class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true, // Enable Material 3 features
     brightness: Brightness.light,
-    primarySwatch: Colors.deepPurple, // Base color swatch
-    primaryColor: Colors.deepPurple[600], // More specific primary color
+    primarySwatch: Colors.blue, // Base color swatch
+    primaryColor: Colors.blue[600], // More specific primary color
     scaffoldBackgroundColor: Colors.grey[100],
     appBarTheme: AppBarTheme(
-      backgroundColor: Colors.deepPurple[600],
+      backgroundColor: Colors.blue[600],
       foregroundColor: Colors.white, // Title and icon color
       elevation: 4.0,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.deepPurple[500],
+        backgroundColor: Colors.blue[500],
         foregroundColor: Colors.white, // Text color
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
@@ -33,13 +33,13 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: Colors.deepPurple[600]!, width: 2.0),
+        borderSide: BorderSide(color: Colors.blue[600]!, width: 2.0),
       ),
       labelStyle: TextStyle(color: Colors.grey[700]),
     ),
     // Add other theme properties as needed (textTheme, cardTheme, etc.)
     colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.deepPurple,
+      seedColor: Colors.blue,
       brightness: Brightness.light,
     ),
   );
@@ -47,17 +47,17 @@ class AppTheme {
   static final ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primarySwatch: Colors.deepPurple,
-    primaryColor: Colors.deepPurple[300],
+    primarySwatch: Colors.blue,
+    primaryColor: Colors.blue[300],
     scaffoldBackgroundColor: Colors.grey[900],
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.grey[850],
-      foregroundColor: Colors.deepPurple[200],
+      foregroundColor: Colors.blue[200],
       elevation: 4.0,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.deepPurple[400],
+        backgroundColor: Colors.blue[400],
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
@@ -72,7 +72,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: Colors.deepPurple[300]!, width: 2.0),
+        borderSide: BorderSide(color: Colors.blue[300]!, width: 2.0),
       ),
       labelStyle: TextStyle(color: Colors.grey[400]),
       hintStyle: TextStyle(color: Colors.grey[500]),
@@ -80,11 +80,10 @@ class AppTheme {
       iconColor: Colors.grey[400],
       prefixIconColor: Colors.grey[400],
       suffixIconColor: Colors.grey[400],
-
     ),
     // Add other theme properties
     colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.deepPurple,
+      seedColor: Colors.blue,
       brightness: Brightness.dark,
       // Adjust specific dark theme colors if needed
       background: Colors.grey[900]!,
