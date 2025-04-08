@@ -20,8 +20,13 @@ class _ImageCropPageState extends State<ImageCropPage> {
   @override
   void initState() {
     super.initState();
-    // Start cropping immediately when the page loads
-    _cropImage();
+    // Start cropping after the first frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Ensure the widget is still mounted
+        _cropImage();
+      }
+    });
   }
 
   Future<void> _cropImage() async {
