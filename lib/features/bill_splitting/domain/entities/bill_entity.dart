@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart'; // Import BillItemEntity
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart';
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart'; // Import ParticipantEntity
 
 // Represents a single bill to be split.
 class BillEntity extends Equatable {
@@ -9,6 +10,7 @@ class BillEntity extends Equatable {
   final String? description; // Optional description or name for the bill
   final String payerUserId; // ID of the user who paid the bill initially
   final List<BillItemEntity>? items; // List of items on the bill
+  final List<ParticipantEntity>? participants; // List of participants
   // TODO: Add fields for items, participants, image URL etc. later
 
   const BillEntity({
@@ -17,12 +19,20 @@ class BillEntity extends Equatable {
     required this.date,
     this.description,
     required this.payerUserId,
-    this.items, // Make items optional in constructor
+    this.items,
+    this.participants, // Make participants optional
   });
 
   @override
-  List<Object?> get props =>
-      [id, totalAmount, date, description, payerUserId, items];
+  List<Object?> get props => [
+        id,
+        totalAmount,
+        date,
+        description,
+        payerUserId,
+        items,
+        participants
+      ]; // Add participants to props
 
   // Optional: Add copyWith method for easier updates
   BillEntity copyWith({
@@ -32,6 +42,7 @@ class BillEntity extends Equatable {
     String? description,
     String? payerUserId,
     List<BillItemEntity>? items,
+    List<ParticipantEntity>? participants,
   }) {
     return BillEntity(
       id: id ?? this.id,
@@ -40,6 +51,7 @@ class BillEntity extends Equatable {
       description: description ?? this.description,
       payerUserId: payerUserId ?? this.payerUserId,
       items: items ?? this.items,
+      participants: participants ?? this.participants,
     );
   }
 }

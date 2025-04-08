@@ -1,6 +1,8 @@
 import 'package:hyper_split_bill/core/error/exceptions.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/datasources/bill_remote_data_source.dart';
+import 'package:hyper_split_bill/features/bill_splitting/data/models/bill_item_model.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/models/bill_model.dart';
+import 'package:hyper_split_bill/features/bill_splitting/data/models/participant_model.dart';
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -138,5 +140,59 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
     }
   }
 
-  // TODO: Implement methods for items, participants, assignments
+  @override
+  Future<List<BillItemModel>> saveBillItems(
+      List<BillItemModel> items, String billId) async {
+    if (items.isEmpty) return []; // Nothing to save
+    try {
+      final userId = _getCurrentUserId();
+      final itemsData = items
+          .map((item) => item.toMap(billId: billId, userId: userId))
+          .toList();
+
+      final response = await _supabaseClient
+          .from('bill_items')
+          .insert(itemsData)
+          .select(); // Select the inserted rows
+
+      return (response as List)
+          .map((itemData) =>
+              BillItemModel.fromMap(itemData as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw ServerException('Failed to save bill items: ${e.message}');
+    } catch (e) {
+      throw ServerException(
+          'An unexpected error occurred while saving bill items: ${e.runtimeType}');
+    }
+  }
+
+  @override
+  Future<List<ParticipantModel>> saveParticipants(
+      List<ParticipantModel> participants, String billId) async {
+    if (participants.isEmpty) return []; // Nothing to save
+    try {
+      final userId = _getCurrentUserId();
+      final participantsData = participants
+          .map((p) => p.toMap(billId: billId, userId: userId))
+          .toList();
+
+      final response = await _supabaseClient
+          .from('participants')
+          .insert(participantsData)
+          .select(); // Select the inserted rows
+
+      return (response as List)
+          .map((pData) =>
+              ParticipantModel.fromMap(pData as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw ServerException('Failed to save participants: ${e.message}');
+    } catch (e) {
+      throw ServerException(
+          'An unexpected error occurred while saving participants: ${e.runtimeType}');
+    }
+  }
+
+  // TODO: Implement methods for assignments
 }

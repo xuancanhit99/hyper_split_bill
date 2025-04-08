@@ -5,7 +5,11 @@ import 'package:hyper_split_bill/core/error/exceptions.dart';
 import 'package:hyper_split_bill/core/error/failures.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/datasources/bill_remote_data_source.dart';
 // import 'package:hyper_split_bill/features/bill_splitting/data/datasources/ocr_data_source.dart'; // Import if OCR logic is handled here
+import 'package:hyper_split_bill/features/bill_splitting/data/models/bill_item_model.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/models/bill_model.dart';
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart'; // Import entity
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart'; // Import entity
+import 'package:hyper_split_bill/features/bill_splitting/data/models/participant_model.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_entity.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/repositories/bill_repository.dart';
 import 'package:injectable/injectable.dart';
@@ -44,11 +48,47 @@ class BillRepositoryImpl implements BillRepository {
 
   @override
   Future<Either<Failure, BillEntity>> createBill(BillEntity bill) async {
+    // Convert main entity and lists to models
     final billModel = BillModel.fromEntity(bill);
-    return _handleRemoteCall(() async {
+    final itemModels = (bill.items ?? [])
+        .map((item) => BillItemModel.fromEntity(item))
+        .toList();
+    final participantModels = (bill.participants ?? [])
+        .map((p) => ParticipantModel.fromEntity(p))
+        .toList();
+
+    return _handleRemoteCall<BillEntity>(() async {
+      // 1. Create the main bill record and get its ID
       final createdBillModel = await remoteDataSource.createBill(billModel);
-      // Convert back to Entity for the domain layer
-      return createdBillModel as BillEntity; // BillModel extends BillEntity
+      final billId = createdBillModel.id; // Get the generated ID
+
+      // 2. Save items associated with the new bill ID
+      List<BillItemModel> savedItemModels = [];
+      if (itemModels.isNotEmpty) {
+        savedItemModels =
+            await remoteDataSource.saveBillItems(itemModels, billId);
+      }
+
+      // 3. Save participants associated with the new bill ID
+      List<ParticipantModel> savedParticipantModels = [];
+      if (participantModels.isNotEmpty) {
+        savedParticipantModels =
+            await remoteDataSource.saveParticipants(participantModels, billId);
+      }
+
+      // 4. Return the complete BillEntity (including saved items/participants if needed)
+      // Convert saved models back to entities
+      final savedItems = savedItemModels.cast<BillItemEntity>().toList();
+      final savedParticipants =
+          savedParticipantModels.cast<ParticipantEntity>().toList();
+
+      // Return the original created bill entity but potentially updated with saved items/participants
+      // Note: BillModel extends BillEntity, so direct cast is possible.
+      // We might want to return a copyWith the saved lists if the original entity didn't have them.
+      return (createdBillModel as BillEntity).copyWith(
+        items: savedItems.isNotEmpty ? savedItems : null,
+        participants: savedParticipants.isNotEmpty ? savedParticipants : null,
+      );
     });
   }
 
