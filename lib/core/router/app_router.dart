@@ -89,11 +89,9 @@ class AppRouter {
         final currentState = authBloc.state; // Get current Bloc state
         final loggingIn = state.matchedLocation == AppRoutes.login;
         final signingUp = state.matchedLocation == AppRoutes.signup;
-        final resettingPassword = state.matchedLocation ==
-            AppRoutes.resetPassword; // Check for reset page
-        final isPublicRoute = loggingIn ||
-            signingUp ||
-            resettingPassword; // Add resetPassword as a public-accessible route (via deep link)
+        // Removed resettingPassword check
+        final isPublicRoute =
+            loggingIn || signingUp; // Only login and signup are public now
 
         debugPrint(
           "Redirect Check: Current State: ${currentState.runtimeType}, Location: ${state.matchedLocation}, IsPublic: $isPublicRoute",
