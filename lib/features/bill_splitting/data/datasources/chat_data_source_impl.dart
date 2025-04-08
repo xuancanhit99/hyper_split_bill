@@ -52,9 +52,12 @@ class ChatDataSourceImpl implements ChatDataSource {
         body: body,
       );
 
+      // Decode response body explicitly using UTF-8
+      final responseBody = utf8.decode(response.bodyBytes);
+
       if (response.statusCode == 200) {
         final decodedResponse =
-            json.decode(response.body) as Map<String, dynamic>;
+            json.decode(responseBody) as Map<String, dynamic>;
         if (decodedResponse.containsKey('response_text')) {
           return decodedResponse['response_text'] as String;
         } else {
@@ -64,11 +67,17 @@ class ChatDataSourceImpl implements ChatDataSource {
       } else {
         String detail = 'HTTP Error ${response.statusCode}';
         try {
-          final errorBody = json.decode(response.body) as Map<String, dynamic>;
+          // Try decoding error body as UTF-8 as well
+          final errorBody = json.decode(responseBody)
+              as Map<String, dynamic>; // Use responseBody here too
           if (errorBody.containsKey('detail')) {
             detail = errorBody['detail'].toString();
           }
-        } catch (_) {/* Ignore parsing error */}
+        } catch (_) {
+          print(
+              "Chat Error Response Body (non-JSON or parse failed): $responseBody");
+          /* Ignore parsing error */
+        }
         throw ServerException('Chat request failed: $detail');
       }
     } on SocketException {

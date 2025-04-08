@@ -51,10 +51,48 @@ JSON Output:
         // modelName: 'gemini-pro' // Or specify a model suitable for JSON output
       );
 
-      // TODO: Add validation here to ensure the returned string is valid JSON
-      // and potentially parse it into a Map/specific Dart object immediately.
-      // For now, return the raw JSON string.
-      return Right(structuredJsonString);
+      // --- Clean and Extract JSON ---
+      String cleanedString = structuredJsonString.trim();
+
+      // 1. Remove markdown code block fences if present
+      final RegExp jsonBlockRegex = RegExp(r'```json\s*([\s\S]*?)\s*```');
+      final match = jsonBlockRegex.firstMatch(cleanedString);
+      if (match != null && match.groupCount >= 1) {
+        cleanedString = match.group(1)!.trim();
+      }
+
+      // 2. Sometimes the model might start directly with '{' or '['
+      // Find the first '{' or '[' and the last '}' or ']'
+      int firstBracket = cleanedString.indexOf(RegExp(r'[{[]'));
+      int lastBracket = cleanedString.lastIndexOf(RegExp(r'[}\]]'));
+
+      if (firstBracket != -1 &&
+          lastBracket != -1 &&
+          lastBracket > firstBracket) {
+        // Extract the potential JSON part
+        cleanedString = cleanedString.substring(firstBracket, lastBracket + 1);
+      } else {
+        // If no brackets found, or invalid range, likely not JSON
+        print(
+            "Warning: Could not reliably find JSON structure in Chat API response.");
+        // Return Left or the potentially non-JSON string based on requirements
+        return Left(ServerFailure(
+            'Could not extract valid JSON structure from Chat API response. Raw: $structuredJsonString'));
+        // Or: return Right(cleanedString); // If you want to attempt parsing anyway
+      }
+
+      // 3. Basic validation (starts with { or [ and ends with } or ])
+      if ((cleanedString.startsWith('{') && cleanedString.endsWith('}')) ||
+          (cleanedString.startsWith('[') && cleanedString.endsWith(']'))) {
+        print("Extracted potential JSON: $cleanedString");
+        return Right(cleanedString);
+      } else {
+        print(
+            "Warning: Extracted string doesn't look like valid JSON start/end. Raw: $structuredJsonString");
+        return Left(ServerFailure(
+            'Extracted content does not appear to be valid JSON. Raw: $structuredJsonString'));
+        // Code already returns Left(ServerFailure(...)) above this else block
+      }
     } on ServerException catch (e) {
       return Left(
           ServerFailure('Chat API Error for Structuring: ${e.message}'));

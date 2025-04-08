@@ -44,12 +44,15 @@ class OcrDataSourceImpl implements OcrDataSource {
       // }
 
       // Add the file
+      final String? mimeType = lookupMimeType(imageFile.path);
+      print(
+          "Detected MIME type for ${imageFile.path}: $mimeType"); // Log detected MIME type
       request.files.add(await http.MultipartFile.fromPath(
         'file', // Field name from API doc
         imageFile.path,
         // Determine content type using mime package
-        contentType: MediaType.parse(
-            lookupMimeType(imageFile.path) ?? 'application/octet-stream'),
+        contentType: MediaType.parse(mimeType ??
+            'application/octet-stream'), // Use detected type or fallback
       ));
 
       // Add optional fields
