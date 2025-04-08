@@ -42,11 +42,24 @@ class _BillUploadViewState extends State<_BillUploadView> {
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
-      // Navigate to crop page
+      // Navigate to crop page and wait for result
       if (mounted) {
-        // Use go_router to push the crop page, passing the path
-        GoRouter.of(context).push(AppRoutes.cropImage,
-            extra: _selectedImage!.path); // Correct way to push
+        final croppedFile = await GoRouter.of(context).push<File?>(
+          AppRoutes.cropImage,
+          extra: _selectedImage!.path,
+        );
+
+        // If a cropped file is returned, dispatch the OCR event
+        if (croppedFile != null && mounted) {
+          print("Cropped file received: ${croppedFile.path}");
+          context.read<BillSplittingBloc>().add(
+                ProcessOcrEvent(imageFile: croppedFile),
+              );
+        } else {
+          print("Cropping cancelled or failed.");
+          // Optionally clear the selected image if cropping is cancelled
+          // setState(() { _selectedImage = null; });
+        }
       }
     } else {
       print('No image selected.');
@@ -61,11 +74,24 @@ class _BillUploadViewState extends State<_BillUploadView> {
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
-      // Navigate to crop page
+      // Navigate to crop page and wait for result
       if (mounted) {
-        // Use go_router to push the crop page, passing the path
-        GoRouter.of(context).push(AppRoutes.cropImage,
-            extra: _selectedImage!.path); // Correct way to push
+        final croppedFile = await GoRouter.of(context).push<File?>(
+          AppRoutes.cropImage,
+          extra: _selectedImage!.path,
+        );
+
+        // If a cropped file is returned, dispatch the OCR event
+        if (croppedFile != null && mounted) {
+          print("Cropped file received: ${croppedFile.path}");
+          context.read<BillSplittingBloc>().add(
+                ProcessOcrEvent(imageFile: croppedFile),
+              );
+        } else {
+          print("Cropping cancelled or failed.");
+          // Optionally clear the selected image if cropping is cancelled
+          // setState(() { _selectedImage = null; });
+        }
       }
     } else {
       print('No image taken.');
@@ -179,66 +205,6 @@ class _BillUploadViewState extends State<_BillUploadView> {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-    // TODO: Wrap with BlocListener to handle state changes (loading, success, error)
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Upload Bill'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              // Display selected image preview (optional)
-              if (_selectedImage != null) ...[
-                Expanded(
-                  // Use Expanded to allow image to take available space
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Image.file(
-                      _selectedImage!,
-                      fit: BoxFit.contain, // Adjust fit as needed
-                    ),
-                  ),
-                ),
-              ] else ...[
-                // Placeholder or instruction text when no image is selected
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Select an image or take a photo of your bill.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ),
-                ),
-              ],
-
-              // Buttons at the bottom
-              ElevatedButton.icon(
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Choose from Gallery'),
-                onPressed: _pickImageFromGallery,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.camera_alt_outlined),
-                label: const Text('Take Photo'),
-                onPressed: _pickImageFromCamera,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-              ),
-            ],
           ),
         ),
       ),

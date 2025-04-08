@@ -13,7 +13,7 @@ import 'package:injectable/injectable.dart';
 part 'bill_splitting_event.dart'; // Include the event file
 part 'bill_splitting_state.dart'; // Include the state file
 
-@injectable // Register Bloc with GetIt
+@lazySingleton // Make Bloc a singleton accessible via GetIt
 class BillSplittingBloc extends Bloc<BillSplittingEvent, BillSplittingState> {
   final GetBillsUseCase _getBillsUseCase;
   final ProcessBillOcrUseCase _processBillOcrUseCase;

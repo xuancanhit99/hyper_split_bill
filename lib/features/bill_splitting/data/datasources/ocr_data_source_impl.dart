@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart'; // Import mime package
+import 'package:http_parser/http_parser.dart'; // Import for MediaType
 import 'package:hyper_split_bill/core/config/app_config.dart'; // To get API base URL
 import 'package:hyper_split_bill/core/error/exceptions.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/datasources/ocr_data_source.dart';
@@ -45,7 +47,9 @@ class OcrDataSourceImpl implements OcrDataSource {
       request.files.add(await http.MultipartFile.fromPath(
         'file', // Field name from API doc
         imageFile.path,
-        // contentType: MediaType('image', 'jpeg'), // Optional: specify content type if needed
+        // Determine content type using mime package
+        contentType: MediaType.parse(
+            lookupMimeType(imageFile.path) ?? 'application/octet-stream'),
       ));
 
       // Add optional fields

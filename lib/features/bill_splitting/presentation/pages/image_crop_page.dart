@@ -32,7 +32,8 @@ class _ImageCropPageState extends State<ImageCropPage> {
   Future<void> _cropImage() async {
     CroppedFile? croppedFile; // Declare outside try
     try {
-      final croppedFile = await ImageCropper().cropImage(
+      croppedFile = await ImageCropper().cropImage(
+        // Assign to the existing variable, remove 'final'
         sourcePath: widget.imagePath,
         // aspectRatioPresets parameter removed, handled within uiSettings if needed
         uiSettings: [
@@ -65,41 +66,22 @@ class _ImageCropPageState extends State<ImageCropPage> {
     } finally {
       // Ensure we always try to pop, regardless of success, failure, or cancellation
       if (mounted) {
-        // Check if cropping was successful before processing
-        if (croppedFile != null) {
-          setState(() {
-            _croppedFile = croppedFile;
-          });
-          _processCroppedImage(File(croppedFile.path));
-        } else {
-          // If croppedFile is null (cancelled or error), just pop
-          Navigator.of(context).pop();
-        }
+        // Pop and return the result (null if cancelled or error)
+        Navigator.of(context)
+            .pop(croppedFile == null ? null : File(croppedFile.path));
       }
     }
+    // _processCroppedImage is no longer needed here as we return the result via pop
 
     // Logic moved to finally block
   }
 
-  void _processCroppedImage(File croppedImageFile) {
-    if (mounted) {
-      // Dispatch event to Bloc with the cropped image
-      context.read<BillSplittingBloc>().add(
-            ProcessOcrEvent(imageFile: croppedImageFile),
-          );
-      // TODO: Add BlocListener here or on the previous page to handle navigation
-      // after OCR processing starts/completes/fails.
-      // For now, pop back after dispatching. Consider a loading indicator.
-      Navigator.of(context)
-          .pop(); // Pop back to upload page (or handle navigation via Bloc state)
-    }
-  }
+  // Removed _processCroppedImage function
 
   @override
   Widget build(BuildContext context) {
     // This page's primary purpose is to launch the native cropper UI.
     // We don't need to show much in the Flutter UI itself.
-    // Returning an empty container is sufficient while the native UI is active.
     return const Scaffold(
       // Optional: Keep AppBar for context, or remove entirely for cleaner transition
       // appBar: AppBar(
