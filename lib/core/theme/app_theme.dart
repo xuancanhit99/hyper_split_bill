@@ -13,6 +13,7 @@ class AppTheme {
     primaryColor: AppColors.facebookBlue, // Use Facebook blue
     scaffoldBackgroundColor:
         AppColors.lightBackground, // White or light gray background
+    fontFamily: 'Averta', // Set default font
     appBarTheme: AppBarTheme(
       // Facebook style AppBar (usually light)
       backgroundColor: AppColors.lightBackground, // White or light gray
@@ -70,6 +71,7 @@ class AppTheme {
         AppColors.facebookBlue, // Use Facebook blue (adjust if needed for dark)
     scaffoldBackgroundColor:
         AppColors.darkBackground, // Use defined dark background
+    fontFamily: 'Averta', // Set default font
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.darkSurface, // Use defined dark surface
       foregroundColor: AppColors.textPrimaryDark, // Light title and icons
