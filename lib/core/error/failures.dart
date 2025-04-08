@@ -18,6 +18,11 @@ class CacheFailure extends Failure {
   const CacheFailure(super.message);
 }
 
+// Specific OCR Failures
+class OcrParsingFailure extends Failure {
+  const OcrParsingFailure(super.message);
+}
+
 class NetworkFailure extends Failure {
   const NetworkFailure(super.message);
 }

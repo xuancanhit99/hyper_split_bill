@@ -13,17 +13,13 @@ class OcrDataSourceImpl implements OcrDataSource {
   final http.Client httpClient;
   final AppConfig appConfig; // Inject AppConfig to get base URLs
 
-  // TODO: Decide which OCR service to use (Gemini or Grok) or make it configurable
-  // For now, let's assume Gemini is the default.
   late final String _ocrBaseUrl;
-  // late final String _apiKey; // Optional: Get API key from AppConfig if needed per request
+  late final String? _apiKey;
 
   OcrDataSourceImpl({required this.httpClient, required this.appConfig}) {
-    // TODO: Get the correct base URL from AppConfig based on selection/config
-    // Example: _ocrBaseUrl = appConfig.geminiOcrBaseUrl;
-    // Example: _apiKey = appConfig.googleApiKey; // If needed
-    _ocrBaseUrl = appConfig
-        .geminiOcrBaseUrl; // Assuming geminiOcrBaseUrl exists in AppConfig
+    // Sử dụng Grok OCR service
+    _ocrBaseUrl = appConfig.grokOcrBaseUrl;
+    _apiKey = appConfig.xaiApiKey;
   }
 
   @override
@@ -32,37 +28,44 @@ class OcrDataSourceImpl implements OcrDataSource {
     String? prompt,
     // String? modelName, // Optional model override
   }) async {
-    final endpoint = '/ocr/extract-text'; // As per API doc
-    final uri = Uri.parse('$_ocrBaseUrl$endpoint');
+    final endpoint = '/ocr/extract-text';
+    final queryParameters = <String, String>{};
+    if (prompt != null && prompt.isNotEmpty) {
+      queryParameters['prompt'] = prompt;
+    }
+    // Luôn gửi model_name mặc định hoặc model được chỉ định (nếu có)
+    queryParameters['model_name'] =
+        'grok-2-vision-1212'; // Sử dụng model mặc định
+
+    final uri = Uri.parse('$_ocrBaseUrl$endpoint').replace(
+      queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
+    );
+    print("Sending OCR request to URI: $uri"); // Log the final URI
 
     try {
       final request = http.MultipartRequest('POST', uri);
 
-      // Add headers if API key needs to be sent per request
-      // if (_apiKey.isNotEmpty) {
-      //   request.headers['X-API-Key'] = _apiKey;
-      // }
+      // Thêm XAI API Key cho Grok service nếu có
+      if (_apiKey != null && _apiKey!.isNotEmpty) {
+        request.headers['X-API-Key'] = _apiKey!;
+      }
 
-      // Add the file
+      // Add the file - Grok chỉ chấp nhận image/jpeg và image/png
       final String? mimeType = lookupMimeType(imageFile.path);
-      print(
-          "Detected MIME type for ${imageFile.path}: $mimeType"); // Log detected MIME type
+      print("Detected MIME type for ${imageFile.path}: $mimeType");
+
+      if (mimeType != 'image/jpeg' && mimeType != 'image/png') {
+        throw ServerException(
+            'Grok OCR chỉ hỗ trợ định dạng JPEG và PNG. Định dạng hiện tại: $mimeType');
+      }
+
       request.files.add(await http.MultipartFile.fromPath(
-        'file', // Field name from API doc
+        'file',
         imageFile.path,
-        // Determine content type using mime package
-        contentType: MediaType.parse(mimeType ??
-            'application/octet-stream'), // Use detected type or fallback
+        contentType: MediaType.parse(mimeType!),
       ));
 
-      // Add optional fields
-      if (prompt != null && prompt.isNotEmpty) {
-        request.fields['prompt'] = prompt;
-      }
-      // if (modelName != null && modelName.isNotEmpty) {
-      //   request.fields['model_name'] = modelName;
-      // }
-
+      // Không cần thêm prompt và model_name vào fields nữa vì đã gửi qua query params
       final streamedResponse = await httpClient.send(request);
       final response = await http.Response.fromStream(streamedResponse);
 

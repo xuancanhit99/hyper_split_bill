@@ -21,23 +21,23 @@ class ProcessBillOcrUseCase {
     // --- Define the Detailed Prompt for OCR API ---
     // Requesting JSON output directly from the OCR Vision model.
     const String detailedPrompt = """
-Analyze the following bill image and return ONLY a valid JSON object containing the structured data.
-Do not include any explanatory text before or after the JSON object.
-Do not use markdown code blocks (like ```json).
-The JSON object MUST have the following fields:
-- "bill_date": (string, format YYYY-MM-DD, try to infer from text, otherwise null)
-- "description": (string, optional, try to infer store name or a general description)
-- "currency_code": (string, e.g., "USD", "VND", try to infer, default to "USD" if unsure)
-- "subtotal_amount": (number, subtotal before tax/tip/discount, null if not found)
-- "tax_amount": (number, total tax amount, null if not found)
-- "tip_amount": (number, total tip amount, null if not found)
-- "discount_amount": (number, total discount amount, null if not found)
-- "total_amount": (number, the final total amount paid, should be present)
-- "items": (array of objects, each with "description": string, "quantity": number, "unit_price": number, "total_price": number)
+Analyze the following bill image and Return ONLY a valid JSON object with the structured data.
+NO explanatory text, NO markdown code blocks.
+
+If a field cannot be inferred, the value is the EMPTY STRING: ""
+
+JSON fields MUST be:
+- "bill_date": (string, YYYY-MM-DD, bill date or payment date)
+- "description": (string, store name or a general description)
+- "currency_code": (string, e.g., "USD", "RUB", "VND", based on the main language of the bill)
+- "subtotal_amount": (number, subtotal before tax/tip/discount)
+- "tax_amount": (number, total tax amount)
+- "tip_amount": (number, total tip amount)
+- "discount_amount": (number, total discount amount)
+- "total_amount": (number, the final total amount paid)
+- "items": (array of objects: {"description": string, "quantity": number, "unit_price": number, "total_price": number})
 
 Extract the items listed on the bill. For each item, determine its description, quantity (default to 1 if not specified), unit price (if available), and total price. If only the total price for an item line is available, use that for "total_price" and potentially estimate "unit_price" if quantity is known. If quantity or unit price is ambiguous, make a reasonable guess or omit the field. Ensure the sum of "total_price" for all items is reasonably close to the "subtotal_amount" if available.
-
-If any required numeric field (like total_amount) cannot be found or parsed, return a JSON object with an "error" field describing the issue, e.g., {"error": "Could not determine total amount"}.
 """;
 
     try {
@@ -67,29 +67,51 @@ If any required numeric field (like total_amount) cannot be found or parsed, ret
         if (decodedJson is Map<String, dynamic>) {
           print("Successfully decoded response as JSON Map.");
           // Check for the presence of key fields we expect in the structured output
-          if (decodedJson.containsKey('total_amount') &&
-              decodedJson.containsKey('items')) {
-            // API returned the expected structured JSON. Return it.
-            print("ProcessBillOcrUseCase returning structured JSON.");
-            return Right(receivedString);
-          } else if (decodedJson.containsKey('extracted_text')) {
-            // API returned the simple {extracted_text: ...} structure.
-            // Return the raw text itself for the next step (structuring).
-            final rawText = decodedJson['extracted_text'] as String? ?? '';
-            print(
-                "ProcessBillOcrUseCase returning raw extracted text for structuring.");
-            // NOTE: The success value now represents RAW TEXT in this case.
-            // The Bloc needs to handle this and call the structuring use case.
-            return Right(rawText);
-          } else if (decodedJson.containsKey('error')) {
-            // Handle the case where the API itself reported an error in the JSON
+          // Ưu tiên kiểm tra lỗi do API báo cáo trước
+          if (decodedJson.containsKey('error')) {
             print(
                 "Warning: API returned JSON containing an error field: ${decodedJson['error']}");
             return Left(ServerFailure(
                 'OCR API reported an error: ${decodedJson['error']}'));
-          } else {
+          }
+          // Kiểm tra xem có đúng cấu trúc JSON mong đợi không
+          else if (decodedJson.containsKey('total_amount') &&
+              decodedJson.containsKey('items')) {
+            print("ProcessBillOcrUseCase returning structured JSON.");
+            return Right(receivedString);
+          }
+          // Kiểm tra xem có phải JSON cấu trúc nằm trong extracted_text không
+          else if (decodedJson.containsKey('extracted_text')) {
+            final extractedText =
+                decodedJson['extracted_text'] as String? ?? '';
             print(
-                "Warning: API returned JSON, but it lacks expected fields (total_amount, items) or known alternatives (extracted_text, error).");
+                "Found 'extracted_text'. Attempting to parse its content as JSON.");
+            try {
+              final innerJson = json.decode(extractedText);
+              if (innerJson is Map<String, dynamic> &&
+                  innerJson.containsKey('total_amount') &&
+                  innerJson.containsKey('items')) {
+                print(
+                    "Successfully parsed structured JSON from 'extracted_text'.");
+                // Trả về chuỗi JSON bên trong
+                return Right(extractedText);
+              } else {
+                print(
+                    "Warning: Content of 'extracted_text' is not the expected structured JSON.");
+                return Left(OcrParsingFailure(
+                    'OCR model returned JSON inside extracted_text, but it lacks expected fields. Content: $extractedText'));
+              }
+            } catch (e) {
+              print("Error parsing content of 'extracted_text' as JSON: $e.");
+              // Lỗi này chỉ ra JSON bên trong extracted_text không hợp lệ
+              return Left(OcrParsingFailure(
+                  'Failed to parse JSON content within extracted_text. Invalid format received from OCR API. Content: $extractedText'));
+            }
+          }
+          // Trường hợp JSON không có cấu trúc mong đợi và cũng không phải lỗi hay text thô
+          else {
+            print(
+                "Warning: API returned JSON with unexpected structure. Keys found: ${decodedJson.keys.join(', ')}");
             return Left(ServerFailure(
                 'API returned an unexpected JSON structure. Content: $receivedString'));
           }

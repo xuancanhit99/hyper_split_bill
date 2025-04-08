@@ -11,17 +11,12 @@ class ChatDataSourceImpl implements ChatDataSource {
   final http.Client httpClient;
   final AppConfig appConfig;
 
-  // TODO: Decide which Chat service to use (Gemini or Grok) or make it configurable
   late final String _chatBaseUrl;
-  late final String? _apiKey; // Optional API Key from env
+  late final String? _apiKey;
 
   ChatDataSourceImpl({required this.httpClient, required this.appConfig}) {
-    // TODO: Get the correct base URL and API key from AppConfig
-    // Example: _chatBaseUrl = appConfig.geminiChatBaseUrl; // Assuming geminiChatBaseUrl exists
-    // Example: _apiKey = appConfig.googleApiKey;
-    _chatBaseUrl = appConfig
-        .geminiOcrBaseUrl; // Reuse OCR base URL for now if chat is on same service
-    _apiKey = appConfig.googleApiKey;
+    _chatBaseUrl = appConfig.grokOcrBaseUrl; // Sử dụng Grok chat service
+    _apiKey = appConfig.xaiApiKey;
   }
 
   @override
@@ -35,14 +30,14 @@ class ChatDataSourceImpl implements ChatDataSource {
 
     final headers = {
       'Content-Type': 'application/json',
-      // Add API key header if provided via config and not empty
       if (_apiKey != null && _apiKey!.isNotEmpty) 'X-API-Key': _apiKey!,
     };
 
     final body = json.encode({
       'message': message,
       if (history != null) 'history': history,
-      if (modelName != null) 'model_name': modelName,
+      'model_name':
+          modelName ?? 'grok-2-1212', // Sử dụng model mặc định từ tài liệu API
     });
 
     try {
@@ -67,16 +62,13 @@ class ChatDataSourceImpl implements ChatDataSource {
       } else {
         String detail = 'HTTP Error ${response.statusCode}';
         try {
-          // Try decoding error body as UTF-8 as well
-          final errorBody = json.decode(responseBody)
-              as Map<String, dynamic>; // Use responseBody here too
+          final errorBody = json.decode(responseBody) as Map<String, dynamic>;
           if (errorBody.containsKey('detail')) {
             detail = errorBody['detail'].toString();
           }
         } catch (_) {
           print(
               "Chat Error Response Body (non-JSON or parse failed): $responseBody");
-          /* Ignore parsing error */
         }
         throw ServerException('Chat request failed: $detail');
       }
