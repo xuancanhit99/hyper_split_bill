@@ -50,6 +50,7 @@ dependencies:
   fpdart: ^1.1.1
   supabase_auth_ui: ^0.5.4
   flutter_native_splash: ^2.4.0
+  mime: ^1.0.5 # Add mime package for content type detection
 
 dev_dependencies:
   flutter_test:

@@ -13,11 +13,8 @@ class BillUploadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<BillSplittingBloc>(),
-      child:
-          const _BillUploadView(), // Use a private widget for the view content
-    );
+    // BlocProvider is now handled by the router for this page and subsequent pages
+    return const _BillUploadView();
   }
 }
 

@@ -8,8 +8,11 @@ import 'package:hyper_split_bill/features/auth/presentation/pages/auth_page.dart
 
 import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_upload_page.dart'; // Import upload page
-import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/image_crop_page.dart'; // Import crop page
-import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_edit_page.dart'; // Import edit page
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/image_crop_page.dart';
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_edit_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Import BlocProvider
+import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart'; // Import the Bloc
+import 'package:hyper_split_bill/injection_container.dart'; // Import sl
 // Removed import for reset_password_page.dart
 
 // --- Define Route Paths ---
@@ -45,6 +48,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.login,
           name: AppRoutes.login, // Optional: Use names for navigation
+          // Use builder for LoginPage as it doesn't need BillSplittingBloc directly
           builder: (context, state) => const LoginPage(),
         ),
         // GoRoute(
@@ -62,21 +66,26 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.upload,
           name: AppRoutes.upload,
-          builder: (context, state) =>
-              const BillUploadPage(), // Link to the actual page
+          // Provide BillSplittingBloc to the route and its descendants
+          pageBuilder: (context, state) => MaterialPage(
+            key: state.pageKey, // Important for state preservation if needed
+            child: BlocProvider.value(
+              value: sl<BillSplittingBloc>(), // Provide the singleton instance
+              child: const BillUploadPage(),
+            ),
+          ),
         ),
         GoRoute(
           path: AppRoutes.cropImage,
           name: AppRoutes.cropImage,
+          // Crop page might not need the Bloc directly, but subsequent pages will
+          // If it needed the bloc, we would use pageBuilder here too.
           builder: (context, state) {
-            // Extract the image path passed as extra data
             final imagePath = state.extra as String?;
             if (imagePath == null) {
-              // Handle error: navigate back or show error page if path is missing
-              // For simplicity, redirect back to upload for now
-              // Consider a dedicated error page or message
+              // Redirect immediately if possible, avoid building placeholder
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                context.go(AppRoutes.upload); // Or show an error
+                context.go(AppRoutes.upload);
               });
               return const Scaffold(
                   body: Center(child: Text("Error: Image path missing")));
@@ -87,19 +96,26 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.editBill,
           name: AppRoutes.editBill,
-          builder: (context, state) {
-            // Extract the OCR result text passed as extra data
+          // Provide BillSplittingBloc to the route and its descendants
+          pageBuilder: (context, state) {
             final ocrResult = state.extra as String?;
             if (ocrResult == null) {
-              // Handle error if OCR result is missing
+              // Redirect immediately if possible
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                context
-                    .go(AppRoutes.upload); // Go back to upload if data missing
+                context.go(AppRoutes.upload);
               });
-              return const Scaffold(
-                  body: Center(child: Text("Error: OCR result missing")));
+              return const MaterialPage(
+                  child: Scaffold(
+                      body: Center(child: Text("Error: OCR result missing"))));
             }
-            return BillEditPage(ocrResult: ocrResult);
+            return MaterialPage(
+              key: state.pageKey,
+              child: BlocProvider.value(
+                value:
+                    sl<BillSplittingBloc>(), // Provide the singleton instance
+                child: BillEditPage(ocrResult: ocrResult),
+              ),
+            );
           },
         ),
         GoRoute(
@@ -109,20 +125,7 @@ class AppRouter {
             body: Center(child: Text('History Page Placeholder')),
           ), // Placeholder
         ),
-        // GoRoute(
-        //   path: AppRoutes.resetPassword,
-        //   name: AppRoutes.resetPassword,
-        //   // This page is typically reached via deep link
-        //   builder: (context, state) {
-        //     // Potentially extract token/params from state.uri if needed,
-        //     // but SupaResetPassword usually handles it automatically via session recovery.
-        //     // Ensure ResetPasswordPage is imported.
-        //     // Assuming ResetPasswordPage is in:
-        //     // import 'package:hyper_split_bill/features/auth/presentation/pages/reset_password_page.dart';
-        //     // If not, add the import at the top of the file.
-        //     return const ResetPasswordPage();
-        //   },
-        // ),
+        // Removed GoRoute for resetPassword
       ],
 
       // --- REDIRECT LOGIC ---
@@ -134,38 +137,36 @@ class AppRouter {
         final isPublicRoute =
             loggingIn || signingUp; // Only login and signup are public now
 
-        debugPrint(
-          "Redirect Check: Current State: ${currentState.runtimeType}, Location: ${state.matchedLocation}, IsPublic: $isPublicRoute",
-        ); // Debugging
-
-        // If checking auth state initially, stay put (or show splash)
+        // Don't redirect during initial check or if already on a public route when unauthenticated
         if (currentState is AuthInitial || currentState is AuthLoading) {
-          // Could redirect to a dedicated splash screen: return AppRoutes.splash;
-          return null; // Stay on current route while loading/checking
+          return null; // Stay put while checking
         }
 
-        // If authenticated:
-        if (currentState is AuthAuthenticated) {
-          // If user is on login or signup page, redirect to home
-          if (isPublicRoute) {
-            debugPrint(
-              "Redirecting authenticated user from public route to home",
-            );
-            return AppRoutes.home;
-          }
+        final isAuthenticated = currentState is AuthAuthenticated;
+
+        // If authenticated and trying to access login/signup, redirect to home
+        if (isAuthenticated && isPublicRoute) {
+          debugPrint(
+              "Redirecting authenticated user from public route to home");
+          return AppRoutes.home;
         }
-        // If unauthenticated:
-        else if (currentState is AuthUnauthenticated ||
-            currentState is AuthFailure) {
-          // If user is NOT on a public route, redirect to login
-          if (!isPublicRoute) {
-            debugPrint("Redirecting unauthenticated user to login");
+
+        // If unauthenticated and trying to access a protected route, redirect to login
+        if (!isAuthenticated && !isPublicRoute) {
+          // Check if the target route is protected (add more protected routes here)
+          final isProtected = state.matchedLocation == AppRoutes.home ||
+              state.matchedLocation == AppRoutes.upload ||
+              state.matchedLocation == AppRoutes.cropImage ||
+              state.matchedLocation == AppRoutes.editBill ||
+              state.matchedLocation == AppRoutes.history;
+          if (isProtected) {
+            debugPrint(
+                "Redirecting unauthenticated user to login from ${state.matchedLocation}");
             return AppRoutes.login;
           }
         }
 
         // No redirect needed
-        debugPrint("No redirect needed.");
         return null;
       },
       errorBuilder: (context, state) => Scaffold(
