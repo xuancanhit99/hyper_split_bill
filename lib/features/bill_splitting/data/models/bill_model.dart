@@ -9,6 +9,7 @@ class BillModel extends BillEntity {
     required super.date,
     super.description,
     required super.payerUserId,
+    super.currencyCode,
     // Add any additional fields specific to the data source if needed
   });
 
@@ -32,6 +33,7 @@ class BillModel extends BillEntity {
       description: map['description'] as String?,
       payerUserId: map['user_id']
           as String, // Assuming 'user_id' from DB maps to payerUserId
+      currencyCode: map['currency_code'] as String?, // Map currency_code
       // TODO: Map other fields like subtotal, tax, tip, discount, image_url, ocr_extracted_text
     );
   }
@@ -49,6 +51,7 @@ class BillModel extends BillEntity {
           .split('T')
           .first, // Format as YYYY-MM-DD for 'date' type
       'description': description,
+      'currency_code': currencyCode, // Map currency_code back
       // TODO: Map other fields back to DB columns
       // 'subtotal_amount': subtotalAmount,
       // 'tax_amount': taxAmount,
@@ -68,6 +71,7 @@ class BillModel extends BillEntity {
       date: entity.date,
       description: entity.description,
       payerUserId: entity.payerUserId,
+      currencyCode: entity.currencyCode,
     );
   }
 }

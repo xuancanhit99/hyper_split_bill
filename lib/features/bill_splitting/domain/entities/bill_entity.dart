@@ -11,7 +11,8 @@ class BillEntity extends Equatable {
   final String payerUserId; // ID of the user who paid the bill initially
   final List<BillItemEntity>? items; // List of items on the bill
   final List<ParticipantEntity>? participants; // List of participants
-  // TODO: Add fields for items, participants, image URL etc. later
+  final String? currencyCode; // e.g., "USD", "VND", "RUB"
+  // TODO: Add fields for image URL etc. later
 
   const BillEntity({
     required this.id,
@@ -21,6 +22,7 @@ class BillEntity extends Equatable {
     required this.payerUserId,
     this.items,
     this.participants, // Make participants optional
+    this.currencyCode,
   });
 
   @override
@@ -31,7 +33,8 @@ class BillEntity extends Equatable {
         description,
         payerUserId,
         items,
-        participants
+        participants,
+        currencyCode
       ]; // Add participants to props
 
   // Optional: Add copyWith method for easier updates
@@ -43,6 +46,7 @@ class BillEntity extends Equatable {
     String? payerUserId,
     List<BillItemEntity>? items,
     List<ParticipantEntity>? participants,
+    String? currencyCode,
   }) {
     return BillEntity(
       id: id ?? this.id,
@@ -52,6 +56,7 @@ class BillEntity extends Equatable {
       payerUserId: payerUserId ?? this.payerUserId,
       items: items ?? this.items,
       participants: participants ?? this.participants,
+      currencyCode: currencyCode ?? this.currencyCode,
     );
   }
 }

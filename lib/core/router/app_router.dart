@@ -10,6 +10,7 @@ import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart
 import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_upload_page.dart'; // Import upload page
 import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/image_crop_page.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_edit_page.dart';
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/chatbot_page.dart'; // Import ChatbotPage
 import 'package:flutter_bloc/flutter_bloc.dart'; // Import BlocProvider
 import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart'; // Import the Bloc
 import 'package:hyper_split_bill/injection_container.dart'; // Import sl
@@ -25,6 +26,7 @@ class AppRoutes {
   static const history = '/history'; // Added route
   static const cropImage = '/crop-image'; // Added route for image cropping
   static const editBill = '/edit-bill'; // Added route for editing bill details
+  static const chatbot = '/chatbot'; // Added route for the chatbot
   static const resetPassword =
       '/reset-password'; // Path kept for potential future use, but route removed
 }
@@ -128,6 +130,21 @@ class AppRouter {
             body: Center(child: Text('History Page Placeholder')),
           ), // Placeholder
         ),
+        // TODO: Create ChatbotPage and replace Placeholder
+        GoRoute(
+            path: AppRoutes.chatbot,
+            name: AppRoutes.chatbot,
+            builder: (context, state) {
+              final billJson = state.extra as String?;
+              if (billJson == null) {
+                // Handle missing data, maybe redirect back or show error
+                return const Scaffold(
+                    body: Center(
+                        child: Text("Error: Bill data missing for chatbot.")));
+              }
+              // Use the actual ChatbotPage
+              return ChatbotPage(billJson: billJson);
+            }),
         // Removed GoRoute for resetPassword
       ],
 
@@ -161,6 +178,8 @@ class AppRouter {
               state.matchedLocation == AppRoutes.upload ||
               state.matchedLocation == AppRoutes.cropImage ||
               state.matchedLocation == AppRoutes.editBill ||
+              state.matchedLocation ==
+                  AppRoutes.chatbot || // Add chatbot to protected routes
               state.matchedLocation == AppRoutes.history;
           if (isProtected) {
             debugPrint(
