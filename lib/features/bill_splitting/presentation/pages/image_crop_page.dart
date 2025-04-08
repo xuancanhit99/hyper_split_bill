@@ -30,41 +30,55 @@ class _ImageCropPageState extends State<ImageCropPage> {
   }
 
   Future<void> _cropImage() async {
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: widget.imagePath,
-      // aspectRatioPresets parameter removed, handled within uiSettings if needed
-      uiSettings: [
-        // Customize the cropper UI
-        AndroidUiSettings(
-            toolbarTitle: 'Crop Bill Image',
-            toolbarColor: Theme.of(context).appBarTheme.backgroundColor ??
-                AppColors.facebookBlue, // Use theme color
-            toolbarWidgetColor:
-                Theme.of(context).appBarTheme.foregroundColor ?? Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false),
-        IOSUiSettings(
-          title: 'Crop Bill Image',
-          // Add iOS specific settings if needed
-        ),
-        // WebUiSettings( // Add Web settings if needed
-        //   context: context,
-        // ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      setState(() {
-        _croppedFile = croppedFile;
-      });
-      // If cropping is successful, proceed to OCR
-      _processCroppedImage(File(croppedFile.path));
-    } else {
-      // If user cancels cropping, go back to the previous screen
+    CroppedFile? croppedFile; // Declare outside try
+    try {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: widget.imagePath,
+        // aspectRatioPresets parameter removed, handled within uiSettings if needed
+        uiSettings: [
+          // Customize the cropper UI
+          AndroidUiSettings(
+              toolbarTitle: 'Crop Bill Image',
+              toolbarColor: Theme.of(context).appBarTheme.backgroundColor ??
+                  AppColors.facebookBlue, // Use theme color
+              toolbarWidgetColor:
+                  Theme.of(context).appBarTheme.foregroundColor ?? Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false),
+          IOSUiSettings(
+            title: 'Crop Bill Image',
+            // Add iOS specific settings if needed
+          ),
+          // WebUiSettings( // Add Web settings if needed
+          //   context: context,
+          // ),
+        ],
+      );
+    } catch (e) {
+      print("Error during image cropping: $e");
+      // Optionally show a SnackBar error message before popping
       if (mounted) {
-        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error cropping image: $e')),
+        );
+      }
+    } finally {
+      // Ensure we always try to pop, regardless of success, failure, or cancellation
+      if (mounted) {
+        // Check if cropping was successful before processing
+        if (croppedFile != null) {
+          setState(() {
+            _croppedFile = croppedFile;
+          });
+          _processCroppedImage(File(croppedFile.path));
+        } else {
+          // If croppedFile is null (cancelled or error), just pop
+          Navigator.of(context).pop();
+        }
       }
     }
+
+    // Logic moved to finally block
   }
 
   void _processCroppedImage(File croppedImageFile) {
@@ -83,17 +97,19 @@ class _ImageCropPageState extends State<ImageCropPage> {
 
   @override
   Widget build(BuildContext context) {
-    // This page primarily shows the native cropper UI.
-    // We can show a loading indicator while the cropper is initializing or processing.
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cropping Image...'), // Temporary title
-        automaticallyImplyLeading: false, // Hide back button as flow is handled
-      ),
-      body: const Center(
-        // Show a loading indicator while the cropper UI is presented
-        child: CircularProgressIndicator(),
-      ),
+    // This page's primary purpose is to launch the native cropper UI.
+    // We don't need to show much in the Flutter UI itself.
+    // Returning an empty container is sufficient while the native UI is active.
+    return const Scaffold(
+      // Optional: Keep AppBar for context, or remove entirely for cleaner transition
+      // appBar: AppBar(
+      //   title: const Text('Cropping Image...'),
+      //   automaticallyImplyLeading: false,
+      // ),
+      body: Center(
+          child:
+              CircularProgressIndicator()), // Keep indicator for visual feedback
     );
+    // Alternatively, return const SizedBox.shrink(); for a completely blank Flutter UI.
   }
 }
