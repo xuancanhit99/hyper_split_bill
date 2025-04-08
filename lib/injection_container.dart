@@ -19,9 +19,7 @@ final sl = GetIt.instance;
 Future<void> configureDependencies() async {
   sl.init();
 
-  // Register external dependencies first
-  _registerExternalDependencies();
-
+  // External dependencies are now handled by RegisterModule
 
   // Register manual dependencies that might not work with @injectable
   _registerThemes();
@@ -30,19 +28,15 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton(() => AppRouter(sl<AuthBloc>()));
 }
 
-void _registerExternalDependencies() {
-  // Register Supabase client - this must be available via GetIt for other dependencies
-  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
-  sl.registerLazySingleton(() => http.Client());
-}
+// Removed _registerExternalDependencies function as it's handled by @module
 
 void _registerThemes() {
   sl.registerLazySingleton<ThemeData>(
-        () => AppTheme.lightTheme,
+    () => AppTheme.lightTheme,
     instanceName: 'lightTheme',
   );
   sl.registerLazySingleton<ThemeData>(
-        () => AppTheme.darkTheme,
+    () => AppTheme.darkTheme,
     instanceName: 'darkTheme',
   );
 }

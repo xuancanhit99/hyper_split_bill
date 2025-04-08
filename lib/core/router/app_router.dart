@@ -7,6 +7,9 @@ import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
 import 'package:hyper_split_bill/features/auth/presentation/pages/auth_page.dart';
 
 import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_upload_page.dart'; // Import upload page
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/image_crop_page.dart'; // Import crop page
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_edit_page.dart'; // Import edit page
 // Removed import for reset_password_page.dart
 
 // --- Define Route Paths ---
@@ -17,6 +20,8 @@ class AppRoutes {
   static const home = '/';
   static const upload = '/upload'; // Added route
   static const history = '/history'; // Added route
+  static const cropImage = '/crop-image'; // Added route for image cropping
+  static const editBill = '/edit-bill'; // Added route for editing bill details
   static const resetPassword =
       '/reset-password'; // Path kept for potential future use, but route removed
 }
@@ -53,13 +58,49 @@ class AppRouter {
           name: AppRoutes.home,
           builder: (context, state) => const HomePage(),
         ),
-        // TODO: Replace with actual page widgets once created
+        // Bill Splitting Feature Routes (Authenticated)
         GoRoute(
           path: AppRoutes.upload,
           name: AppRoutes.upload,
-          builder: (context, state) => const Scaffold(
-            body: Center(child: Text('Upload Page Placeholder')),
-          ), // Placeholder
+          builder: (context, state) =>
+              const BillUploadPage(), // Link to the actual page
+        ),
+        GoRoute(
+          path: AppRoutes.cropImage,
+          name: AppRoutes.cropImage,
+          builder: (context, state) {
+            // Extract the image path passed as extra data
+            final imagePath = state.extra as String?;
+            if (imagePath == null) {
+              // Handle error: navigate back or show error page if path is missing
+              // For simplicity, redirect back to upload for now
+              // Consider a dedicated error page or message
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context.go(AppRoutes.upload); // Or show an error
+              });
+              return const Scaffold(
+                  body: Center(child: Text("Error: Image path missing")));
+            }
+            return ImageCropPage(imagePath: imagePath);
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.editBill,
+          name: AppRoutes.editBill,
+          builder: (context, state) {
+            // Extract the OCR result text passed as extra data
+            final ocrResult = state.extra as String?;
+            if (ocrResult == null) {
+              // Handle error if OCR result is missing
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context
+                    .go(AppRoutes.upload); // Go back to upload if data missing
+              });
+              return const Scaffold(
+                  body: Center(child: Text("Error: OCR result missing")));
+            }
+            return BillEditPage(ocrResult: ocrResult);
+          },
         ),
         GoRoute(
           path: AppRoutes.history,
