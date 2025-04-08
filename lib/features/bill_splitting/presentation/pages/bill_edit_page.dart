@@ -214,8 +214,14 @@ class _BillEditPageState extends State<BillEditPage> {
     String? currentUserId;
     if (authState is AuthAuthenticated) {
       currentUserId = authState.user.id;
+      print(
+          "Attempting to save bill for authenticated user ID: $currentUserId"); // Log the ID
+    } else {
+      print(
+          "Attempting to save bill, but user is not authenticated. Auth state: $authState"); // Log the state if not authenticated
     }
     if (currentUserId == null) {
+      print("Save cancelled: currentUserId is null."); // Log cancellation
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: User not authenticated.')),
       );
@@ -237,8 +243,12 @@ class _BillEditPageState extends State<BillEditPage> {
       // discountAmount: discountAmount,
       // ocrExtractedText: widget.structuredJsonString,
     );
+    // Convert BillEntity to Map for easier logging if needed
+    // print("Dispatching SaveBillEvent with BillEntity: ${BillModel.fromEntity(billToSave).toMap()}");
 
     // Dispatch event
+    print(
+        "Dispatching SaveBillEvent for user ID: $currentUserId"); // Log before dispatch
     context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
   }
 

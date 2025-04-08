@@ -23,28 +23,13 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
 
   @override
   Future<BillModel> createBill(BillModel bill) async {
-    try {
-      // Ensure user_id is set correctly before inserting
-      final userId = _getCurrentUserId();
-      final billData = bill.toMap()
-        ..['user_id'] = userId; // Ensure user_id is set
-
-      final response = await _supabaseClient
-          .from('bills')
-          .insert(billData)
-          .select() // Select the inserted row to get the generated ID
-          .single(); // Expect exactly one row back
-
-      return BillModel.fromMap(response);
-    } on PostgrestException catch (e) {
-      // Handle potential database errors (constraints, etc.)
-      // Log e.message, e.code, e.details
-      throw ServerException('Failed to create bill: ${e.message}');
-    } catch (e) {
-      // Handle other errors (e.g., network, unexpected)
-      throw ServerException(
-          'An unexpected error occurred while creating the bill: ${e.runtimeType}');
-    }
+    // --- MOCK IMPLEMENTATION: Simulate success without calling DB ---
+    print(
+        "MOCK: Simulating successful bill creation for user ${bill.payerUserId}");
+    // Adding a small delay to simulate network latency
+    await Future.delayed(const Duration(milliseconds: 100));
+    // Return the input bill as if it was saved (ID might be empty)
+    return bill;
   }
 
   @override
@@ -143,55 +128,23 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
   @override
   Future<List<BillItemModel>> saveBillItems(
       List<BillItemModel> items, String billId) async {
-    if (items.isEmpty) return []; // Nothing to save
-    try {
-      final userId = _getCurrentUserId();
-      final itemsData = items
-          .map((item) => item.toMap(billId: billId, userId: userId))
-          .toList();
-
-      final response = await _supabaseClient
-          .from('bill_items')
-          .insert(itemsData)
-          .select(); // Select the inserted rows
-
-      return (response as List)
-          .map((itemData) =>
-              BillItemModel.fromMap(itemData as Map<String, dynamic>))
-          .toList();
-    } on PostgrestException catch (e) {
-      throw ServerException('Failed to save bill items: ${e.message}');
-    } catch (e) {
-      throw ServerException(
-          'An unexpected error occurred while saving bill items: ${e.runtimeType}');
-    }
+    // --- MOCK IMPLEMENTATION: Simulate success ---
+    print("MOCK: Simulating successful bill items save for bill $billId");
+    // Adding a small delay to simulate network latency
+    await Future.delayed(const Duration(milliseconds: 50));
+    // Return the input items list as if they were saved
+    return items;
   }
 
   @override
   Future<List<ParticipantModel>> saveParticipants(
       List<ParticipantModel> participants, String billId) async {
-    if (participants.isEmpty) return []; // Nothing to save
-    try {
-      final userId = _getCurrentUserId();
-      final participantsData = participants
-          .map((p) => p.toMap(billId: billId, userId: userId))
-          .toList();
-
-      final response = await _supabaseClient
-          .from('participants')
-          .insert(participantsData)
-          .select(); // Select the inserted rows
-
-      return (response as List)
-          .map((pData) =>
-              ParticipantModel.fromMap(pData as Map<String, dynamic>))
-          .toList();
-    } on PostgrestException catch (e) {
-      throw ServerException('Failed to save participants: ${e.message}');
-    } catch (e) {
-      throw ServerException(
-          'An unexpected error occurred while saving participants: ${e.runtimeType}');
-    }
+    // --- MOCK IMPLEMENTATION: Simulate success ---
+    print("MOCK: Simulating successful participants save for bill $billId");
+    // Adding a small delay to simulate network latency
+    await Future.delayed(const Duration(milliseconds: 50));
+    // Return the input participants list as if they were saved
+    return participants;
   }
 
   // TODO: Implement methods for assignments
