@@ -98,8 +98,9 @@ class AppRouter {
           name: AppRoutes.editBill,
           // Provide BillSplittingBloc to the route and its descendants
           pageBuilder: (context, state) {
-            final ocrResult = state.extra as String?;
-            if (ocrResult == null) {
+            final structuredJson =
+                state.extra as String?; // Renamed variable for clarity
+            if (structuredJson == null) {
               // Redirect immediately if possible
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 context.go(AppRoutes.upload);
@@ -113,7 +114,9 @@ class AppRouter {
               child: BlocProvider.value(
                 value:
                     sl<BillSplittingBloc>(), // Provide the singleton instance
-                child: BillEditPage(ocrResult: ocrResult),
+                child: BillEditPage(
+                    structuredJsonString:
+                        structuredJson), // Pass correct parameter name
               ),
             );
           },

@@ -29,7 +29,7 @@ class _BillUploadView extends StatefulWidget {
 class _BillUploadViewState extends State<_BillUploadView> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage; // To hold the selected image file
-  bool _isLoading = false; // To track loading state for OCR
+  // Removed _isLoading state variable, will use BlocBuilder instead
 
   // Function to pick image from gallery
   Future<void> _pickImageFromGallery() async {
@@ -102,20 +102,18 @@ class _BillUploadViewState extends State<_BillUploadView> {
     // Wrap the Scaffold with BlocListener to react to state changes
     return BlocListener<BillSplittingBloc, BillSplittingState>(
       listener: (context, state) {
-        setState(() {
-          // Update loading state based on Bloc state
-          _isLoading = state is BillSplittingOcrProcessing;
-        });
+        // No longer need to manage _isLoading here
 
         if (state is BillSplittingOcrSuccess) {
           // OCR Success: Navigate to the edit page
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(
-                    'OCR Success! Text length: ${state.extractedText.length}. Navigating to edit...')),
+                    'OCR & Structuring Success! JSON length: ${state.structuredJson.length}. Navigating to edit...')), // Use structuredJson
           );
           // Navigate to BillEditPage, passing the extracted text
-          context.push(AppRoutes.editBill, extra: state.extractedText);
+          context.push(AppRoutes.editBill,
+              extra: state.structuredJson); // Use structuredJson
           // Clear the selected image after navigating (optional)
           // setState(() {
           //   _selectedImage = null;
@@ -134,75 +132,101 @@ class _BillUploadViewState extends State<_BillUploadView> {
         // The actual UI remains inside the listener's child
         appBar: AppBar(
           title: const Text('Upload Bill'),
-          actions: [
-            // Show loading indicator in AppBar
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.only(right: 16.0),
-                child: Center(
-                    child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))),
-              ),
-          ],
+          // Remove loading indicator from AppBar actions
+          actions: [], // Define an empty actions list
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                // Display selected image preview (optional)
-                if (_selectedImage != null) ...[
-                  Expanded(
-                    // Use Expanded to allow image to take available space
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 20.0),
-                      child: Image.file(
-                        _selectedImage!,
-                        fit: BoxFit.contain, // Adjust fit as needed
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  // Placeholder or instruction text when no image is selected
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Select an image or take a photo of your bill.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                ],
+        // Use BlocBuilder to conditionally add a loading overlay using Stack
+        body: BlocBuilder<BillSplittingBloc, BillSplittingState>(
+          builder: (context, state) {
+            final isLoading = state is BillSplittingOcrProcessing ||
+                state is BillSplittingStructuring;
 
-                // Buttons at the bottom
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('Choose from Gallery'),
-                  // Disable button while loading
-                  onPressed: _isLoading ? null : _pickImageFromGallery,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
+            return Stack(
+              children: [
+                // Main content (always present)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        // Display selected image preview (optional)
+                        if (_selectedImage != null) ...[
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 20.0),
+                              child: Image.file(
+                                _selectedImage!,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          // Placeholder
+                          const Expanded(
+                            child: Center(
+                              child: Text(
+                                'Select an image or take a photo of your bill.',
+                                textAlign: TextAlign.center,
+                                style:
+                                    TextStyle(fontSize: 16, color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // Buttons (still disable based on isLoading)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label: const Text('Choose from Gallery'),
+                          onPressed: isLoading ? null : _pickImageFromGallery,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.camera_alt_outlined),
+                          label: const Text('Take Photo'),
+                          onPressed: isLoading ? null : _pickImageFromCamera,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.camera_alt_outlined),
-                  label: const Text('Take Photo'),
-                  // Disable button while loading
-                  onPressed: _isLoading ? null : _pickImageFromCamera,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
+
+                // Loading Overlay (conditionally shown)
+                if (isLoading)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black
+                          .withOpacity(0.5), // Semi-transparent background
+                      child: Center(
+                        child: Column(
+                          // Added Column for text
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            Text(
+                              state is BillSplittingStructuring
+                                  ? 'Structuring data...' // Specific text for structuring
+                                  : 'Processing image...', // Generic text for OCR
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
               ],
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

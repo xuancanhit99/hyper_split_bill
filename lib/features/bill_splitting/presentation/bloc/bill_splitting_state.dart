@@ -19,16 +19,18 @@ class BillSplittingLoading extends BillSplittingState {}
 // State when OCR processing is in progress
 class BillSplittingOcrProcessing extends BillSplittingState {}
 
-// State after OCR successfully extracts text
-class BillSplittingOcrSuccess extends BillSplittingState {
-  final String extractedText;
-  // TODO: Potentially include parsed BillEntity/Items data here after initial parsing
-  // final BillEntity initialParsedBill;
+// State when structuring the raw OCR text (e.g., calling Chat API)
+class BillSplittingStructuring extends BillSplittingState {}
 
-  const BillSplittingOcrSuccess({required this.extractedText});
+// State after OCR and structuring (if needed) successfully produce structured JSON
+class BillSplittingOcrSuccess extends BillSplittingState {
+  final String structuredJson; // Renamed from extractedText
+
+  const BillSplittingOcrSuccess(
+      {required this.structuredJson}); // Updated constructor
 
   @override
-  List<Object?> get props => [extractedText];
+  List<Object?> get props => [structuredJson]; // Updated props
 }
 
 // State when OCR processing fails

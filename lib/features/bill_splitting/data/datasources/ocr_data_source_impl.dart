@@ -67,26 +67,50 @@ class OcrDataSourceImpl implements OcrDataSource {
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        final decodedResponse =
-            json.decode(response.body) as Map<String, dynamic>;
-        if (decodedResponse.containsKey('extracted_text')) {
-          return decodedResponse['extracted_text'] as String;
-        } else {
-          throw const ServerException(
-              'OCR API response missing "extracted_text" field.');
-        }
+        // Read raw bytes and decode explicitly using UTF-8
+        print(
+            "OCR Response Status 200. Body Bytes Length: ${response.bodyBytes.length}");
+        // print("Raw Body Bytes (first 100): ${response.bodyBytes.take(100).toList()}"); // Optional: Log raw bytes for deep debug
+        final utf8DecodedBody = utf8.decode(response.bodyBytes,
+            allowMalformed: true); // Allow malformed to see potential issues
+        print("UTF-8 Decoded Body:\n>>>\n$utf8DecodedBody\n<<<");
+
+        // Don't assume the structure here. Return the full decoded body string.
+        // The UseCase will be responsible for trying to parse it as the expected JSON.
+        print("OCRDataSourceImpl returning full decoded body to UseCase.");
+        return utf8DecodedBody;
       } else {
         // Attempt to parse error detail
         String detail = 'HTTP Error ${response.statusCode}';
+        String errorBodyUtf8 = ''; // Declare ONCE outside try block
         try {
-          final errorBody = json.decode(response.body) as Map<String, dynamic>;
-          if (errorBody.containsKey('detail')) {
-            detail = errorBody['detail'].toString();
+          // Decode error body using UTF-8 for logging/details
+          errorBodyUtf8 = // Assign value inside try block
+              utf8.decode(response.bodyBytes, allowMalformed: true);
+          print("OCR Error Response Body (UTF-8 Decoded): $errorBodyUtf8");
+
+          // Try to parse the decoded error body as JSON
+          try {
+            final errorBodyJson =
+                json.decode(errorBodyUtf8) as Map<String, dynamic>;
+            // If 'detail' key exists in JSON, use its value
+            if (errorBodyJson.containsKey('detail')) {
+              detail = errorBodyJson['detail'].toString();
+            } else {
+              // If 'detail' key is missing, use the full decoded string as detail
+              detail = errorBodyUtf8;
+            }
+          } catch (jsonError) {
+            // If parsing the error body as JSON fails, use the full decoded string as detail
+            print(
+                "Failed to parse error body as JSON: $jsonError. Using raw decoded body as detail.");
+            detail = errorBodyUtf8;
           }
-        } catch (_) {
-          // Ignore parsing error, use default detail
+        } catch (decodeError) {
+          // If even decoding the error body fails, keep the default HTTP error message
           print(
-              "OCR Error Response Body: ${response.body}"); // Log raw error body
+              "Failed to decode error body: $decodeError. Using default detail: $detail");
+          // errorBodyUtf8 will be empty here, so detail remains the default HTTP error
         }
         // Consider mapping status codes to more specific exceptions if needed
         throw ServerException('OCR request failed: $detail');

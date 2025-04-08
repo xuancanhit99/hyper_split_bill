@@ -15,12 +15,11 @@ class StructureBillDataUseCase {
   // Returns a structured representation (e.g., JSON string) or a Failure.
   Future<Either<Failure, String>> call({required String ocrText}) async {
     // --- Define the Prompt ---
-    // This prompt guides the Chat API to extract and structure the data.
-    // It should specify the desired output format (e.g., JSON) and fields.
-    // TODO: Refine this prompt for better accuracy and handling complex bills.
-    final prompt = """
-Analyze the following bill text extracted via OCR and return a JSON object containing the structured data.
-The JSON object should have the following fields:
+    const String detailedPrompt = """
+Analyze the following bill text extracted via OCR and return ONLY a valid JSON object containing the structured data.
+Do not include any explanatory text before or after the JSON object.
+Do not use markdown code blocks (like ```json).
+The JSON object MUST have the following fields:
 - "bill_date": (string, format YYYY-MM-DD, try to infer from text, otherwise null)
 - "description": (string, optional, try to infer store name or a general description)
 - "currency_code": (string, e.g., "USD", "VND", try to infer, default to "USD" if unsure)
@@ -33,73 +32,80 @@ The JSON object should have the following fields:
 
 Extract the items listed on the bill. For each item, determine its description, quantity (default to 1 if not specified), unit price (if available), and total price. If only the total price for an item line is available, use that for "total_price" and potentially estimate "unit_price" if quantity is known. If quantity or unit price is ambiguous, make a reasonable guess or omit the field. Ensure the sum of "total_price" for all items is reasonably close to the "subtotal_amount" if available.
 
-If any required numeric field (like total_amount) cannot be found or parsed, return an error structure or indicate failure clearly in the response.
-
-OCR Text:
-```
-$ocrText
-```
-
-JSON Output:
+If any required numeric field (like total_amount) cannot be found or parsed, return a JSON object with an "error" field describing the issue, e.g., {"error": "Could not determine total amount"}.
 """;
 
     try {
       // Send the prompt to the Chat API
       final structuredJsonString = await chatDataSource.sendMessage(
-        message: prompt,
-        // No history needed for this specific task usually
+        message:
+            "$detailedPrompt\n\nOCR Text:\n```\n$ocrText\n```\n\nJSON Output:", // Re-add OCR text context clearly
         // modelName: 'gemini-pro' // Or specify a model suitable for JSON output
       );
 
       // --- Clean and Extract JSON ---
-      String cleanedString = structuredJsonString.trim();
+      print(
+          "Raw response from Chat API before cleaning:\n>>>\n$structuredJsonString\n<<<");
+      String potentialJson = structuredJsonString.trim();
+      bool foundMarkdown = false;
 
-      // 1. Remove markdown code block fences if present
-      final RegExp jsonBlockRegex = RegExp(r'```json\s*([\s\S]*?)\s*```');
-      final match = jsonBlockRegex.firstMatch(cleanedString);
+      // 1. Try to find JSON within markdown code blocks first (making 'json' optional)
+      final RegExp jsonBlockRegex =
+          RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```', multiLine: true);
+      final match = jsonBlockRegex.firstMatch(potentialJson);
+
       if (match != null && match.groupCount >= 1) {
-        cleanedString = match.group(1)!.trim();
-      }
-
-      // 2. Sometimes the model might start directly with '{' or '['
-      // Find the first '{' or '[' and the last '}' or ']'
-      int firstBracket = cleanedString.indexOf(RegExp(r'[{[]'));
-      int lastBracket = cleanedString.lastIndexOf(RegExp(r'[}\]]'));
-
-      if (firstBracket != -1 &&
-          lastBracket != -1 &&
-          lastBracket > firstBracket) {
-        // Extract the potential JSON part
-        cleanedString = cleanedString.substring(firstBracket, lastBracket + 1);
+        potentialJson = match.group(1)!.trim();
+        foundMarkdown = true;
+        print("Extracted JSON from markdown block:\n>>>\n$potentialJson\n<<<");
       } else {
-        // If no brackets found, or invalid range, likely not JSON
-        print(
-            "Warning: Could not reliably find JSON structure in Chat API response.");
-        // Return Left or the potentially non-JSON string based on requirements
-        return Left(ServerFailure(
-            'Could not extract valid JSON structure from Chat API response. Raw: $structuredJsonString'));
-        // Or: return Right(cleanedString); // If you want to attempt parsing anyway
+        print("No markdown block found in Chat API response.");
       }
 
-      // 3. Basic validation (starts with { or [ and ends with } or ])
-      if ((cleanedString.startsWith('{') && cleanedString.endsWith('}')) ||
-          (cleanedString.startsWith('[') && cleanedString.endsWith(']'))) {
-        print("Extracted potential JSON: $cleanedString");
-        return Right(cleanedString);
+      // 2. If no markdown block was found OR if after removing markdown it's still not valid JSON,
+      //    try finding the first '{' and last '}' as a fallback.
+      if (!foundMarkdown ||
+          !(potentialJson.startsWith('{') && potentialJson.endsWith('}'))) {
+        print(
+            "Attempting to extract JSON by finding first/last braces '{...}'");
+        int firstBrace = potentialJson.indexOf('{');
+        int lastBrace = potentialJson.lastIndexOf('}');
+
+        if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+          potentialJson = potentialJson.substring(firstBrace, lastBrace + 1);
+          print("JSON extracted by finding braces:\n>>>\n$potentialJson\n<<<");
+        } else {
+          // If still no valid structure found, return error
+          print(
+              "Error: Could not find valid JSON structure ({...}) even after cleaning attempts. Raw:\n>>>\n$structuredJsonString\n<<<");
+          return Left(ServerFailure(
+              'Could not extract valid JSON object from the Chat API response. Raw: $structuredJsonString'));
+        }
+      }
+
+      // 3. Final check and return
+      if (potentialJson.startsWith('{') && potentialJson.endsWith('}')) {
+        print("Final potential JSON to return:\n>>>\n$potentialJson\n<<<");
+        return Right(potentialJson);
       } else {
         print(
-            "Warning: Extracted string doesn't look like valid JSON start/end. Raw: $structuredJsonString");
+            "Error: Final cleaned string does not appear to be a valid JSON object. Cleaned:\n>>>\n$potentialJson\n<<< Raw:\n>>>\n$structuredJsonString\n<<<");
         return Left(ServerFailure(
-            'Extracted content does not appear to be valid JSON. Raw: $structuredJsonString'));
-        // Code already returns Left(ServerFailure(...)) above this else block
+            'Final cleaned content does not appear to be a valid JSON object. Raw: $structuredJsonString'));
       }
-    } on ServerException catch (e) {
+    } on ServerException catch (e, s) {
+      print(
+          "StructureBillDataUseCase caught ServerException: $e\nStackTrace: $s");
       return Left(
           ServerFailure('Chat API Error for Structuring: ${e.message}'));
-    } on NetworkException catch (e) {
+    } on NetworkException catch (e, s) {
+      print(
+          "StructureBillDataUseCase caught NetworkException: $e\nStackTrace: $s");
       return Left(
           NetworkFailure('Chat Network Error for Structuring: ${e.message}'));
-    } catch (e) {
+    } catch (e, s) {
+      print(
+          "StructureBillDataUseCase caught Unexpected Error: $e\nStackTrace: $s");
       return Left(ServerFailure(
           'Unexpected error structuring bill data: ${e.runtimeType}'));
     }
