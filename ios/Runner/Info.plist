@@ -49,5 +49,7 @@
 		<false/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Hyper Split App needs camera access so can take a photo of the bill</string>
 	</dict>
 </plist>
