@@ -107,69 +107,63 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
         if (state is BillSplittingOcrSuccess) {
           // OCR Success: Validate JSON before navigating
-          bool isValidBill = false;
+          bool isReceipt = false; // Default to false
           String errorMessage =
-              'Could not recognize bill details in the image. Please try a clearer image.'; // Updated default message
+              'Could not process the image. Please try again.'; // Generic default
+          String imageCategory = 'unknown'; // Default category
+
           try {
             final data =
                 jsonDecode(state.structuredJson) as Map<String, dynamic>;
 
-            // --- Stricter Validation ---
-            // Helper to parse num safely (similar to BillEditPage but simplified for check)
-            num? parseNumCheck(dynamic value) {
-              if (value == null) return null;
-              if (value is num) return value;
-              if (value is String)
-                return num.tryParse(value.replaceAll(RegExp(r'[^\d.]'), ''));
-              return null;
-            }
+            // --- Validation using is_receipt and image_category ---
 
-            // 1. Check for internal error first
-            final bool hasInternalError =
-                data.containsKey('error') && data['error'] != null;
-            if (hasInternalError) {
-              errorMessage = "Error processing bill: ${data['error']}";
-              // isValidBill remains false
-            } else {
-              // 2. Check for meaningful data if no internal error
-              final num? totalAmount = parseNumCheck(data['total_amount']);
-              final bool hasMeaningfulTotal =
-                  totalAmount != null && totalAmount > 0;
+            // 1. Check if 'is_receipt' field exists and is a boolean
+            if (data.containsKey('is_receipt') && data['is_receipt'] is bool) {
+              isReceipt = data['is_receipt'] as bool;
 
-              final bool hasItems = data.containsKey('items') &&
-                  data['items'] is List &&
-                  (data['items'] as List).isNotEmpty;
-
-              final String description =
-                  (data['description'] as String? ?? '').trim();
-              final bool hasDescription = description.isNotEmpty;
-
-              // Consider valid if AT LEAST ONE meaningful field exists
-              if (hasMeaningfulTotal || hasItems || hasDescription) {
-                isValidBill = true;
+              if (!isReceipt) {
+                // 2. If it's not a receipt, try to get the category
+                imageCategory = data['image_category'] as String? ?? 'unknown';
+                // Construct specific error message
+                if (imageCategory == 'unknown') {
+                  errorMessage =
+                      '🤖 This image does not appear to be a receipt/bill/invoice. Please upload a valid document.';
+                } else {
+                  errorMessage =
+                      "🤖 This image does not appear to be a receipt/bill/invoice. It looks like a '$imageCategory'. Please upload a valid document.";
+                }
               }
-              // If still not valid, keep the default errorMessage
+              // If isReceipt is true, we don't need to set an error message here.
+            } else {
+              // Handle case where 'is_receipt' is missing or has wrong type
+              print(
+                  "Warning: 'is_receipt' field missing or not a boolean in JSON response.");
+              errorMessage =
+                  'Could not determine if the image is a receipt. Please try again.';
+              isReceipt = false; // Treat as invalid if field is missing/wrong
             }
-            // --- End Stricter Validation ---
+            // --- End Validation ---
           } catch (e) {
-            print("Error decoding or validating structured JSON: $e");
+            print("Error decoding structured JSON: $e");
             errorMessage =
-                'Failed to process the structured data.'; // Keep this generic error for decoding issues
+                'Failed to process the structured data.'; // Error during JSON decoding
+            isReceipt = false; // Treat as invalid on decoding error
           }
 
-          if (isValidBill) {
+          if (isReceipt) {
+            // Navigate only if it's confirmed to be a receipt
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                   content: Text(
-                      'OCR & Structuring Success! Navigating to edit...')), // Simplified message
+                      'Receipt detected! Navigating to edit...')), // Updated message
             );
-            // Navigate to BillEditPage, passing the extracted text
             context.push(AppRoutes.editBill, extra: state.structuredJson);
           } else {
-            // Show error SnackBar if JSON is not valid
+            // Show the specific error message if it's not a receipt or if an error occurred
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(errorMessage),
+                content: Text(errorMessage), // Use the determined error message
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
