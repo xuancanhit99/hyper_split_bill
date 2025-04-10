@@ -11,6 +11,7 @@ import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bi
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_participants_section.dart'; // Import participants section
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc for user ID
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes for navigation
+import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import the new currency constants file
 
 class BillEditPage extends StatefulWidget {
   final String structuredJsonString; // Receive the structured JSON string
@@ -22,6 +23,11 @@ class BillEditPage extends StatefulWidget {
 }
 
 class _BillEditPageState extends State<BillEditPage> {
+  // Base list is now imported from kCommonCurrencies
+  // static const List<String> _baseCurrencies = [ ... ]; // Removed
+
+  // Dynamic list to hold currencies for the dropdown, initialized in initState
+  late List<String> _dropdownCurrencies;
   // Controllers for main bill fields
   late TextEditingController _descriptionController;
   late TextEditingController _totalAmountController;
@@ -30,7 +36,7 @@ class _BillEditPageState extends State<BillEditPage> {
   late TextEditingController _tipController;
   late TextEditingController _discountController;
   late TextEditingController _ocrTextController; // To display raw JSON/OCR
-  late TextEditingController _currencyController; // Controller for currency
+  late TextEditingController _currencyController; // Holds the selected value
 
   // State for parsed data
   bool _isInitializing = true; // Combined parsing/loading state
@@ -38,9 +44,7 @@ class _BillEditPageState extends State<BillEditPage> {
   List<BillItemEntity> _items = [];
   List<ParticipantEntity> _participants = [];
   bool _isEditingMode = true; // Start in editing mode
-  String?
-      _finalBillJsonString; // To store the final JSON after saving internally
-
+  String? _finalBillJsonString; // Stores the final JSON after saving internally
   @override
   void initState() {
     super.initState();
@@ -56,7 +60,11 @@ class _BillEditPageState extends State<BillEditPage> {
     _ocrTextController = TextEditingController(
         text: widget.structuredJsonString); // Show the received JSON
 
-    // Parse the received JSON string directly
+    // Initialize the dynamic currency list using the imported constant list
+    _dropdownCurrencies =
+        List.from(cCommonCurrencies); // Start with common currencies
+
+    // Parse the received JSON string directly, which might update _dropdownCurrencies
     _parseStructuredJson(widget.structuredJsonString);
   }
 
@@ -133,13 +141,47 @@ class _BillEditPageState extends State<BillEditPage> {
       _discountController.text =
           _parseNum(data['discount_amount'])?.toString() ?? '0.0';
 
-      // Populate currency code - default to USD if not found or empty
-      final currency = data['currency_code'] as String?;
-      _currencyController.text = (currency != null && currency.isNotEmpty)
-          ? currency.toUpperCase()
-          : 'USD'; // Default to USD
-      print("Parsed currency code: ${_currencyController.text}");
+      // Populate currency code
+      final parsedCurrency = data['currency_code'] as String?;
+      String effectiveCurrency = 'USD'; // Default
 
+      if (parsedCurrency != null && parsedCurrency.isNotEmpty) {
+        final upperCaseCurrency = parsedCurrency.toUpperCase();
+        // Use the parsed currency if it's valid (e.g., 3 letters)
+        // You might add more robust validation here if needed
+        if (upperCaseCurrency.length == 3) {
+          effectiveCurrency = upperCaseCurrency;
+          // Add to dropdown list if not already present
+          if (!_dropdownCurrencies.contains(effectiveCurrency)) {
+            // Use setState to ensure the UI rebuilds with the new list if parsing happens after initial build
+            // Though in initState, setState isn't strictly needed, it's safer if parsing logic is reused later
+            setState(() {
+              _dropdownCurrencies.add(effectiveCurrency);
+              // Optional: Sort the list alphabetically
+              _dropdownCurrencies.sort();
+            });
+            print(
+                "Added parsed currency '$effectiveCurrency' to dropdown list.");
+          }
+        } else {
+          print(
+              "Warning: Parsed currency '$parsedCurrency' is invalid. Defaulting to USD.");
+        }
+      } else {
+        print("Warning: No currency code found in JSON. Defaulting to USD.");
+      }
+
+      // Ensure the default 'USD' is in the list if it wasn't added automatically
+      if (!_dropdownCurrencies.contains('USD')) {
+        setState(() {
+          _dropdownCurrencies.insert(0, 'USD'); // Add USD at the beginning
+        });
+      }
+
+      // Set the controller's text AFTER potentially modifying the list
+      _currencyController.text = effectiveCurrency;
+      print(
+          "Selected currency code after parsing: ${_currencyController.text}");
       // Format date if available
       final dateString = data['bill_date'] as String?;
       if (dateString != null) {
@@ -267,12 +309,12 @@ class _BillEditPageState extends State<BillEditPage> {
       );
       return;
     }
-    if (currencyCode.isEmpty || currencyCode.length != 3) {
-      // Basic validation for currency code
+    // Validate selected currency from dropdown against the dynamic list
+    if (!_dropdownCurrencies.contains(currencyCode)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(
-                'Please enter a valid 3-letter currency code (e.g., USD).')),
+                'Invalid currency selected. Please choose from the list.')),
       );
       return;
     }
@@ -425,11 +467,34 @@ class _BillEditPageState extends State<BillEditPage> {
                 )
               else ...[
                 // --- Structured Data Fields ---
-                TextField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                      labelText: 'Description / Store Name'),
-                  enabled: _isEditingMode, // Control based on edit mode
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: TextField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                            labelText: 'Description / Store Name'),
+                        enabled: _isEditingMode, // Control based on edit mode
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3, // More space for date
+                      child: TextField(
+                        controller: _dateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Bill Date',
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true, // Date picker handles changes
+                        enabled: _isEditingMode, // Control based on edit mode
+                        onTap: _isEditingMode
+                            ? () => _selectDate(context)
+                            : null, // Allow tap only in edit mode
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -448,34 +513,46 @@ class _BillEditPageState extends State<BillEditPage> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      flex: 1, // Less space for currency
-                      child: TextField(
-                        controller: _currencyController,
+                      flex: 1, // Adjust flex as needed
+                      child: DropdownButtonFormField<String>(
+                        // Ensure the value exists in the items list before building
+                        value: _dropdownCurrencies
+                                .contains(_currencyController.text)
+                            ? _currencyController.text
+                            : (_dropdownCurrencies.isNotEmpty
+                                ? _dropdownCurrencies.first
+                                : null), // Fallback if value is somehow invalid
+                        items: _dropdownCurrencies
+                            .map((String currency) => DropdownMenuItem<String>(
+                                  value: currency,
+                                  child: Text(currency),
+                                ))
+                            .toList(),
+                        onChanged: _isEditingMode
+                            ? (String? newValue) {
+                                if (newValue != null &&
+                                    _dropdownCurrencies.contains(newValue)) {
+                                  // Extra check
+                                  setState(() {
+                                    _currencyController.text = newValue;
+                                  });
+                                }
+                              }
+                            : null, // Disable dropdown if not editing
                         decoration: const InputDecoration(
                           labelText: 'Currency',
-                          counterText: "",
+                          // Remove counterText and maxLength as they are not applicable
                         ),
-                        maxLength: 3,
-                        textCapitalization: TextCapitalization.characters,
-                        enabled: _isEditingMode, // Control based on edit mode
+                        menuMaxHeight:
+                            300.0, // Limit dropdown height and enable scrolling
+                        // Optionally add isExpanded: true if you want the dropdown to fill width
+                        // isExpanded: true,
+                        // Optionally add hint or disabledHint
+                        // disabledHint: Text(_currencyController.text), // Show current value when disabled
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2, // More space for date
-                      child: TextField(
-                        controller: _dateController,
-                        decoration: const InputDecoration(
-                          labelText: 'Bill Date',
-                          suffixIcon: Icon(Icons.calendar_today),
-                        ),
-                        readOnly: true, // Date picker handles changes
-                        enabled: _isEditingMode, // Control based on edit mode
-                        onTap: _isEditingMode
-                            ? () => _selectDate(context)
-                            : null, // Allow tap only in edit mode
-                      ),
-                    ),
+                    // The Date field previously here is now moved to the first row
                   ],
                 ),
                 const SizedBox(height: 16),
