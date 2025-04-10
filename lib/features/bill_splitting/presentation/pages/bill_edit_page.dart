@@ -74,6 +74,31 @@ class _BillEditPageState extends State<BillEditPage> {
     super.dispose();
   }
 
+  // Helper function to safely parse numeric values from dynamic JSON data
+  num? _parseNum(dynamic value, {bool allowNegative = true}) {
+    if (value == null) {
+      return null;
+    }
+    if (value is num) {
+      return allowNegative || value >= 0 ? value : null;
+    }
+    if (value is String) {
+      if (value.trim().isEmpty) {
+        return null;
+      }
+      // Remove common currency symbols, commas, and leading/trailing whitespace
+      final sanitizedValue = value
+          .replaceAll(RegExp(r'[$,€£¥]'), '') // Add more symbols if needed
+          .replaceAll(',', '')
+          .trim();
+      final parsedValue = num.tryParse(sanitizedValue);
+      return parsedValue != null && (allowNegative || parsedValue >= 0)
+          ? parsedValue
+          : null;
+    }
+    return null; // Not a num or parsable String
+  }
+
   void _parseStructuredJson(String jsonString) {
     // Reset state before parsing
     _items = [];
@@ -96,19 +121,19 @@ class _BillEditPageState extends State<BillEditPage> {
         throw Exception("Error from structuring API: ${data['error']}");
       }
 
-      // Populate controllers
+      // Populate controllers using the safe parsing helper
       final description = data['description'] as String? ?? '';
       print("Parsed description field: '$description'");
       _descriptionController.text = description;
+
       _totalAmountController.text =
-          (data['total_amount'] as num?)?.toString() ?? '';
-      _taxController.text = (data['tax_amount'] as num?)?.toString() ?? '0.0';
-      _tipController.text = (data['tip_amount'] as num?)?.toString() ?? '0.0';
+          _parseNum(data['total_amount'])?.toString() ?? '';
+      _taxController.text = _parseNum(data['tax_amount'])?.toString() ?? '0.0';
+      _tipController.text = _parseNum(data['tip_amount'])?.toString() ?? '0.0';
       _discountController.text =
-          (data['discount_amount'] as num?)?.toString() ?? '0.0';
+          _parseNum(data['discount_amount'])?.toString() ?? '0.0';
+
       // Populate currency code - default to USD if not found or empty
-      // TODO: Implement language detection logic here if possible from OCR/Structuring result
-      // For now, using the parsed 'currency_code' or defaulting.
       final currency = data['currency_code'] as String?;
       _currencyController.text = (currency != null && currency.isNotEmpty)
           ? currency.toUpperCase()
@@ -130,7 +155,7 @@ class _BillEditPageState extends State<BillEditPage> {
         _dateController.text = '';
       }
 
-      // Parse items
+      // Parse items using the safe parsing helper
       if (data['items'] is List) {
         int itemIndex = 0;
         for (var itemMap in (data['items'] as List)) {
@@ -138,11 +163,15 @@ class _BillEditPageState extends State<BillEditPage> {
             try {
               final itemDescription =
                   itemMap['description'] as String? ?? 'Unknown Item';
-              final itemQuantity = (itemMap['quantity'] as num?)?.toInt() ?? 1;
+              // Quantity should likely be an integer and non-negative
+              final itemQuantity =
+                  _parseNum(itemMap['quantity'], allowNegative: false)
+                          ?.toInt() ??
+                      1;
               final itemUnitPrice =
-                  (itemMap['unit_price'] as num?)?.toDouble() ?? 0.0;
+                  _parseNum(itemMap['unit_price'])?.toDouble() ?? 0.0;
               final itemTotalPrice =
-                  (itemMap['total_price'] as num?)?.toDouble() ?? 0.0;
+                  _parseNum(itemMap['total_price'])?.toDouble() ?? 0.0;
 
               print(
                   "Parsing item ${itemIndex + 1}: description='$itemDescription', quantity=$itemQuantity, unitPrice=$itemUnitPrice, totalPrice=$itemTotalPrice");
