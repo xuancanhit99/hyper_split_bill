@@ -1,4 +1,5 @@
 import 'dart:io'; // Will be needed for File type
+import 'dart:convert'; // Import for jsonDecode
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Will be needed for Bloc
 import 'package:image_picker/image_picker.dart'; // For picking images
@@ -105,19 +106,76 @@ class _BillUploadViewState extends State<_BillUploadView> {
         // No longer need to manage _isLoading here
 
         if (state is BillSplittingOcrSuccess) {
-          // OCR Success: Navigate to the edit page
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'OCR & Structuring Success! JSON length: ${state.structuredJson.length}. Navigating to edit...')), // Use structuredJson
-          );
-          // Navigate to BillEditPage, passing the extracted text
-          context.push(AppRoutes.editBill,
-              extra: state.structuredJson); // Use structuredJson
-          // Clear the selected image after navigating (optional)
-          // setState(() {
-          //   _selectedImage = null;
-          // });
+          // OCR Success: Validate JSON before navigating
+          bool isValidBill = false;
+          String errorMessage =
+              'Could not recognize bill details in the image. Please try a clearer image.'; // Updated default message
+          try {
+            final data =
+                jsonDecode(state.structuredJson) as Map<String, dynamic>;
+
+            // --- Stricter Validation ---
+            // Helper to parse num safely (similar to BillEditPage but simplified for check)
+            num? parseNumCheck(dynamic value) {
+              if (value == null) return null;
+              if (value is num) return value;
+              if (value is String)
+                return num.tryParse(value.replaceAll(RegExp(r'[^\d.]'), ''));
+              return null;
+            }
+
+            // 1. Check for internal error first
+            final bool hasInternalError =
+                data.containsKey('error') && data['error'] != null;
+            if (hasInternalError) {
+              errorMessage = "Error processing bill: ${data['error']}";
+              // isValidBill remains false
+            } else {
+              // 2. Check for meaningful data if no internal error
+              final num? totalAmount = parseNumCheck(data['total_amount']);
+              final bool hasMeaningfulTotal =
+                  totalAmount != null && totalAmount > 0;
+
+              final bool hasItems = data.containsKey('items') &&
+                  data['items'] is List &&
+                  (data['items'] as List).isNotEmpty;
+
+              final String description =
+                  (data['description'] as String? ?? '').trim();
+              final bool hasDescription = description.isNotEmpty;
+
+              // Consider valid if AT LEAST ONE meaningful field exists
+              if (hasMeaningfulTotal || hasItems || hasDescription) {
+                isValidBill = true;
+              }
+              // If still not valid, keep the default errorMessage
+            }
+            // --- End Stricter Validation ---
+          } catch (e) {
+            print("Error decoding or validating structured JSON: $e");
+            errorMessage =
+                'Failed to process the structured data.'; // Keep this generic error for decoding issues
+          }
+
+          if (isValidBill) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'OCR & Structuring Success! Navigating to edit...')), // Simplified message
+            );
+            // Navigate to BillEditPage, passing the extracted text
+            context.push(AppRoutes.editBill, extra: state.structuredJson);
+          } else {
+            // Show error SnackBar if JSON is not valid
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+          // Clear the selected image after processing (optional)
+          // setState(() { _selectedImage = null; });
         } else if (state is BillSplittingOcrFailure) {
           // OCR Failure: Show error message
           ScaffoldMessenger.of(context).showSnackBar(
