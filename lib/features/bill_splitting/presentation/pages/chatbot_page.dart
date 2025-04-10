@@ -161,85 +161,88 @@ class _ChatbotPageState extends State<ChatbotPage> {
       appBar: AppBar(
         title: const Text('Bill Bot Assistant'),
       ),
-      body: Column(
-        children: [
-          // --- Chat Messages Area ---
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _messages.length, // Use actual message list length
-              itemBuilder: (context, index) {
-                final message = _messages[index]; // Get actual message
-                return _buildMessageBubble(
-                    message); // Use helper to build bubble
-              },
-            ),
-          ),
-          const Divider(height: 1.0),
-
-          // --- Suggestions Area ---
-          if (_suggestions.isNotEmpty &&
-              !_isLoading) // Show only when not loading
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              child: Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
-                alignment: WrapAlignment.center, // Center suggestions
-                children: _suggestions
-                    .map((s) => ActionChip(
-                          label: Text(s),
-                          onPressed: () => _onSuggestionTap(s),
-                          tooltip: 'Send "$s"',
-                        ))
-                    .toList(),
+      body: SafeArea(
+        // Added SafeArea
+        child: Column(
+          children: [
+            // --- Chat Messages Area ---
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(8.0),
+                itemCount: _messages.length, // Use actual message list length
+                itemBuilder: (context, index) {
+                  final message = _messages[index]; // Get actual message
+                  return _buildMessageBubble(
+                      message); // Use helper to build bubble
+                },
               ),
             ),
-          if (_suggestions.isNotEmpty && !_isLoading)
-            const Divider(
-                height: 1.0), // Divider above input if suggestions shown
+            const Divider(height: 1.0),
 
-          // --- Input Area ---
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Ask how to split the bill...',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12.0, vertical: 8.0), // Adjust padding
-                    ),
-                    textInputAction: TextInputAction.send, // Add send action
-                    onSubmitted: _isLoading
-                        ? null
-                        : (_) =>
-                            _sendMessage(), // Send on submit, disable if loading
-                    enabled: !_isLoading, // Disable input field when loading
-                  ),
+            // --- Suggestions Area ---
+            if (_suggestions.isNotEmpty &&
+                !_isLoading) // Show only when not loading
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                child: Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  alignment: WrapAlignment.center, // Center suggestions
+                  children: _suggestions
+                      .map((s) => ActionChip(
+                            label: Text(s),
+                            onPressed: () => _onSuggestionTap(s),
+                            tooltip: 'Send "$s"',
+                          ))
+                      .toList(),
                 ),
-                const SizedBox(width: 8.0),
-                // Show loading indicator or send button
-                _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2)) // Loading indicator
-                    : IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: _sendMessage,
-                        tooltip: 'Send message',
+              ),
+            if (_suggestions.isNotEmpty && !_isLoading)
+              const Divider(
+                  height: 1.0), // Divider above input if suggestions shown
+
+            // --- Input Area ---
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: 'Ask how to split the bill...',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12.0, vertical: 8.0), // Adjust padding
                       ),
-              ],
+                      textInputAction: TextInputAction.send, // Add send action
+                      onSubmitted: _isLoading
+                          ? null
+                          : (_) =>
+                              _sendMessage(), // Send on submit, disable if loading
+                      enabled: !_isLoading, // Disable input field when loading
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  // Show loading indicator or send button
+                  _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2)) // Loading indicator
+                      : IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed: _sendMessage,
+                          tooltip: 'Send message',
+                        ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

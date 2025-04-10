@@ -88,9 +88,12 @@ class _ImageCropPageState extends State<ImageCropPage> {
       //   title: const Text('Cropping Image...'),
       //   automaticallyImplyLeading: false,
       // ),
-      body: Center(
-          child:
-              CircularProgressIndicator()), // Keep indicator for visual feedback
+      body: SafeArea(
+        // Added SafeArea
+        child: Center(
+            child:
+                CircularProgressIndicator()), // Keep indicator for visual feedback
+      ),
     );
     // Alternatively, return const SizedBox.shrink(); for a completely blank Flutter UI.
   }

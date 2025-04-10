@@ -136,97 +136,100 @@ class _BillUploadViewState extends State<_BillUploadView> {
           actions: [], // Define an empty actions list
         ),
         // Use BlocBuilder to conditionally add a loading overlay using Stack
-        body: BlocBuilder<BillSplittingBloc, BillSplittingState>(
-          builder: (context, state) {
-            final isLoading = state is BillSplittingOcrProcessing ||
-                state is BillSplittingStructuring;
+        body: SafeArea(
+          // Added SafeArea
+          child: BlocBuilder<BillSplittingBloc, BillSplittingState>(
+            builder: (context, state) {
+              final isLoading = state is BillSplittingOcrProcessing ||
+                  state is BillSplittingStructuring;
 
-            return Stack(
-              children: [
-                // Main content (always present)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        // Display selected image preview (optional)
-                        if (_selectedImage != null) ...[
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 20.0),
-                              child: Image.file(
-                                _selectedImage!,
-                                fit: BoxFit.contain,
+              return Stack(
+                children: [
+                  // Main content (always present)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          // Display selected image preview (optional)
+                          if (_selectedImage != null) ...[
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 20.0),
+                                child: Image.file(
+                                  _selectedImage!,
+                                  fit: BoxFit.contain,
+                                ),
                               ),
                             ),
-                          ),
-                        ] else ...[
-                          // Placeholder
-                          const Expanded(
-                            child: Center(
-                              child: Text(
-                                'Select an image or take a photo of your bill.',
-                                textAlign: TextAlign.center,
-                                style:
-                                    TextStyle(fontSize: 16, color: Colors.grey),
+                          ] else ...[
+                            // Placeholder
+                            const Expanded(
+                              child: Center(
+                                child: Text(
+                                  'Select an image or take a photo of your bill.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.grey),
+                                ),
                               ),
+                            ),
+                          ],
+
+                          // Buttons (still disable based on isLoading)
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: const Text('Choose from Gallery'),
+                            onPressed: isLoading ? null : _pickImageFromGallery,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.camera_alt_outlined),
+                            label: const Text('Take Photo'),
+                            onPressed: isLoading ? null : _pickImageFromCamera,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
                             ),
                           ),
                         ],
-
-                        // Buttons (still disable based on isLoading)
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.photo_library_outlined),
-                          label: const Text('Choose from Gallery'),
-                          onPressed: isLoading ? null : _pickImageFromGallery,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.camera_alt_outlined),
-                          label: const Text('Take Photo'),
-                          onPressed: isLoading ? null : _pickImageFromCamera,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Loading Overlay (conditionally shown)
-                if (isLoading)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black
-                          .withOpacity(0.5), // Semi-transparent background
-                      child: Center(
-                        child: Column(
-                          // Added Column for text
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 16),
-                            Text(
-                              state is BillSplittingStructuring
-                                  ? 'Structuring data...' // Specific text for structuring
-                                  : 'Processing image...', // Generic text for OCR
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 16),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
                   ),
-              ],
-            );
-          },
+
+                  // Loading Overlay (conditionally shown)
+                  if (isLoading)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black
+                            .withOpacity(0.5), // Semi-transparent background
+                        child: Center(
+                          child: Column(
+                            // Added Column for text
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 16),
+                              Text(
+                                state is BillSplittingStructuring
+                                    ? 'Structuring data...' // Specific text for structuring
+                                    : 'Processing image...', // Generic text for OCR
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -379,237 +379,241 @@ class _BillEditPageState extends State<BillEditPage> {
             ),
           ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            if (_isInitializing) // Show loading only during initial parse
-              const Center(child: CircularProgressIndicator())
-            else if (_parsingError != null)
-              Padding(
-                // Add padding for error message
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: Center(
-                    child: Text('Error parsing OCR data: $_parsingError',
-                        style: TextStyle(color: Colors.red))),
-              )
-            else ...[
-              // --- Structured Data Fields ---
-              TextField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                    labelText: 'Description / Store Name'),
-                enabled: _isEditingMode, // Control based on edit mode
-              ),
-              const SizedBox(height: 16),
-              Row(
-                // Row for amounts and currency
-                children: [
-                  Expanded(
-                    flex: 2, // Give more space to amount
-                    child: TextField(
-                      controller: _totalAmountController,
-                      decoration:
-                          const InputDecoration(labelText: 'Total Amount'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      enabled: _isEditingMode, // Control based on edit mode
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 1, // Less space for currency
-                    child: TextField(
-                      controller: _currencyController,
-                      decoration: const InputDecoration(
-                        labelText: 'Currency',
-                        counterText: "",
-                      ),
-                      maxLength: 3,
-                      textCapitalization: TextCapitalization.characters,
-                      enabled: _isEditingMode, // Control based on edit mode
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2, // More space for date
-                    child: TextField(
-                      controller: _dateController,
-                      decoration: const InputDecoration(
-                        labelText: 'Bill Date',
-                        suffixIcon: Icon(Icons.calendar_today),
-                      ),
-                      readOnly: true, // Date picker handles changes
-                      enabled: _isEditingMode, // Control based on edit mode
-                      onTap: _isEditingMode
-                          ? () => _selectDate(context)
-                          : null, // Allow tap only in edit mode
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Optional fields for Tax, Tip, Discount
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _taxController,
-                      decoration: const InputDecoration(labelText: 'Tax'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      enabled: _isEditingMode, // Control based on edit mode
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _tipController,
-                      decoration: const InputDecoration(labelText: 'Tip'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      enabled: _isEditingMode, // Control based on edit mode
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _discountController,
-                      decoration: const InputDecoration(labelText: 'Discount'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      enabled: _isEditingMode, // Control based on edit mode
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-
-              // --- Items Section ---
-              Text('Items:', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              BillItemsSection(
-                key: ValueKey(
-                    'items_${_items.hashCode}_$_isEditingMode'), // Add mode to key
-                initialItems: _items,
-                enabled: _isEditingMode, // Control based on edit mode
-                onItemsChanged: (updatedItems) {
-                  // Only update if in editing mode (although widget should prevent calls)
-                  if (_isEditingMode) {
-                    _items = updatedItems;
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-
-              // --- Participants Section ---
-              Text('Participants:',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              BillParticipantsSection(
-                key: ValueKey(
-                    'participants_${_participants.hashCode}_$_isEditingMode'), // Add mode to key
-                initialParticipants: _participants,
-                enabled: _isEditingMode, // Control based on edit mode
-                onParticipantsChanged: (updatedParticipants) {
-                  // Only update if in editing mode
-                  if (_isEditingMode) {
-                    _participants = updatedParticipants;
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-
-              // --- Final Bill JSON Data (Show only when not editing) ---
-              if (!_isEditingMode && _finalBillJsonString != null) ...[
-                ExpansionTile(
-                  initiallyExpanded: true, // Keep it open initially
-                  title: Text(
-                    'Final Bill JSON Data',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+        body: SafeArea(
+          // Added SafeArea
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              if (_isInitializing) // Show loading only during initial parse
+                const Center(child: CircularProgressIndicator())
+              else if (_parsingError != null)
+                Padding(
+                  // Add padding for error message
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
+                  child: Center(
+                      child: Text('Error parsing OCR data: $_parsingError',
+                          style: TextStyle(color: Colors.red))),
+                )
+              else ...[
+                // --- Structured Data Fields ---
+                TextField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                      labelText: 'Description / Store Name'),
+                  enabled: _isEditingMode, // Control based on edit mode
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  // Row for amounts and currency
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(12.0),
-                        decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceVariant
-                                .withOpacity(0.3), // Use theme color
-                            borderRadius: BorderRadius.circular(4.0),
-                            border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant) // Use theme color
-                            ),
-                        child: SelectableText(
-                          // Allow copying
-                          _finalBillJsonString!,
-                          style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant // Use theme color for text
-                              ),
+                    Expanded(
+                      flex: 2, // Give more space to amount
+                      child: TextField(
+                        controller: _totalAmountController,
+                        decoration:
+                            const InputDecoration(labelText: 'Total Amount'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        enabled: _isEditingMode, // Control based on edit mode
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 1, // Less space for currency
+                      child: TextField(
+                        controller: _currencyController,
+                        decoration: const InputDecoration(
+                          labelText: 'Currency',
+                          counterText: "",
                         ),
+                        maxLength: 3,
+                        textCapitalization: TextCapitalization.characters,
+                        enabled: _isEditingMode, // Control based on edit mode
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2, // More space for date
+                      child: TextField(
+                        controller: _dateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Bill Date',
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        readOnly: true, // Date picker handles changes
+                        enabled: _isEditingMode, // Control based on edit mode
+                        onTap: _isEditingMode
+                            ? () => _selectDate(context)
+                            : null, // Allow tap only in edit mode
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-              ],
-
-              // --- Bill Bot Button (Show only when not editing) ---
-              if (!_isEditingMode && _finalBillJsonString != null) ...[
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: const Text('Ask Bill Bot'),
-                  onPressed: () {
-                    print(
-                        "Navigate to Chatbot with JSON:\n$_finalBillJsonString");
-                    // Navigate to the chatbot route, passing the final JSON string
-                    context.push(AppRoutes.chatbot,
-                        extra: _finalBillJsonString);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
+                // Optional fields for Tax, Tip, Discount
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _taxController,
+                        decoration: const InputDecoration(labelText: 'Tax'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        enabled: _isEditingMode, // Control based on edit mode
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _tipController,
+                        decoration: const InputDecoration(labelText: 'Tip'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        enabled: _isEditingMode, // Control based on edit mode
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _discountController,
+                        decoration:
+                            const InputDecoration(labelText: 'Discount'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        enabled: _isEditingMode, // Control based on edit mode
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
-                const Divider(), // Add divider after button
-              ],
+                const Divider(),
 
-              // --- Raw OCR Text (Optional, always available) ---
-              ExpansionTile(
-                title: Text(
-                  'Raw OCR/JSON Data (Initial)',
-                  style: Theme.of(context).textTheme.titleSmall,
+                // --- Items Section ---
+                Text('Items:', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                BillItemsSection(
+                  key: ValueKey(
+                      'items_${_items.hashCode}_$_isEditingMode'), // Add mode to key
+                  initialItems: _items,
+                  enabled: _isEditingMode, // Control based on edit mode
+                  onItemsChanged: (updatedItems) {
+                    // Only update if in editing mode (although widget should prevent calls)
+                    if (_isEditingMode) {
+                      _items = updatedItems;
+                    }
+                  },
                 ),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: TextField(
-                      controller: _ocrTextController,
-                      maxLines: 10,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: 'Structured JSON data received...',
+                const SizedBox(height: 24),
+                const Divider(),
+
+                // --- Participants Section ---
+                Text('Participants:',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                BillParticipantsSection(
+                  key: ValueKey(
+                      'participants_${_participants.hashCode}_$_isEditingMode'), // Add mode to key
+                  initialParticipants: _participants,
+                  enabled: _isEditingMode, // Control based on edit mode
+                  onParticipantsChanged: (updatedParticipants) {
+                    // Only update if in editing mode
+                    if (_isEditingMode) {
+                      _participants = updatedParticipants;
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+
+                // --- Final Bill JSON Data (Show only when not editing) ---
+                if (!_isEditingMode && _finalBillJsonString != null) ...[
+                  ExpansionTile(
+                    initiallyExpanded: true, // Keep it open initially
+                    title: Text(
+                      'Final Bill JSON Data',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                        child: Container(
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant
+                                  .withOpacity(0.3), // Use theme color
+                              borderRadius: BorderRadius.circular(4.0),
+                              border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant) // Use theme color
+                              ),
+                          child: SelectableText(
+                            // Allow copying
+                            _finalBillJsonString!,
+                            style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant // Use theme color for text
+                                ),
+                          ),
+                        ),
                       ),
-                      style: const TextStyle(
-                          fontFamily: 'monospace', fontSize: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // --- Bill Bot Button (Show only when not editing) ---
+                if (!_isEditingMode && _finalBillJsonString != null) ...[
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('Ask Bill Bot'),
+                    onPressed: () {
+                      print(
+                          "Navigate to Chatbot with JSON:\n$_finalBillJsonString");
+                      // Navigate to the chatbot route, passing the final JSON string
+                      context.push(AppRoutes.chatbot,
+                          extra: _finalBillJsonString);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  const Divider(), // Add divider after button
                 ],
-              ),
-              const SizedBox(height: 24),
+
+                // --- Raw OCR Text (Optional, always available) ---
+                ExpansionTile(
+                  title: Text(
+                    'Raw OCR/JSON Data (Initial)',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: TextField(
+                        controller: _ocrTextController,
+                        maxLines: 10,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: 'Structured JSON data received...',
+                        ),
+                        style: const TextStyle(
+                            fontFamily: 'monospace', fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
