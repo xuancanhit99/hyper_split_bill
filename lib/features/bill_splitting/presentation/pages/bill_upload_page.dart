@@ -47,9 +47,14 @@ class _BillUploadViewState extends State<_BillUploadView> {
           extra: _selectedImage!.path,
         );
 
-        // If a cropped file is returned, dispatch the OCR event
+        // If a cropped file is returned, update the UI and dispatch the OCR event
         if (croppedFile != null && mounted) {
           print("Cropped file received: ${croppedFile.path}");
+          // Update the displayed image to the cropped one
+          setState(() {
+            _selectedImage = croppedFile;
+          });
+          // Dispatch the OCR event with the cropped file
           context.read<BillSplittingBloc>().add(
                 ProcessOcrEvent(imageFile: croppedFile),
               );
@@ -79,9 +84,14 @@ class _BillUploadViewState extends State<_BillUploadView> {
           extra: _selectedImage!.path,
         );
 
-        // If a cropped file is returned, dispatch the OCR event
+        // If a cropped file is returned, update the UI and dispatch the OCR event
         if (croppedFile != null && mounted) {
           print("Cropped file received: ${croppedFile.path}");
+          // Update the displayed image to the cropped one
+          setState(() {
+            _selectedImage = croppedFile;
+          });
+          // Dispatch the OCR event with the cropped file
           context.read<BillSplittingBloc>().add(
                 ProcessOcrEvent(imageFile: croppedFile),
               );
