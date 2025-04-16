@@ -536,9 +536,10 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             child: Text(
               '${_formatCurrencyValue(participant.percentage)}%',
               textAlign: TextAlign.right,
-              style: TextStyle(
-                fontWeight: isLocked ? FontWeight.bold : FontWeight.normal,
-              ),
+              // Removed conditional bold style:
+              // style: TextStyle(
+              //   fontWeight: isLocked ? FontWeight.bold : FontWeight.normal,
+              // ),
             ),
           ),
           // const SizedBox(width: 8), // No extra space needed with Expanded
