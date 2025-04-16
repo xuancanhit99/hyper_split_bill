@@ -47,7 +47,8 @@ class _BillEditPageState extends State<BillEditPage> {
   List<ParticipantEntity> _participants = [];
   bool _isEditingMode = true; // Start in editing mode
   String? _finalBillJsonString; // Stores the final JSON after saving internally
-  bool _showSplitDetails = false; // State to control split detail visibility
+  bool _showSplitDetails =
+      false; // State to control split detail visibility (kept for potential future use)
 
   // State for optional field visibility
   bool _showTax = false;
@@ -256,6 +257,7 @@ class _BillEditPageState extends State<BillEditPage> {
       if (authState is AuthAuthenticated) {
         currentUserName = authState.user.email?.split('@').first ?? 'Me';
       }
+      // Initialize with the first participant (percentage will be set by distribution)
       _participants = [ParticipantEntity(name: currentUserName)];
 
       setState(() {}); // Update UI after successful parsing
@@ -314,6 +316,19 @@ class _BillEditPageState extends State<BillEditPage> {
       return;
     }
 
+    // Validate Participant Percentages
+    double totalPercentage =
+        _participants.fold(0.0, (sum, p) => sum + (p.percentage ?? 0.0));
+    if ((totalPercentage - 100.0).abs() > 0.01) {
+      // Allow for small floating point inaccuracies
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                'Participant percentages must add up to 100%. Current total: ${totalPercentage.toStringAsFixed(2)}%')),
+      );
+      return;
+    }
+
     // Validate and Parse Date
     DateTime? parsedBillDate;
     try {
@@ -352,7 +367,8 @@ class _BillEditPageState extends State<BillEditPage> {
       payerUserId: currentUserId!, // We know it's not null here
       currencyCode: currencyCode,
       items: _items,
-      participants: _participants,
+      participants:
+          _participants, // Pass the participants list with percentages
       // Note: Tax, Tip, Discount are not part of BillEntity currently
       // They are handled separately in the JSON map below if needed
     );
@@ -393,6 +409,9 @@ class _BillEditPageState extends State<BillEditPage> {
         _finalBillJsonString = null; // Clear final JSON when going back to edit
         _showSplitDetails = false; // Reset split details visibility
       }
+      // When switching back to review mode, percentages might need redistribution
+      // if they were edited but not saved (though save is required now).
+      // However, the BillParticipantsSection handles its state based on `enabled`.
     });
     print("Switched to ${_isEditingMode ? 'editing' : 'review'} mode.");
   }
@@ -864,112 +883,83 @@ class _BillEditPageState extends State<BillEditPage> {
                 const SizedBox(height: 8),
                 BillParticipantsSection(
                   key: ValueKey(
-                      'participants_${_participants.hashCode}_$_isEditingMode'),
+                      'participants_${_participants.hashCode}_${_isEditingMode}_${_totalAmountController.text}_${_currencyController.text}'), // Add amounts to key to force rebuild on change
                   initialParticipants: _participants,
                   enabled: _isEditingMode,
+                  totalAmount: _parseNum(_totalAmountController.text)
+                      ?.toDouble(), // Pass total amount
+                  currencyCode: _currencyController.text, // Pass currency code
                   onParticipantsChanged: (updatedParticipants) {
-                    if (_isEditingMode) {
-                      setState(() {
-                        _participants = updatedParticipants;
-                      }); // Update state
-                    }
+                    // No need to check _isEditingMode here, the callback should only be called when enabled
+                    setState(() {
+                      _participants = updatedParticipants;
+                    });
                   },
                 ),
-                // Add the new conditional text here
-                if (!_isEditingMode && _participants.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  // Conditionally show Button or RichText based on _showSplitDetails
+                // Add "Split Equally" button for review mode
+                if (!_isEditingMode && _participants.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: _showSplitDetails
-                        ? Builder(
-                            // Use Builder to get context for Theme
-                            builder: (context) {
-                              final totalAmount =
-                                  _parseNum(_totalAmountController.text);
-                              final currencyCode =
-                                  _currencyController.text.isNotEmpty
-                                      ? _currencyController.text
-                                      : 'N/A';
-                              String formattedAmount = '';
-                              String part1Text = '';
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.pie_chart_outline, size: 18),
+                      label:
+                          Text('Split Equally Among ${_participants.length}'),
+                      style: TextButton.styleFrom(
+                        textStyle: const TextStyle(fontStyle: FontStyle.italic),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        if (_participants.isEmpty) return;
+                        final double equalPercentage =
+                            100.0 / _participants.length;
+                        final List<ParticipantEntity> equallySplitParticipants =
+                            [];
+                        double assignedTotal = 0;
 
-                              if (totalAmount != null &&
-                                  totalAmount > 0 &&
-                                  _participants.isNotEmpty) {
-                                final amountPerPerson =
-                                    totalAmount / _participants.length;
-                                formattedAmount =
-                                    _formatCurrencyValue(amountPerPerson);
-                                part1Text =
-                                    'Split equally among ${_participants.length} participants, each person owes: ';
-                              } else if (_participants.isEmpty) {
-                                // Should not happen if we are here, but handle defensively
-                                return const Text(
-                                    'Add participants to calculate split amount.',
-                                    style:
-                                        TextStyle(fontStyle: FontStyle.italic));
-                              } else {
-                                return const Text(
-                                    'Enter a valid total amount to calculate split.',
-                                    style:
-                                        TextStyle(fontStyle: FontStyle.italic));
-                              }
+                        for (int i = 0; i < _participants.length; i++) {
+                          double perc = (i == _participants.length - 1)
+                              ? (100.0 -
+                                  assignedTotal) // Assign remainder to last
+                              : equalPercentage;
+                          // Use toStringAsFixed for better control over rounding for display/comparison later
+                          perc = double.parse(perc.toStringAsFixed(2));
+                          assignedTotal += perc;
 
-                              final baseStyle =
-                                  Theme.of(context).textTheme.bodyMedium ??
-                                      const TextStyle();
-                              final amountStyle = baseStyle.copyWith(
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.bold,
-                                fontSize: baseStyle.fontSize != null
-                                    ? baseStyle.fontSize! * 1.1
-                                    : null, // Slightly larger
-                                color: Colors.red,
-                              );
-
-                              return RichText(
-                                text: TextSpan(
-                                  style: baseStyle.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ), // Default style for the RichText
-                                  children: <TextSpan>[
-                                    TextSpan(
-                                        text:
-                                            part1Text), // Part 1: Italic, default color
-                                    TextSpan(
-                                      text:
-                                          '$formattedAmount $currencyCode', // Part 2: Italic, Bold, Larger, Red
-                                      style: amountStyle,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          )
-                        : TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _showSplitDetails = true;
-                              });
-                            },
-                            child: Text(
-                              'Split equally among ${_participants.length} participants',
-                              style: TextStyle(
-                                fontStyle: FontStyle.italic,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary, // Use primary color for button
-                              ),
+                          equallySplitParticipants.add(
+                            _participants[i].copyWith(
+                              percentage: perc,
+                              isPercentageLocked: false, // Unlock all
+                              setPercentageToNull: false,
                             ),
-                          ),
+                          );
+                        }
+
+                        // Final check for 100% total due to potential rounding errors
+                        double finalTotal = equallySplitParticipants.fold(
+                            0.0, (sum, p) => sum + (p.percentage ?? 0.0));
+                        if ((finalTotal - 100.0).abs() > 0.01 &&
+                            equallySplitParticipants.isNotEmpty) {
+                          double adjustment = 100.0 - finalTotal;
+                          double lastPerc =
+                              equallySplitParticipants.last.percentage ?? 0.0;
+                          // Adjust the last participant's percentage
+                          equallySplitParticipants[
+                              equallySplitParticipants.length -
+                                  1] = equallySplitParticipants.last.copyWith(
+                              percentage: double.parse(
+                                  (lastPerc + adjustment).toStringAsFixed(2)));
+                        }
+
+                        setState(() {
+                          _participants = equallySplitParticipants;
+                          // We don't need _showSplitDetails anymore as the display is handled within BillParticipantsSection
+                          // _showSplitDetails = false;
+                        });
+                      },
+                    ),
                   ),
-                ],
-                const SizedBox(height: 24), // Existing SizedBox
-                const Divider(), // Existing Divider
+                const SizedBox(height: 24), // Keep this SizedBox
+                const Divider(), // Keep this Divider
 
                 // --- Final Bill JSON Data (Show only when not editing) ---
                 if (!_isEditingMode && _finalBillJsonString != null) ...[
