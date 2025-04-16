@@ -24,9 +24,9 @@ Hyper Split Bill là một ứng dụng Flutter được thiết kế để đơ
 *   **Định tuyến (Routing):** go_router
 *   **Backend:** Supabase (Auth, Database)
 *   **Dịch vụ bên ngoài:**
-    *   API Dịch vụ OCR (Chưa xác định dịch vụ cụ thể)
-    *   API Dịch vụ AI/LLM (Chưa xác định dịch vụ cụ thể, có thể để cấu trúc dữ liệu qua giao diện trò chuyện)
-*   **Xử lý ảnh:** image_picker, image_cropper (hoặc tương tự)
+    *   API Dịch vụ OCR (Google Gemini, Grok Vision, Google Cloud Vision, Tesseract)
+    *   API Dịch vụ AI/LLM (Google Gemini, Grok)
+*   **Xử lý ảnh:** image_picker, image_cropper
 
 ## Tổng quan kiến trúc
 
@@ -52,7 +52,7 @@ Tiêm phụ thuộc được quản lý bằng `get_it` và `injectable` để t
 
 1.  **Sao chép kho lưu trữ:**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/xuancanhit99/hyper_split_bill.git
     cd hyper_split_bill
     ```
 2.  **Thiết lập biến môi trường:**
@@ -62,7 +62,7 @@ Tiêm phụ thuộc được quản lý bằng `get_it` và `injectable` để t
         ```
     *   Điền các giá trị bắt buộc vào tệp `.env`, bao gồm:
         *   Supabase URL và Anon Key
-        *   Khóa API cho các dịch vụ OCR và AI
+        *   Khóa API cho các dịch vụ OCR và AI đã chọn (Google AI Studio, Grok API)
 
 3.  **Cài đặt các phụ thuộc:**
     ```bash

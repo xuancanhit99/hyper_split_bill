@@ -53,19 +53,19 @@ graph LR
 
 ```mermaid
 graph TD
-    subgraph Presentation Layer (Слой Представления)
-        P1[Страницы/Виджеты]
+    subgraph Presentation Layer
+        P1[Pages/Widgets]
         P2[Bloc/Cubit]
     end
-    subgraph Domain Layer (Доменный Слой)
-        D1[Use Cases (Сценарии использования)]
-        D2[Entities (Сущности)]
-        D3[Repository Interfaces (Интерфейсы Репозиториев)]
+    subgraph Domain Layer
+        D1[Use Cases]
+        D2[Entities]
+        D3[Repository Interfaces]
     end
-    subgraph Data Layer (Слой Данных)
-        DA1[Repository Implementations (Реализации Репозиториев)]
-        DA2[Data Sources (Источники Данных)]
-        DA3[Models (Модели)]
+    subgraph Data Layer
+        DA1[Repository Implementations]
+        DA2[Data Sources]
+        DA3[Models]
     end
 
     P1 --> P2;
@@ -76,21 +76,21 @@ graph TD
     DA1 --> DA2;
     DA2 --> DA3;
 
-    subgraph External (Внешние системы)
+    subgraph External
         E1[Supabase]
         E2[OCR API]
         E3[AI/LLM API]
-        E4[Хранилище устройства/Камера]
+        E4[Device Storage/Camera]
     end
 
-    DA2 -- Взаимодействует с --> E1;
-    DA2 -- Взаимодействует с --> E2;
-    DA2 -- Взаимодействует с --> E3;
-    DA2 -- Взаимодействует с --> E4;
+    DA2 -- Interacts with --> E1;
+    DA2 -- Interacts with --> E2;
+    DA2 -- Interacts with --> E3;
+    DA2 -- Interacts with --> E4;
 
-    style "Presentation Layer (Слой Представления)" fill:#f9f,stroke:#333,stroke-width:2px
-    style "Domain Layer (Доменный Слой)" fill:#ccf,stroke:#333,stroke-width:2px
-    style "Data Layer (Слой Данных)" fill:#9cf,stroke:#333,stroke-width:2px
+    style Presentation Layer fill:#f9f,stroke:#333,stroke-width:2px
+    style Domain Layer fill:#ccf,stroke:#333,stroke-width:2px
+    style Data Layer fill:#9cf,stroke:#333,stroke-width:2px
 ```
 
 *   **Presentation Layer:** Отвечает за рендеринг UI (`Страницы`, `Виджеты`) и управление состоянием (`Bloc`). Взаимодействия пользователя вызывают события в Blocs. Blocs вызывают Use Cases доменного слоя и генерируют состояния для обновления UI. Использует `go_router` для навигации.

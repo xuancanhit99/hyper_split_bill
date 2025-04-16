@@ -53,19 +53,19 @@ graph LR
 
 ```mermaid
 graph TD
-    subgraph Presentation Layer (Lớp Trình bày)
-        P1[Trang/Widgets]
+    subgraph Presentation Layer
+        P1[Pages/Widgets]
         P2[Bloc/Cubit]
     end
-    subgraph Domain Layer (Lớp Miền)
-        D1[Use Cases (Trường hợp sử dụng)]
-        D2[Entities (Thực thể)]
-        D3[Repository Interfaces (Giao diện Repository)]
+    subgraph Domain Layer
+        D1[Use Cases]
+        D2[Entities]
+        D3[Repository Interfaces]
     end
-    subgraph Data Layer (Lớp Dữ liệu)
-        DA1[Repository Implementations (Triển khai Repository)]
-        DA2[Data Sources (Nguồn dữ liệu)]
-        DA3[Models (Mô hình)]
+    subgraph Data Layer
+        DA1[Repository Implementations]
+        DA2[Data Sources]
+        DA3[Models]
     end
 
     P1 --> P2;
@@ -76,21 +76,21 @@ graph TD
     DA1 --> DA2;
     DA2 --> DA3;
 
-    subgraph External (Hệ thống bên ngoài)
+    subgraph External
         E1[Supabase]
         E2[OCR API]
         E3[AI/LLM API]
-        E4[Bộ nhớ thiết bị/Máy ảnh]
+        E4[Device Storage/Camera]
     end
 
-    DA2 -- Tương tác với --> E1;
-    DA2 -- Tương tác với --> E2;
-    DA2 -- Tương tác với --> E3;
-    DA2 -- Tương tác với --> E4;
+    DA2 -- Interacts with --> E1;
+    DA2 -- Interacts with --> E2;
+    DA2 -- Interacts with --> E3;
+    DA2 -- Interacts with --> E4;
 
-    style "Presentation Layer (Lớp Trình bày)" fill:#f9f,stroke:#333,stroke-width:2px
-    style "Domain Layer (Lớp Miền)" fill:#ccf,stroke:#333,stroke-width:2px
-    style "Data Layer (Lớp Dữ liệu)" fill:#9cf,stroke:#333,stroke-width:2px
+    style Presentation Layer fill:#f9f,stroke:#333,stroke-width:2px
+    style Domain Layer fill:#ccf,stroke:#333,stroke-width:2px
+    style Data Layer fill:#9cf,stroke:#333,stroke-width:2px
 ```
 
 *   **Presentation Layer:** Xử lý việc hiển thị UI (`Trang`, `Widgets`) và quản lý trạng thái (`Bloc`). Tương tác của người dùng kích hoạt các sự kiện trong Blocs. Blocs gọi các Use Cases của lớp Domain và phát ra các trạng thái để cập nhật UI. Sử dụng `go_router` để điều hướng.
