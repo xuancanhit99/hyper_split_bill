@@ -13,6 +13,116 @@ import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes for navigation
 import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import the new currency constants file
 
+// --- Stateful Widget for Description Dialog Content ---
+class _DescriptionDialogContent extends StatefulWidget {
+  final String initialValue;
+
+  const _DescriptionDialogContent({super.key, required this.initialValue});
+
+  @override
+  _DescriptionDialogContentState createState() =>
+      _DescriptionDialogContentState();
+}
+
+class _DescriptionDialogContentState extends State<_DescriptionDialogContent> {
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  String get currentValue => controller.text.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      autofocus: true,
+      decoration:
+          const InputDecoration(hintText: 'Enter description or store name'),
+      textCapitalization: TextCapitalization.sentences,
+    );
+  }
+}
+
+// --- Stateful Widget for Numeric Dialog Content ---
+class _NumericDialogContent extends StatefulWidget {
+  final String initialValue;
+  final String? hintText;
+  final String? valueSuffix;
+  final bool allowNegative;
+  final num? Function(dynamic, {bool allowNegative})
+      parseNumFunc; // Pass helper
+
+  const _NumericDialogContent({
+    super.key,
+    required this.initialValue,
+    this.hintText,
+    this.valueSuffix,
+    this.allowNegative = false,
+    required this.parseNumFunc,
+  });
+
+  @override
+  _NumericDialogContentState createState() => _NumericDialogContentState();
+}
+
+class _NumericDialogContentState extends State<_NumericDialogContent> {
+  late final TextEditingController controller;
+  final formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  String get currentValue => controller.text.isEmpty ? '0' : controller.text;
+  bool validate() => formKey.currentState!.validate();
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: TextFormField(
+        controller: controller,
+        autofocus: true,
+        keyboardType: TextInputType.numberWithOptions(
+            decimal: true, signed: widget.allowNegative),
+        decoration: InputDecoration(
+          hintText: widget.hintText ?? 'Enter value',
+          suffixText: widget.valueSuffix,
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return null; // Allow empty, treat as 0
+          }
+          final number =
+              widget.parseNumFunc(value, allowNegative: widget.allowNegative);
+          if (number == null) {
+            return 'Please enter a valid number';
+          }
+          return null; // Valid
+        },
+      ),
+    );
+  }
+}
+
 class BillEditPage extends StatefulWidget {
   final String structuredJsonString; // Receive the structured JSON string
 
@@ -89,6 +199,15 @@ class _BillEditPageState extends State<BillEditPage> {
     super.dispose();
   }
 
+  // --- Formatting Helper ---
+  String _formatCurrencyValue(num? value) {
+    if (value == null) return '';
+    // Use NumberFormat for flexible formatting
+    // '0.##' pattern removes trailing zeros and '.00'
+    final format = NumberFormat('0.##');
+    return format.format(value);
+  }
+
   // Helper function to safely parse numeric values from dynamic JSON data
   num? _parseNum(dynamic value, {bool allowNegative = true}) {
     if (value == null) return null;
@@ -97,8 +216,8 @@ class _BillEditPageState extends State<BillEditPage> {
       if (value.trim().isEmpty) return null;
       final sanitizedValue = value
           .replaceAll(RegExp(r'[$,€£¥%]'), '')
-          .replaceAll(',', '')
-          .trim(); // Also remove %
+          .replaceAll(',', '.') // Ensure decimal point is '.' for parsing
+          .trim();
       final parsedValue = num.tryParse(sanitizedValue);
       return parsedValue != null && (allowNegative || parsedValue >= 0)
           ? parsedValue
@@ -125,6 +244,7 @@ class _BillEditPageState extends State<BillEditPage> {
       }
 
       _descriptionController.text = data['description'] as String? ?? '';
+      // Store raw numeric string in controller, format for display later
       _totalAmountController.text =
           _parseNum(data['total_amount'])?.toString() ?? '';
 
@@ -424,46 +544,185 @@ class _BillEditPageState extends State<BillEditPage> {
     );
   }
 
-  // --- Placeholder Dialog Methods ---
-  void _showEditDescriptionDialog() {
-    // TODO: Implement dialog to edit description
-    print("Tapped to edit description");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Description editing not implemented yet.')),
+  // --- Edit Dialog Methods ---
+  Future<void> _showEditDescriptionDialog() async {
+    // Key to access the state of the dialog content
+    final GlobalKey<_DescriptionDialogContentState> contentKey =
+        GlobalKey<_DescriptionDialogContentState>();
+
+    final String? newDescription = await showDialog<String>(
+      context: context,
+      // Prevent dismissal by tapping outside - ensures proper flow
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Description'),
+        content: _DescriptionDialogContent(
+          key: contentKey, // Assign key
+          initialValue: _descriptionController.text,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(), // Return null on cancel
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              // Access value via key and pop
+              final value = contentKey.currentState?.currentValue;
+              Navigator.of(context).pop(value);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
+
+    // No local controller to dispose here
+
+    // Update the state if needed (using post frame callback)
+    if (newDescription != null &&
+        newDescription != _descriptionController.text) {
+      // Delay setState until after the frame finishes to avoid race conditions
+      // during dialog closing/deactivation.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Check if the widget is still in the tree
+          setState(() {
+            _descriptionController.text = newDescription;
+          });
+        }
+      });
+    }
   }
 
-  void _showEditTotalAmountDialog() {
-    // TODO: Implement dialog to edit total amount
-    print("Tapped to edit total amount");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Total Amount editing not implemented yet.')),
+  // --- Reusable Numeric Edit Dialog (Decoupled Controller) ---
+  Future<String?> _showEditNumericDialog({
+    required String title,
+    required String initialValue,
+    String? hintText,
+    String? valueSuffix,
+    bool allowNegative = false,
+  }) async {
+    // Key to access the state of the dialog content
+    final GlobalKey<_NumericDialogContentState> contentKey =
+        GlobalKey<_NumericDialogContentState>();
+
+    final String? newValue = await showDialog<String>(
+      context: context,
+      // Prevent dismissal by tapping outside - ensures proper flow
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: _NumericDialogContent(
+          key: contentKey, // Assign key
+          initialValue: initialValue,
+          hintText: hintText,
+          valueSuffix: valueSuffix,
+          allowNegative: allowNegative,
+          parseNumFunc: _parseNum, // Pass the helper function
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(), // Return null on cancel
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              // Access state via key to validate and get value
+              final contentState = contentKey.currentState;
+              if (contentState != null && contentState.validate()) {
+                Navigator.of(context).pop(contentState.currentValue);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
+
+    // No local controller or form key to dispose here
+
+    // Return the new value (or null if cancelled)
+    return newValue;
   }
 
-  void _showEditTaxDialog() {
-    // TODO: Implement dialog to edit tax
-    print("Tapped to edit tax");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tax editing not implemented yet.')),
+  // --- Specific Edit Dialog Implementations using the decoupled helper ---
+
+  Future<void> _showEditTotalAmountDialog() async {
+    final String? newValue = await _showEditNumericDialog(
+      title: 'Edit Total Amount',
+      initialValue: _totalAmountController.text,
+      allowNegative: false,
     );
+    if (newValue != null && newValue != _totalAmountController.text) {
+      // Delay setState until after the frame finishes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _totalAmountController.text = newValue;
+          });
+        }
+      });
+    }
   }
 
-  void _showEditTipDialog() {
-    // TODO: Implement dialog to edit tip
-    print("Tapped to edit tip");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tip editing not implemented yet.')),
+  Future<void> _showEditTaxDialog() async {
+    final String? newValue = await _showEditNumericDialog(
+      title: 'Edit Tax',
+      initialValue: _taxController.text,
+      valueSuffix: '%',
+      allowNegative: false,
     );
+    if (newValue != null && newValue != _taxController.text) {
+      // Delay setState until after the frame finishes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _taxController.text = newValue;
+          });
+        }
+      });
+    }
   }
 
-  void _showEditDiscountDialog() {
-    // TODO: Implement dialog to edit discount
-    print("Tapped to edit discount");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Discount editing not implemented yet.')),
+  Future<void> _showEditTipDialog() async {
+    final String? newValue = await _showEditNumericDialog(
+      title: 'Edit Tip',
+      initialValue: _tipController.text,
+      valueSuffix: '%',
+      allowNegative: false,
     );
+    if (newValue != null && newValue != _tipController.text) {
+      // Delay setState until after the frame finishes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _tipController.text = newValue;
+          });
+        }
+      });
+    }
+  }
+
+  Future<void> _showEditDiscountDialog() async {
+    final String? newValue = await _showEditNumericDialog(
+      title: 'Edit Discount',
+      initialValue: _discountController.text,
+      valueSuffix: '%',
+      allowNegative: false,
+    );
+    if (newValue != null && newValue != _discountController.text) {
+      // Delay setState until after the frame finishes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _discountController.text = newValue;
+          });
+        }
+      });
+    }
   }
 
   // --- Dialog to Add Optional Fields ---
@@ -695,11 +954,10 @@ class _BillEditPageState extends State<BillEditPage> {
                 const Divider(height: 1),
                 _buildEditableRow(
                   context: context,
-                  // No icon, use text prefix
                   textPrefix: "Total Amount:",
                   label: 'Total Amount',
-                  value: _totalAmountController
-                      .text, // Add currency symbol formatting later if needed
+                  value: _formatCurrencyValue(_parseNum(
+                      _totalAmountController.text)), // Format for display
                   isBold: true,
                   onTap: _showEditTotalAmountDialog,
                 ),
@@ -711,7 +969,7 @@ class _BillEditPageState extends State<BillEditPage> {
                     context: context,
                     textPrefix: "Tax:", // Use text prefix
                     label: 'Tax',
-                    value: _taxController.text,
+                    value: _taxController.text, // Raw value from controller
                     valueSuffix: "%", // Add suffix
                     onTap: _showEditTaxDialog,
                   ),
@@ -722,7 +980,7 @@ class _BillEditPageState extends State<BillEditPage> {
                     context: context,
                     textPrefix: "Tip:", // Use text prefix
                     label: 'Tip',
-                    value: _tipController.text,
+                    value: _tipController.text, // Raw value from controller
                     valueSuffix: "%", // Add suffix
                     onTap: _showEditTipDialog,
                   ),
@@ -733,7 +991,8 @@ class _BillEditPageState extends State<BillEditPage> {
                     context: context,
                     textPrefix: "Discount:", // Use text prefix
                     label: 'Discount',
-                    value: _discountController.text,
+                    value:
+                        _discountController.text, // Raw value from controller
                     valueSuffix: "%", // Add suffix
                     onTap: _showEditDiscountDialog,
                   ),
@@ -770,7 +1029,7 @@ class _BillEditPageState extends State<BillEditPage> {
                     _isEditingMode)
                   const SizedBox(height: 16),
 
-                // const Divider(), // Divider before Items section
+                const Divider(), // Divider before Items section
 
                 // --- Items Section ---
                 BillItemsSection(

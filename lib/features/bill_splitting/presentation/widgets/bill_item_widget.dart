@@ -15,11 +15,18 @@ class BillItemWidget extends StatelessWidget {
     // this.enabled = true,
   });
 
+  // --- Formatting Helper ---
+  String _formatCurrencyValue(num? value) {
+    if (value == null) return '';
+    // Use NumberFormat for flexible formatting
+    // '0.##' pattern removes trailing zeros and '.00'
+    final format = NumberFormat('0.##');
+    return format.format(value);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Formatter for currency display
-    final currencyFormat = NumberFormat.currency(
-        locale: 'en_US', symbol: ''); // Adjust symbol/locale as needed
+    // Formatter for quantity display
     final quantityFormat = NumberFormat.decimalPattern();
 
     return Padding(
@@ -46,8 +53,8 @@ class BillItemWidget extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              // Display unit price
-              currencyFormat.format(item.unitPrice),
+              // Display unit price using the helper
+              _formatCurrencyValue(item.unitPrice),
               textAlign: TextAlign.right,
             ),
           ),
@@ -55,8 +62,8 @@ class BillItemWidget extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              // Display total price
-              currencyFormat.format(item.totalPrice),
+              // Display total price using the helper
+              _formatCurrencyValue(item.totalPrice),
               textAlign: TextAlign.right,
             ),
           ),
