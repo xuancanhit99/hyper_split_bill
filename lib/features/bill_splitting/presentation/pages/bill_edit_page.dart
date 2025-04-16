@@ -47,6 +47,7 @@ class _BillEditPageState extends State<BillEditPage> {
   List<ParticipantEntity> _participants = [];
   bool _isEditingMode = true; // Start in editing mode
   String? _finalBillJsonString; // Stores the final JSON after saving internally
+  bool _showSplitDetails = false; // State to control split detail visibility
 
   // State for optional field visibility
   bool _showTax = false;
@@ -378,6 +379,7 @@ class _BillEditPageState extends State<BillEditPage> {
     setState(() {
       _finalBillJsonString = generatedJson;
       _isEditingMode = false; // Switch to review mode
+      _showSplitDetails = false; // Reset split details visibility
     });
 
     print("Internal save complete. Dispatching save event...");
@@ -389,6 +391,7 @@ class _BillEditPageState extends State<BillEditPage> {
       _isEditingMode = !_isEditingMode; // Toggle edit mode
       if (_isEditingMode) {
         _finalBillJsonString = null; // Clear final JSON when going back to edit
+        _showSplitDetails = false; // Reset split details visibility
       }
     });
     print("Switched to ${_isEditingMode ? 'editing' : 'review'} mode.");
@@ -872,8 +875,101 @@ class _BillEditPageState extends State<BillEditPage> {
                     }
                   },
                 ),
-                const SizedBox(height: 24),
-                const Divider(),
+                // Add the new conditional text here
+                if (!_isEditingMode && _participants.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  // Conditionally show Button or RichText based on _showSplitDetails
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: _showSplitDetails
+                        ? Builder(
+                            // Use Builder to get context for Theme
+                            builder: (context) {
+                              final totalAmount =
+                                  _parseNum(_totalAmountController.text);
+                              final currencyCode =
+                                  _currencyController.text.isNotEmpty
+                                      ? _currencyController.text
+                                      : 'N/A';
+                              String formattedAmount = '';
+                              String part1Text = '';
+
+                              if (totalAmount != null &&
+                                  totalAmount > 0 &&
+                                  _participants.isNotEmpty) {
+                                final amountPerPerson =
+                                    totalAmount / _participants.length;
+                                formattedAmount =
+                                    _formatCurrencyValue(amountPerPerson);
+                                part1Text =
+                                    'Split equally among ${_participants.length} participants, each person owes: ';
+                              } else if (_participants.isEmpty) {
+                                // Should not happen if we are here, but handle defensively
+                                return const Text(
+                                    'Add participants to calculate split amount.',
+                                    style:
+                                        TextStyle(fontStyle: FontStyle.italic));
+                              } else {
+                                return const Text(
+                                    'Enter a valid total amount to calculate split.',
+                                    style:
+                                        TextStyle(fontStyle: FontStyle.italic));
+                              }
+
+                              final baseStyle =
+                                  Theme.of(context).textTheme.bodyMedium ??
+                                      const TextStyle();
+                              final amountStyle = baseStyle.copyWith(
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.bold,
+                                fontSize: baseStyle.fontSize != null
+                                    ? baseStyle.fontSize! * 1.1
+                                    : null, // Slightly larger
+                                color: Colors.red,
+                              );
+
+                              return RichText(
+                                text: TextSpan(
+                                  style: baseStyle.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ), // Default style for the RichText
+                                  children: <TextSpan>[
+                                    TextSpan(
+                                        text:
+                                            part1Text), // Part 1: Italic, default color
+                                    TextSpan(
+                                      text:
+                                          '$formattedAmount $currencyCode', // Part 2: Italic, Bold, Larger, Red
+                                      style: amountStyle,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          )
+                        : TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _showSplitDetails = true;
+                              });
+                            },
+                            child: Text(
+                              'Split equally among ${_participants.length} participants',
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary, // Use primary color for button
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
+                const SizedBox(height: 24), // Existing SizedBox
+                const Divider(), // Existing Divider
 
                 // --- Final Bill JSON Data (Show only when not editing) ---
                 if (!_isEditingMode && _finalBillJsonString != null) ...[

@@ -140,11 +140,14 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             }).toList(),
           ),
         const SizedBox(height: 8),
-        TextButton.icon(
-          icon: const Icon(Icons.add_circle_outline),
-          label: const Text('Add Participant'),
-          onPressed: widget.enabled ? _addParticipantDialog : null,
-        ),
+        // Conditionally show the button
+        if (widget.enabled)
+          TextButton.icon(
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('Add Participant'),
+            onPressed:
+                _addParticipantDialog, // No need for ternary here anymore
+          ),
       ],
     );
   }
