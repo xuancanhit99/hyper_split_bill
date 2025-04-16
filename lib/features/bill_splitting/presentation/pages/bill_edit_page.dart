@@ -258,8 +258,14 @@ class _BillEditPageState extends State<BillEditPage> {
       if (authState is AuthAuthenticated) {
         currentUserName = authState.user.email?.split('@').first ?? 'Me';
       }
-      // Initialize with the first participant (percentage will be set by distribution)
-      _participants = [ParticipantEntity(name: currentUserName)];
+      // Initialize with the first participant and set their percentage to 100%
+      _participants = [
+        ParticipantEntity(
+          name: currentUserName,
+          percentage: 100.0, // Explicitly set percentage
+          isPercentageLocked: false, // Start unlocked
+        )
+      ];
 
       setState(() {}); // Update UI after successful parsing
     } catch (e, s) {
@@ -315,6 +321,18 @@ class _BillEditPageState extends State<BillEditPage> {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter a valid total amount.')));
       return;
+    }
+
+    // --- Participant Percentage Handling ---
+    // If only one participant exists, ensure their percentage is 100% before validation
+    if (_participants.length == 1) {
+      // Use copyWith to create a new instance with updated percentage
+      _participants[0] = _participants[0].copyWith(
+        percentage: 100.0,
+        isPercentageLocked: false, // Ensure it's not locked if it was somehow
+        setPercentageToNull: false, // Ensure percentage is not nullified
+      );
+      print("Auto-set single participant percentage to 100%");
     }
 
     // Validate Participant Percentages
