@@ -312,11 +312,13 @@ class BillItemsSection extends StatefulWidget {
   final bool enabled;
   final Function(List<BillItemEntity>)
       onItemsChanged; // Callback to notify parent
+  final bool showItemDetails; // New: Control Qty/Unit Price visibility
 
   const BillItemsSection({
     super.key,
     required this.initialItems,
     required this.onItemsChanged,
+    required this.showItemDetails, // Add to constructor
     this.enabled = true,
   });
 
@@ -462,6 +464,7 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                   onEdit: widget.enabled
                       ? () => _showItemDialog(itemToEdit: item)
                       : () {},
+                  showItemDetails: widget.showItemDetails, // Pass down
                 ),
               );
             },
@@ -496,20 +499,26 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                 style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
-          const Expanded(
-            flex: 1,
-            child: Text('Qty',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            flex: 2,
-            child: Text('Unit Price',
-                textAlign: TextAlign.right,
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 8),
+          // Conditionally show Qty header
+          if (widget.showItemDetails) ...[
+            const Expanded(
+              flex: 1,
+              child: Text('Qty',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 8),
+          ],
+          // Conditionally show Unit Price header
+          if (widget.showItemDetails) ...[
+            const Expanded(
+              flex: 2,
+              child: Text('Unit Price',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 8),
+          ],
           const Expanded(
             flex: 2,
             child: Text('Total Price',

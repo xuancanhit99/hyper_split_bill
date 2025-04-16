@@ -7,11 +7,13 @@ class BillItemWidget extends StatelessWidget {
   final BillItemEntity item;
   final VoidCallback onEdit; // Callback when edit button is pressed
   // final bool enabled; // Keep if needed to disable the edit button itself
+  final bool showItemDetails; // New: Control Qty/Unit Price visibility
 
   const BillItemWidget({
     super.key,
     required this.item,
     required this.onEdit,
+    required this.showItemDetails, // Add to constructor
     // this.enabled = true,
   });
 
@@ -41,23 +43,29 @@ class BillItemWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 1,
-            child: Text(
-              quantityFormat.format(item.quantity),
-              textAlign: TextAlign.center,
+          // Conditionally show Qty
+          if (showItemDetails) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: Text(
+                quantityFormat.format(item.quantity),
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: Text(
-              // Display unit price using the helper
-              _formatCurrencyValue(item.unitPrice),
-              textAlign: TextAlign.right,
+          ],
+          // Conditionally show Unit Price
+          if (showItemDetails) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: Text(
+                // Display unit price using the helper
+                _formatCurrencyValue(item.unitPrice),
+                textAlign: TextAlign.right,
+              ),
             ),
-          ),
+          ],
           const SizedBox(width: 8),
           Expanded(
             flex: 2,

@@ -55,6 +55,7 @@ class _BillEditPageState extends State<BillEditPage> {
   bool _showTip = false;
   bool _showDiscount = false;
   bool _showCurrency = false; // Currency starts hidden as per requirement
+  bool _showItemDetails = false; // State for Qty/Unit Price visibility
 
   // State for calculated total comparison
   double?
@@ -770,6 +771,13 @@ class _BillEditPageState extends State<BillEditPage> {
     }
   }
 
+  // --- Toggle Item Details Visibility ---
+  void _toggleItemDetailsVisibility() {
+    setState(() {
+      _showItemDetails = !_showItemDetails;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<BillSplittingBloc, BillSplittingState>(
@@ -858,6 +866,10 @@ class _BillEditPageState extends State<BillEditPage> {
                   onEditDiscount: _showEditDiscountDialog,
                   onCurrencyChanged: _handleCurrencyChanged,
                   onAddOptionalFields: _showAddFieldDialog,
+                  onToggleItemDetails:
+                      _toggleItemDetailsVisibility, // Pass the toggle function
+                  showItemDetails:
+                      _showItemDetails, // Pass the visibility state
                   formatCurrencyValue: _formatCurrencyValue,
                   // Pass calculation results and update callback
                   calculatedTotalAmount: _calculatedTotalAmount,
@@ -873,6 +885,8 @@ class _BillEditPageState extends State<BillEditPage> {
                   enabled: _isEditingMode,
                   // Use the dedicated handler
                   onItemsChanged: _handleItemsChanged,
+                  showItemDetails:
+                      _showItemDetails, // Pass the visibility state
                 ),
                 const SizedBox(height: 24),
                 const Divider(),

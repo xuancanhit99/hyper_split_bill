@@ -108,6 +108,22 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
   // Removed _navigateToNextStep as logic is now handled by dispatching events to Bloc
 
+  // Function to retry OCR with the existing selected image
+  void _retryOcr() {
+    if (_selectedImage != null) {
+      // Dispatch the OCR event with the existing cropped file
+      context.read<BillSplittingBloc>().add(
+            ProcessOcrEvent(imageFile: _selectedImage!),
+          );
+    } else {
+      print("Retry OCR called but no image is selected.");
+      // Optionally show a message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No image available to retry OCR.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Wrap the Scaffold with BlocListener to react to state changes
@@ -238,6 +254,22 @@ class _BillUploadViewState extends State<_BillUploadView> {
                                 ),
                               ),
                             ),
+                          ],
+
+                          // Add the Retry OCR button conditionally first
+                          if (_selectedImage != null) ...[
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry OCR'),
+                              onPressed: isLoading ? null : _retryOcr,
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                backgroundColor:
+                                    Colors.orangeAccent, // Optional styling
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                           ],
 
                           // Buttons (still disable based on isLoading)

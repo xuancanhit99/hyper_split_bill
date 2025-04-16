@@ -25,6 +25,9 @@ class EditBillInfoSection extends StatelessWidget {
   final VoidCallback onEditDiscount;
   final ValueChanged<String?> onCurrencyChanged;
   final VoidCallback onAddOptionalFields;
+  final VoidCallback
+      onToggleItemDetails; // New: Callback to toggle item details
+  final bool showItemDetails; // New: State for item details visibility
   final String Function(num?) formatCurrencyValue; // Pass formatting function
   final double?
       calculatedTotalAmount; // Newly added: Calculated total from parent
@@ -55,6 +58,8 @@ class EditBillInfoSection extends StatelessWidget {
     required this.onCurrencyChanged,
     required this.onAddOptionalFields,
     required this.formatCurrencyValue,
+    required this.onToggleItemDetails, // Add to constructor
+    required this.showItemDetails, // Add to constructor
     this.calculatedTotalAmount, // Make optional for now
     this.onUpdateTotalAmount, // Make optional for now
   });
@@ -193,12 +198,32 @@ class EditBillInfoSection extends StatelessWidget {
                 else
                   const SizedBox(), // Placeholder to maintain alignment if button not shown
 
-                // Add Optional Fields Button
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  tooltip: 'Add Tax, Tip, Discount, Currency',
-                  onPressed: onAddOptionalFields,
-                  color: Theme.of(context).colorScheme.primary,
+                // Group the action buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min, // Take minimum space
+                  children: [
+                    // Toggle Item Details Button
+                    IconButton(
+                      icon: Icon(showItemDetails
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined),
+                      tooltip: showItemDetails
+                          ? 'Hide Item Quantity & Unit Price'
+                          : 'Show Item Quantity & Unit Price',
+                      onPressed: onToggleItemDetails,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .secondary, // Use secondary color
+                    ),
+                    const SizedBox(width: 8), // Space between buttons
+                    // Add Optional Fields Button
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      tooltip: 'Add Tax, Tip, Discount, Currency',
+                      onPressed: onAddOptionalFields,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
                 ),
               ],
             ),
