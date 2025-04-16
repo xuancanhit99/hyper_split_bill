@@ -1,8 +1,8 @@
-# Hyper Split Bill (Chia sẻ hóa đơn)
+# Hyper Split Bill (Chia sẻ hóa đơn) 🧾💸
 
 Hyper Split Bill là một ứng dụng Flutter được thiết kế để đơn giản hóa quá trình chia sẻ các hóa đơn chung. Người dùng có thể tải lên hình ảnh hóa đơn, ứng dụng sẽ tự động trích xuất các mục và giá cả bằng OCR và AI, chỉnh sửa chi tiết, gán các mục cho người tham gia và tính toán phần chia của mỗi người.
 
-## Tính năng
+## ✨ Tính năng
 
 *   **Xác thực người dùng:** Đăng nhập và đăng ký an toàn (có thể sử dụng Supabase Auth).
 *   **Tải lên hóa đơn:** Tải lên hình ảnh hóa đơn từ thư viện thiết bị hoặc máy ảnh.
@@ -15,7 +15,7 @@ Hyper Split Bill là một ứng dụng Flutter được thiết kế để đơ
 *   **Lịch sử hóa đơn:** (Giả định) Xem và quản lý các hóa đơn đã xử lý trước đó.
 *   **Tương tác Chatbot:** (Tiềm năng) Tương tác với chatbot để được hỗ trợ hoặc tinh chỉnh dữ liệu có cấu trúc.
 
-## Công nghệ sử dụng
+## 🛠️ Công nghệ sử dụng
 
 *   **Framework:** Flutter
 *   **Kiến trúc:** Clean Architecture (Data, Domain, Presentation)
@@ -28,7 +28,7 @@ Hyper Split Bill là một ứng dụng Flutter được thiết kế để đơ
     *   API Dịch vụ AI/LLM (Google Gemini, Grok)
 *   **Xử lý ảnh:** image_picker, image_cropper
 
-## Tổng quan kiến trúc
+## 🏗️ Tổng quan kiến trúc
 
 Ứng dụng tuân theo các nguyên tắc của Clean Architecture, tách biệt các mối quan tâm thành ba lớp chính:
 
@@ -38,7 +38,7 @@ Hyper Split Bill là một ứng dụng Flutter được thiết kế để đơ
 
 Tiêm phụ thuộc được quản lý bằng `get_it` và `injectable` để tách rời và kiểm thử dễ dàng hơn. Điều hướng được xử lý bởi `go_router`.
 
-## Bắt đầu
+## 🚀 Bắt đầu
 
 **Yêu cầu:**
 
@@ -85,7 +85,7 @@ Tiêm phụ thuộc được quản lý bằng `get_it` và `injectable` để t
         flutter run
         ```
 
-## Cấu trúc dự án (thư mục `lib`)
+## 📁 Cấu trúc dự án (thư mục `lib`)
 
 ```
 lib/

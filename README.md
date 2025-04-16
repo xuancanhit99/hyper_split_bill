@@ -1,8 +1,8 @@
-# Hyper Split Bill
+# Hyper Split Bill 🧾💸
 
 Hyper Split Bill is a Flutter application designed to simplify the process of splitting shared bills. Users can upload an image of a bill, have the app automatically extract items and prices using OCR and AI, edit the details, assign items to participants, and calculate individual shares.
 
-## Features
+## ✨ Features
 
 *   **User Authentication:** Secure login and registration (likely using Supabase Auth).
 *   **Bill Upload:** Upload bill images from the device gallery or camera.
@@ -15,7 +15,7 @@ Hyper Split Bill is a Flutter application designed to simplify the process of sp
 *   **Bill History:** (Assumed) View and manage previously processed bills.
 *   **Chatbot Interaction:** (Potential) Interact with a chatbot for assistance or refining structured data.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 *   **Framework:** Flutter
 *   **Architecture:** Clean Architecture (Data, Domain, Presentation)
@@ -28,7 +28,7 @@ Hyper Split Bill is a Flutter application designed to simplify the process of sp
     *   AI/LLM Service APIs (Google Gemini, Grok)
 *   **Image Handling:** image_picker, image_cropper
 
-## Architecture Overview
+## 🏗️ Architecture Overview
 
 The application follows the principles of Clean Architecture, separating concerns into three main layers:
 
@@ -38,7 +38,7 @@ The application follows the principles of Clean Architecture, separating concern
 
 Dependency Injection is managed using `get_it` and `injectable` for decoupling and easier testing. Navigation is handled by `go_router`.
 
-## Getting Started
+## 🚀 Getting Started
 
 **Prerequisites:**
 
@@ -85,7 +85,7 @@ Dependency Injection is managed using `get_it` and `injectable` for decoupling a
         flutter run
         ```
 
-## Project Structure (`lib` folder)
+## 📁 Project Structure (`lib` folder)
 
 ```
 lib/

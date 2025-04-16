@@ -1,10 +1,10 @@
-# System Design: Hyper Split Bill
+# ⚙️ System Design: Hyper Split Bill
 
-## 1. Introduction
+## 1. 📝 Introduction
 
 This document outlines the system design for the Hyper Split Bill application. The goal is to provide a comprehensive overview of the architecture, components, data flow, and external integrations used to deliver the bill splitting functionality.
 
-## 2. Goals
+## 2. 🎯 Goals
 
 *   Provide a user-friendly interface for uploading and managing shared bills.
 *   Automate the extraction of bill details (items, prices) from images using OCR.
@@ -15,14 +15,14 @@ This document outlines the system design for the Hyper Split Bill application. T
 *   Securely authenticate users and store their bill data.
 *   Support multiple platforms (Web, iOS, Android) via Flutter.
 
-## 3. Non-Goals
+## 3. ❌ Non-Goals
 
 *   Real-time payment processing or integration with payment gateways.
 *   Complex budgeting or financial analysis features beyond bill splitting.
 *   Social features like friend requests or group management beyond a single bill context.
 *   Offline-first functionality (assumes network connectivity for core features like OCR, AI, and Supabase interaction).
 
-## 4. Architecture
+## 4. 🏗️ Architecture
 
 ### 4.1. High-Level Overview
 
@@ -115,7 +115,7 @@ graph TD
         *   `ChatDataSource`: Interface/Implementation for interacting with the AI/LLM API.
         *   `BillRemoteDataSource`: Interface/Implementation for interacting with Supabase DB (CRUD operations for bills).
 
-## 5. Data Flow Example: Uploading and Processing a Bill
+## 5. ➡️ Data Flow Example: Uploading and Processing a Bill
 
 1.  **User Action:** User taps "Upload from Gallery" on `BillUploadPage`.
 2.  **Presentation:**
@@ -144,13 +144,13 @@ graph TD
     *   Navigates user to `BillEditPage` via `go_router`, passing the processed data.
 8.  **Presentation:** `BillEditPage` builds its UI based on the state received from the `BillSplittingBloc`, displaying the structured items and participants.
 
-## 6. External Services
+## 6. 🌐 External Services
 
 *   **Supabase:** Used for authentication (Supabase Auth) and database storage (Supabase Postgres) for user data and bills. Accessed via `supabase_flutter` package.
 *   **OCR API:** An external service responsible for converting bill images to text. Requires API key management. (Specific service TBD).
 *   **AI/LLM API:** An external service (like OpenAI, Gemini, etc.) potentially used via a chat-like interface (`ChatDataSource`) to structure the raw OCR text into meaningful bill items and participants. Requires API key management. (Specific service TBD).
 
-## 7. Database Schema (Conceptual - Supabase)
+## 7. 💾 Database Schema (Conceptual - Supabase)
 
 *   **users:** (Managed by Supabase Auth) Stores user profile information.
 *   **bills:**
@@ -180,14 +180,14 @@ graph TD
 
 *(Note: This is a conceptual schema. The actual implementation might differ.)*
 
-## 8. API Contracts (Conceptual)
+## 8. 📜 API Contracts (Conceptual)
 
 *   **OCR API Request:** `POST /ocr` with `image_data` (base64 or multipart/form-data).
 *   **OCR API Response:** `{ "text": "extracted text..." }`
 *   **AI/LLM API Request:** `POST /structure_bill` with `{ "ocr_text": "...", "context": "..." }`
 *   **AI/LLM API Response:** `{ "bill": { "title": "...", "items": [...], "participants": [...] } }`
 
-## 9. Scalability & Performance
+## 9. ⚡ Scalability & Performance
 
 *   Flutter's rendering engine is generally performant.
 *   State management with Bloc is scalable for complex UIs.
@@ -195,7 +195,7 @@ graph TD
 *   Supabase provides scalable backend infrastructure. Database queries should be optimized.
 *   Image processing (upload, potential resizing) should be done efficiently.
 
-## 10. Security Considerations
+## 10. 🔒 Security Considerations
 
 *   Secure handling of Supabase credentials and API keys (using `.env` and potentially secure storage).
 *   Authentication managed by Supabase Auth.

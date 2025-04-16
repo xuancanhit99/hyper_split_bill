@@ -1,10 +1,10 @@
-# Thiết kế Hệ thống: Hyper Split Bill
+# ⚙️ Thiết kế Hệ thống: Hyper Split Bill
 
-## 1. Giới thiệu
+## 1. 📝 Giới thiệu
 
 Tài liệu này phác thảo thiết kế hệ thống cho ứng dụng Hyper Split Bill. Mục tiêu là cung cấp một cái nhìn tổng quan toàn diện về kiến trúc, các thành phần, luồng dữ liệu và các tích hợp bên ngoài được sử dụng để cung cấp chức năng chia sẻ hóa đơn.
 
-## 2. Mục tiêu
+## 2. 🎯 Mục tiêu
 
 *   Cung cấp giao diện thân thiện với người dùng để tải lên và quản lý các hóa đơn chung.
 *   Tự động hóa việc trích xuất chi tiết hóa đơn (các mục, giá cả) từ hình ảnh bằng OCR.
@@ -15,14 +15,14 @@ Tài liệu này phác thảo thiết kế hệ thống cho ứng dụng Hyper S
 *   Xác thực người dùng một cách an toàn và lưu trữ dữ liệu hóa đơn của họ.
 *   Hỗ trợ nhiều nền tảng (Web, iOS, Android) thông qua Flutter.
 
-## 3. Mục tiêu không bao gồm
+## 3. ❌ Mục tiêu không bao gồm
 
 *   Xử lý thanh toán thời gian thực hoặc tích hợp với các cổng thanh toán.
 *   Các tính năng phân tích tài chính hoặc lập ngân sách phức tạp ngoài việc chia sẻ hóa đơn.
 *   Các tính năng xã hội như yêu cầu kết bạn hoặc quản lý nhóm ngoài bối cảnh một hóa đơn duy nhất.
 *   Chức năng ưu tiên ngoại tuyến (giả định cần kết nối mạng cho các tính năng cốt lõi như OCR, AI và tương tác Supabase).
 
-## 4. Kiến trúc
+## 4. 🏗️ Kiến trúc
 
 ### 4.1. Tổng quan cấp cao
 
@@ -115,7 +115,7 @@ graph TD
         *   `ChatDataSource`: Giao diện/Triển khai để tương tác với API AI/LLM.
         *   `BillRemoteDataSource`: Giao diện/Triển khai để tương tác với Supabase DB (các hoạt động CRUD cho hóa đơn).
 
-## 5. Ví dụ luồng dữ liệu: Tải lên và xử lý hóa đơn
+## 5. ➡️ Ví dụ luồng dữ liệu: Tải lên và xử lý hóa đơn
 
 1.  **Hành động người dùng:** Người dùng nhấn "Tải lên từ Thư viện" trên `BillUploadPage`.
 2.  **Trình bày:**
@@ -144,13 +144,13 @@ graph TD
     *   Điều hướng người dùng đến `BillEditPage` qua `go_router`, truyền dữ liệu đã xử lý.
 8.  **Trình bày:** `BillEditPage` xây dựng UI dựa trên trạng thái nhận được từ `BillSplittingBloc`, hiển thị các mục và người tham gia có cấu trúc.
 
-## 6. Dịch vụ bên ngoài
+## 6. 🌐 Dịch vụ bên ngoài
 
 *   **Supabase:** Được sử dụng để xác thực (Supabase Auth) và lưu trữ cơ sở dữ liệu (Supabase Postgres) cho dữ liệu người dùng và hóa đơn. Truy cập qua gói `supabase_flutter`.
 *   **API OCR:** Một dịch vụ bên ngoài chịu trách nhiệm chuyển đổi hình ảnh hóa đơn thành văn bản. Yêu cầu quản lý khóa API. (Dịch vụ cụ thể TBD).
 *   **API AI/LLM:** Một dịch vụ bên ngoài (như OpenAI, Gemini, v.v.) có thể được sử dụng thông qua giao diện giống như trò chuyện (`ChatDataSource`) để cấu trúc văn bản OCR thô thành các mục hóa đơn và người tham gia có ý nghĩa. Yêu cầu quản lý khóa API. (Dịch vụ cụ thể TBD).
 
-## 7. Lược đồ cơ sở dữ liệu (Khái niệm - Supabase)
+## 7. 💾 Lược đồ cơ sở dữ liệu (Khái niệm - Supabase)
 
 *   **users:** (Được quản lý bởi Supabase Auth) Lưu trữ thông tin hồ sơ người dùng.
 *   **bills:**
@@ -180,14 +180,14 @@ graph TD
 
 *(Lưu ý: Đây là lược đồ khái niệm. Việc triển khai thực tế có thể khác.)*
 
-## 8. Hợp đồng API (Khái niệm)
+## 8. 📜 Hợp đồng API (Khái niệm)
 
 *   **Yêu cầu API OCR:** `POST /ocr` với `image_data` (base64 hoặc multipart/form-data).
 *   **Phản hồi API OCR:** `{ "text": "văn bản được trích xuất..." }`
 *   **Yêu cầu API AI/LLM:** `POST /structure_bill` với `{ "ocr_text": "...", "context": "..." }`
 *   **Phản hồi API AI/LLM:** `{ "bill": { "title": "...", "items": [...], "participants": [...] } }`
 
-## 9. Khả năng mở rộng & Hiệu suất
+## 9. ⚡ Khả năng mở rộng & Hiệu suất
 
 *   Công cụ kết xuất của Flutter nói chung là hiệu quả.
 *   Quản lý trạng thái bằng Bloc có thể mở rộng cho các UI phức tạp.
@@ -195,7 +195,7 @@ graph TD
 *   Supabase cung cấp cơ sở hạ tầng backend có thể mở rộng. Các truy vấn cơ sở dữ liệu cần được tối ưu hóa.
 *   Xử lý hình ảnh (tải lên, thay đổi kích thước tiềm năng) nên được thực hiện hiệu quả.
 
-## 10. Cân nhắc về bảo mật
+## 10. 🔒 Cân nhắc về bảo mật
 
 *   Xử lý an toàn thông tin đăng nhập Supabase và khóa API (sử dụng `.env` và có thể là bộ nhớ an toàn).
 *   Xác thực được quản lý bởi Supabase Auth.
