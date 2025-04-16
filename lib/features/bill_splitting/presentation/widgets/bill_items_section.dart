@@ -3,6 +3,301 @@ import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_it
 import 'package:flutter/services.dart'; // For input formatters
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_item_widget.dart';
 
+// --- Stateful Widget for Item Edit Dialog Content ---
+class _ItemDialogContent extends StatefulWidget {
+  final BillItemEntity initialItem;
+
+  const _ItemDialogContent({super.key, required this.initialItem});
+
+  @override
+  _ItemDialogContentState createState() => _ItemDialogContentState();
+}
+
+class _ItemDialogContentState extends State<_ItemDialogContent> {
+  late final TextEditingController descriptionController;
+  late final TextEditingController quantityController;
+  late final TextEditingController unitPriceController;
+  late final TextEditingController totalPriceController;
+  final formKey =
+      GlobalKey<FormState>(); // Add form key for validation if needed
+
+  // State for checkboxes within the dialog
+  bool isQuantityConfirmed = false;
+  bool isUnitPriceConfirmed = false;
+  bool isTotalPriceConfirmed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    descriptionController =
+        TextEditingController(text: widget.initialItem.description);
+    quantityController =
+        TextEditingController(text: widget.initialItem.quantity.toString());
+    unitPriceController = TextEditingController(
+        text: widget.initialItem.unitPrice.toStringAsFixed(2));
+    totalPriceController = TextEditingController(
+        text: widget.initialItem.totalPrice.toStringAsFixed(2));
+
+    // Initial confirmation state (e.g., confirm existing non-zero values)
+    // This logic might need refinement based on desired UX
+    isQuantityConfirmed = widget.initialItem.quantity != 0;
+    isUnitPriceConfirmed = widget.initialItem.unitPrice != 0.0;
+    isTotalPriceConfirmed = widget.initialItem.totalPrice != 0.0;
+    // Ensure only two are confirmed initially if possible
+    _ensureTwoConfirmed();
+    // Initial calculation if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) => calculatePrices());
+  }
+
+  @override
+  void dispose() {
+    descriptionController.dispose();
+    quantityController.dispose();
+    unitPriceController.dispose();
+    totalPriceController.dispose();
+    super.dispose();
+  }
+
+  // Function to ensure only two fields are confirmed initially or after changes
+  void _ensureTwoConfirmed() {
+    int confirmedCount = (isQuantityConfirmed ? 1 : 0) +
+        (isUnitPriceConfirmed ? 1 : 0) +
+        (isTotalPriceConfirmed ? 1 : 0);
+
+    if (confirmedCount > 2) {
+      // Prioritize unchecking total price, then unit price if still > 2
+      if (isTotalPriceConfirmed) isTotalPriceConfirmed = false;
+      if (isUnitPriceConfirmed && isQuantityConfirmed)
+        isUnitPriceConfirmed = false; // Now exactly 2
+    }
+    // If less than 2 are confirmed, it's okay, user needs to confirm more.
+  }
+
+  // Function to calculate fields
+  void calculatePrices() {
+    final quantity = int.tryParse(quantityController.text) ?? 0;
+    final unitPrice = double.tryParse(unitPriceController.text) ?? 0.0;
+    final totalPrice = double.tryParse(totalPriceController.text) ?? 0.0;
+
+    int confirmedCount = (isQuantityConfirmed ? 1 : 0) +
+        (isUnitPriceConfirmed ? 1 : 0) +
+        (isTotalPriceConfirmed ? 1 : 0);
+
+    if (confirmedCount == 2) {
+      if (isQuantityConfirmed &&
+          isUnitPriceConfirmed &&
+          !isTotalPriceConfirmed) {
+        if (quantity >= 0 && unitPrice >= 0) {
+          // Allow quantity 0
+          final calculatedTotal = quantity * unitPrice;
+          // Avoid updating if the text is already the same (prevents cursor jump)
+          if (totalPriceController.text != calculatedTotal.toStringAsFixed(2)) {
+            totalPriceController.text = calculatedTotal.toStringAsFixed(2);
+          }
+        }
+      } else if (isQuantityConfirmed &&
+          isTotalPriceConfirmed &&
+          !isUnitPriceConfirmed) {
+        if (quantity > 0 && totalPrice >= 0) {
+          // quantity > 0 for division
+          final calculatedUnitPrice = totalPrice / quantity;
+          if (unitPriceController.text !=
+              calculatedUnitPrice.toStringAsFixed(2)) {
+            unitPriceController.text = calculatedUnitPrice.toStringAsFixed(2);
+          }
+        } else if (quantity == 0 && totalPrice == 0) {
+          if (unitPriceController.text != "0.00")
+            unitPriceController.text = "0.00";
+        }
+      } else if (isUnitPriceConfirmed &&
+          isTotalPriceConfirmed &&
+          !isQuantityConfirmed) {
+        if (unitPrice > 0 && totalPrice >= 0) {
+          // unitPrice > 0 for division
+          final calculatedQuantity = (totalPrice / unitPrice).round();
+          if (quantityController.text != calculatedQuantity.toString()) {
+            quantityController.text = calculatedQuantity.toString();
+          }
+        } else if (unitPrice == 0 && totalPrice == 0) {
+          if (quantityController.text != "0")
+            quantityController.text = "0"; // Or 1? Depends on UX
+        }
+      }
+    }
+    // Trigger rebuild to update enabled states
+    setState(() {});
+  }
+
+  BillItemEntity? getUpdatedItem() {
+    // Validation before saving
+    final description = descriptionController.text.trim();
+    final quantity = int.tryParse(quantityController.text);
+    final unitPrice = double.tryParse(unitPriceController.text);
+    final totalPrice = double.tryParse(totalPriceController.text);
+    int confirmedCount = (isQuantityConfirmed ? 1 : 0) +
+        (isUnitPriceConfirmed ? 1 : 0) +
+        (isTotalPriceConfirmed ? 1 : 0);
+
+    if (description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Description cannot be empty.')));
+      return null;
+    }
+    if (quantity == null || quantity < 0) {
+      // Allow 0 quantity
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Quantity must be a non-negative number.')));
+      return null;
+    }
+    if (unitPrice == null ||
+        unitPrice < 0 ||
+        totalPrice == null ||
+        totalPrice < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Prices cannot be negative.')));
+      return null;
+    }
+    // Ensure exactly two fields were confirmed for calculation consistency check
+    if (confirmedCount != 2) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Please confirm exactly two values (Quantity, Unit Price, or Total Price) using the checkboxes.')));
+      return null;
+    }
+
+    // Check calculation consistency based on the final values
+    final finalCalculatedTotal = (quantity * unitPrice);
+    // Use a small tolerance for floating point comparisons
+    if ((finalCalculatedTotal - totalPrice).abs() > 0.01) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Error: Final values are inconsistent (Qty * Unit Price != Total Price). Please re-confirm.')));
+      return null;
+    }
+
+    return BillItemEntity(
+      id: widget.initialItem.id, // Keep the original ID
+      description: description,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Determine which fields are enabled based on confirmations
+    bool quantityEnabled = !isQuantityConfirmed &&
+        !(isUnitPriceConfirmed && isTotalPriceConfirmed);
+    bool unitPriceEnabled = !isUnitPriceConfirmed &&
+        !(isQuantityConfirmed && isTotalPriceConfirmed);
+    bool totalPriceEnabled = !isTotalPriceConfirmed &&
+        !(isQuantityConfirmed && isUnitPriceConfirmed);
+
+    return SingleChildScrollView(
+      // Prevent overflow
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: descriptionController,
+            decoration: const InputDecoration(labelText: 'Description'),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 12), // Increased spacing
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: quantityController,
+                  decoration: const InputDecoration(labelText: 'Quantity'),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  enabled: quantityEnabled,
+                  onChanged: (_) => calculatePrices(), // Recalculate on change
+                ),
+              ),
+              Checkbox(
+                value: isQuantityConfirmed,
+                // Disable checkbox if the field is implicitly calculated
+                onChanged: (isUnitPriceConfirmed && isTotalPriceConfirmed)
+                    ? null
+                    : (bool? value) {
+                        setState(() {
+                          isQuantityConfirmed = value ?? false;
+                          _ensureTwoConfirmed();
+                          calculatePrices(); // Recalculate after state change
+                        });
+                      },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: unitPriceController,
+                  decoration: const InputDecoration(labelText: 'Unit Price'),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+                  ],
+                  enabled: unitPriceEnabled,
+                  onChanged: (_) => calculatePrices(), // Recalculate on change
+                ),
+              ),
+              Checkbox(
+                value: isUnitPriceConfirmed,
+                onChanged: (isQuantityConfirmed && isTotalPriceConfirmed)
+                    ? null
+                    : (bool? value) {
+                        setState(() {
+                          isUnitPriceConfirmed = value ?? false;
+                          _ensureTwoConfirmed();
+                          calculatePrices();
+                        });
+                      },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: totalPriceController,
+                  decoration: const InputDecoration(labelText: 'Total Price'),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+                  ],
+                  enabled: totalPriceEnabled,
+                  onChanged: (_) => calculatePrices(), // Recalculate on change
+                ),
+              ),
+              Checkbox(
+                value: isTotalPriceConfirmed,
+                onChanged: (isQuantityConfirmed && isUnitPriceConfirmed)
+                    ? null
+                    : (bool? value) {
+                        setState(() {
+                          isTotalPriceConfirmed = value ?? false;
+                          _ensureTwoConfirmed();
+                          calculatePrices();
+                        });
+                      },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // Widget to manage the list of bill items (display, add, edit, delete)
 class BillItemsSection extends StatefulWidget {
   final List<BillItemEntity> initialItems;
@@ -23,7 +318,7 @@ class BillItemsSection extends StatefulWidget {
 
 class _BillItemsSectionState extends State<BillItemsSection> {
   late List<BillItemEntity> _items;
-  // No longer need controllers here, they will be in the dialog
+
   @override
   void initState() {
     super.initState();
@@ -41,35 +336,56 @@ class _BillItemsSectionState extends State<BillItemsSection> {
   // Update item details after editing in the dialog
   void _updateItem(int index, BillItemEntity updatedItem) {
     if (index < 0 || index >= _items.length) return;
-    setState(() {
-      _items[index] =
-          updatedItem.copyWith(id: _items[index].id); // Keep original ID
+    // Use addPostFrameCallback to ensure state update happens safely
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _items[index] =
+              updatedItem.copyWith(id: _items[index].id); // Keep original ID
+        });
+        // Notify the parent widget about the change
+        widget.onItemsChanged(_items);
+      }
     });
-    // Notify the parent widget about the change
-    widget.onItemsChanged(_items);
   }
 
   void _addItem() {
-    setState(() {
-      final newItem = BillItemEntity(
-        id: 'new_${DateTime.now().millisecondsSinceEpoch}', // Unique ID for new item
-        description: '',
-        quantity: 1,
-        unitPrice: 0.0,
-        totalPrice: 0.0,
-      );
-      _items.add(newItem);
+    final newItem = BillItemEntity(
+      id: 'new_${DateTime.now().millisecondsSinceEpoch}', // Unique ID for new item
+      description: '',
+      quantity: 1, // Default quantity to 1 instead of 0
+      unitPrice: 0.0,
+      totalPrice: 0.0,
+    );
+    // Use addPostFrameCallback for adding item and showing dialog
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _items.add(newItem);
+        });
+        widget.onItemsChanged(_items); // Notify parent
+        // Immediately open the edit dialog for the new item:
+        _showEditItemDialog(_items.length - 1, isAdding: true);
+      }
     });
-    widget.onItemsChanged(_items); // Notify parent
-    // Optionally, immediately open the edit dialog for the new item:
-    // _showEditItemDialog(_items.length - 1);
   }
 
   void _removeItem(int index) {
-    setState(() {
-      _items.removeAt(index);
+    // Use addPostFrameCallback for safe state update
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final item = _items[index]; // Get item before removing
+        setState(() {
+          _items.removeAt(index);
+        });
+        widget.onItemsChanged(_items); // Notify parent
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  '${item.description.isNotEmpty ? item.description : "Item"} deleted')),
+        );
+      }
     });
-    widget.onItemsChanged(_items); // Notify parent
   }
 
   @override
@@ -93,12 +409,38 @@ class _BillItemsSectionState extends State<BillItemsSection> {
               final item = _items[index];
               return Dismissible(
                 key: ValueKey(item.id ?? index), // Unique key for Dismissible
-                direction: DismissDirection.endToStart, // Swipe direction
+                direction: widget.enabled
+                    ? DismissDirection.endToStart
+                    : DismissDirection.none, // Swipe direction only if enabled
+                confirmDismiss: (_) async {
+                  // Show confirmation dialog before deleting
+                  return await showDialog<bool>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Confirm Delete'),
+                            content: Text(
+                                'Are you sure you want to delete "${item.description.isNotEmpty ? item.description : "this item"}"?'),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () => Navigator.of(context)
+                                    .pop(false), // Don't dismiss
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true), // Dismiss
+                                child: const Text('Delete',
+                                    style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          );
+                        },
+                      ) ??
+                      false; // Return false if dialog is dismissed
+                },
                 onDismissed: (direction) {
-                  _removeItem(index);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${item.description} deleted')),
-                  );
+                  _removeItem(index); // Remove item after confirmation
                 },
                 background: Container(
                   color: Colors.red,
@@ -179,510 +521,92 @@ class _BillItemsSectionState extends State<BillItemsSection> {
   }
 
   // --- Edit Item Dialog ---
-  Future<void> _showEditItemDialog(int index) async {
+  Future<void> _showEditItemDialog(int index, {bool isAdding = false}) async {
+    if (index < 0 || index >= _items.length) return; // Bounds check
     final BillItemEntity currentItem = _items[index];
-    final descriptionController =
-        TextEditingController(text: currentItem.description);
-    final quantityController =
-        TextEditingController(text: currentItem.quantity.toString());
-    final unitPriceController =
-        TextEditingController(text: currentItem.unitPrice.toStringAsFixed(2));
-    final totalPriceController =
-        TextEditingController(text: currentItem.totalPrice.toStringAsFixed(2));
-
-    // State for checkboxes within the dialog
-    bool isQuantityConfirmed = false;
-    bool isUnitPriceConfirmed = false;
-    bool isTotalPriceConfirmed = false;
-
-    // Function to calculate fields
-    void calculatePrices() {
-      final quantity = int.tryParse(quantityController.text) ?? 0;
-      final unitPrice = double.tryParse(unitPriceController.text) ?? 0.0;
-      final totalPrice = double.tryParse(totalPriceController.text) ?? 0.0;
-
-      // Calculation now depends on confirmed fields
-      int confirmedCount = (isQuantityConfirmed ? 1 : 0) +
-          (isUnitPriceConfirmed ? 1 : 0) +
-          (isTotalPriceConfirmed ? 1 : 0);
-
-      if (confirmedCount == 2) {
-        if (isQuantityConfirmed &&
-            isUnitPriceConfirmed &&
-            !isTotalPriceConfirmed) {
-          if (quantity > 0 && unitPrice >= 0) {
-            final calculatedTotal = quantity * unitPrice;
-            totalPriceController.text = calculatedTotal.toStringAsFixed(2);
-          }
-        } else if (isQuantityConfirmed &&
-            isTotalPriceConfirmed &&
-            !isUnitPriceConfirmed) {
-          if (quantity > 0 && totalPrice >= 0) {
-            // Avoid division by zero
-            final calculatedUnitPrice =
-                (quantity == 0) ? 0.0 : totalPrice / quantity;
-            unitPriceController.text = calculatedUnitPrice.toStringAsFixed(2);
-          }
-        } else if (isUnitPriceConfirmed &&
-            isTotalPriceConfirmed &&
-            !isQuantityConfirmed) {
-          if (unitPrice > 0 && totalPrice >= 0) {
-            // Avoid division by zero, result is rounded quantity
-            final calculatedQuantity =
-                (unitPrice == 0) ? 0 : (totalPrice / unitPrice).round();
-            quantityController.text = calculatedQuantity.toString();
-          } else if (unitPrice == 0 && totalPrice == 0) {
-            // If both unit price and total are 0, quantity could be anything.
-            // Let's clear it to force user input or keep existing value.
-            // quantityController.text = ''; // Or keep current value
-          }
-        }
-      }
-    }
-
-    // --- No longer need listeners for auto-calculation ---
-    // quantityController.addListener(calculatePrices);
-    // unitPriceController.addListener(calculatePrices);
-    // totalPriceController.addListener(calculatePrices); // Recalculate if total is manually changed
+    // Key to access the state of the dialog content
+    final GlobalKey<_ItemDialogContentState> contentKey =
+        GlobalKey<_ItemDialogContentState>();
 
     final result = await showDialog<BillItemEntity?>(
       context: context,
-      // Use StatefulBuilder to manage dialog's internal state (checkboxes)
-      builder: (context) => StatefulBuilder(builder: (context, setDialogState) {
-        // Determine which fields are enabled based on confirmations
-        bool quantityEnabled = !isQuantityConfirmed &&
-            !(isUnitPriceConfirmed && isTotalPriceConfirmed);
-        bool unitPriceEnabled = !isUnitPriceConfirmed &&
-            !(isQuantityConfirmed && isTotalPriceConfirmed);
-        bool totalPriceEnabled = !isTotalPriceConfirmed &&
-            !(isQuantityConfirmed && isUnitPriceConfirmed);
-
-        return AlertDialog(
-          title:
-              Text(currentItem.description.isEmpty ? 'Add Item' : 'Edit Item'),
-          content: SingleChildScrollView(
-            // Prevent overflow
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                const SizedBox(height: 12), // Increased spacing
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: quantityController,
-                        decoration:
-                            const InputDecoration(labelText: 'Quantity'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
-                        ],
-                        enabled: quantityEnabled,
-                      ),
-                    ),
-                    Checkbox(
-                      value: isQuantityConfirmed,
-                      // Disable checkbox if the field is implicitly calculated
-                      onChanged: (isUnitPriceConfirmed && isTotalPriceConfirmed)
-                          ? null
-                          : (bool? value) {
-                              setDialogState(() {
-                                isQuantityConfirmed = value ?? false;
-                                // If checking this makes 3 checked, uncheck the oldest or least likely?
-                                // Simple approach: if 3 are checked, uncheck the others.
-                                if (isQuantityConfirmed &&
-                                    isUnitPriceConfirmed &&
-                                    isTotalPriceConfirmed) {
-                                  isUnitPriceConfirmed =
-                                      false; // Example: uncheck unit price
-                                  isTotalPriceConfirmed = false;
-                                }
-                                calculatePrices(); // Recalculate after state change
-                              });
-                            },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: unitPriceController,
-                        decoration:
-                            const InputDecoration(labelText: 'Unit Price'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d+\.?\d{0,2}'))
-                        ],
-                        enabled: unitPriceEnabled,
-                      ),
-                    ),
-                    Checkbox(
-                      value: isUnitPriceConfirmed,
-                      onChanged: (isQuantityConfirmed && isTotalPriceConfirmed)
-                          ? null
-                          : (bool? value) {
-                              setDialogState(() {
-                                isUnitPriceConfirmed = value ?? false;
-                                if (isQuantityConfirmed &&
-                                    isUnitPriceConfirmed &&
-                                    isTotalPriceConfirmed) {
-                                  isQuantityConfirmed = false;
-                                  isTotalPriceConfirmed = false;
-                                }
-                                calculatePrices();
-                              });
-                            },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: totalPriceController,
-                        decoration:
-                            const InputDecoration(labelText: 'Total Price'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d+\.?\d{0,2}'))
-                        ],
-                        enabled: totalPriceEnabled,
-                      ),
-                    ),
-                    Checkbox(
-                      value: isTotalPriceConfirmed,
-                      onChanged: (isQuantityConfirmed && isUnitPriceConfirmed)
-                          ? null
-                          : (bool? value) {
-                              setDialogState(() {
-                                isTotalPriceConfirmed = value ?? false;
-                                if (isQuantityConfirmed &&
-                                    isUnitPriceConfirmed &&
-                                    isTotalPriceConfirmed) {
-                                  isQuantityConfirmed = false;
-                                  isUnitPriceConfirmed = false;
-                                }
-                                calculatePrices();
-                              });
-                            },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
+      barrierDismissible: false, // Prevent accidental dismiss
+      builder: (context) => AlertDialog(
+        // Fix Title: Use isAdding flag
+        title: Text(isAdding ? 'Add New Item' : 'Edit Item'),
+        content: _ItemDialogContent(
+          key: contentKey, // Assign key
+          initialItem: currentItem,
+        ),
+        actions: [
+          // Show delete only when editing an existing item
+          if (!isAdding)
             TextButton(
               child: const Text('Delete'),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () {
-                Navigator.of(context)
-                    .pop(null); // Indicate deletion by returning null
-                _removeItem(index); // Remove the item
+              onPressed: () async {
+                // Confirm deletion
+                final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text('Confirm Delete'),
+                          content: Text(
+                              'Are you sure you want to delete "${currentItem.description.isNotEmpty ? currentItem.description : "this item"}"?'),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        );
+                      },
+                    ) ??
+                    false;
+
+                if (confirm) {
+                  // Pop the edit dialog first, indicating no save
+                  Navigator.of(context).pop(null);
+                  // Then remove the item (will use postFrameCallback)
+                  _removeItem(index);
+                }
               },
             ),
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () =>
-                  Navigator.of(context).pop(), // Return nothing on cancel
-            ),
-            TextButton(
-              child: const Text('Save'),
-              onPressed: () {
-                // Validation before saving
-                final quantity = int.tryParse(quantityController.text);
-                final unitPrice = double.tryParse(unitPriceController.text);
-                final totalPrice = double.tryParse(totalPriceController.text);
-                int confirmedCount = (isQuantityConfirmed ? 1 : 0) +
-                    (isUnitPriceConfirmed ? 1 : 0) +
-                    (isTotalPriceConfirmed ? 1 : 0);
-
-                if (descriptionController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Description cannot be empty.')));
-                  return;
-                }
-                if (quantity == null || quantity <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Quantity must be a positive number.')));
-                  return;
-                }
-                if (unitPrice == null ||
-                    unitPrice < 0 ||
-                    totalPrice == null ||
-                    totalPrice < 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Prices cannot be negative.')));
-                  return;
-                }
-                // Ensure exactly two fields were confirmed for calculation consistency check
-                if (confirmedCount != 2) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text(
-                          'Please confirm exactly two values (Quantity, Unit Price, or Total Price) using the checkboxes.')));
-                  return;
-                }
-
-                // Check calculation consistency based on the final values
-                final finalCalculatedTotal = (quantity * unitPrice);
-                if ((finalCalculatedTotal - totalPrice).abs() > 0.01) {
-                  // Allow small tolerance
-                  // This might happen if user manually changed a calculated field after confirmation
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text(
-                          'Error: Final values are inconsistent (Qty * Unit Price != Total Price). Please re-confirm.')));
-                  return;
-                }
-
-                final updatedItem = BillItemEntity(
-                  id: currentItem.id, // Keep the original ID
-                  description: descriptionController.text.trim(),
-                  quantity: quantity,
-                  unitPrice: unitPrice,
-                  // Use the validated total price from the controller
-                  totalPrice: totalPrice,
-                );
-                Navigator.of(context)
-                    .pop(updatedItem); // Return the updated item
-              },
-            ),
-          ],
-        );
-      }),
-    );
-
-    // --- Dispose controllers ---
-    // Remove listeners after dialog is closed (No longer needed)
-    // quantityController.removeListener(calculatePrices);
-    // unitPriceController.removeListener(calculatePrices);
-    // totalPriceController.removeListener(calculatePrices);
-    descriptionController.dispose();
-    quantityController.dispose();
-    unitPriceController.dispose();
-    totalPriceController.dispose();
-
-    if (result != null) {
-      // If the dialog returned an updated item (Save was pressed)
-      _updateItem(index, result);
-    }
-    // If result is null (Delete or Cancel pressed), item removal is handled by the delete button's onPressed
-  }
-}
-/*
-Original build method content:
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('No items parsed or added yet.',
-                style: TextStyle(color: Colors.grey[600])),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _items.length,
-            itemBuilder: (context, index) {
-              final item = _items[index];
-              // Get controllers, ensuring they exist
-              final descriptionCtrl = _descriptionControllers.putIfAbsent(
-                  item.id, () => TextEditingController(text: item.description));
-              final priceCtrl = _priceControllers.putIfAbsent(
-                  item.id,
-                  () => TextEditingController(
-                      text: item.totalPrice.toStringAsFixed(2)));
-              final quantityCtrl = _quantityControllers.putIfAbsent(item.id,
-                  () => TextEditingController(text: item.quantity.toString()));
-
-              return BillItemWidget(
-                key: ValueKey(item.id ?? index), // Use a key
-                item: item,
-                descriptionController: descriptionCtrl,
-                quantityController: quantityCtrl,
-                priceController: priceCtrl,
-                enabled: widget.enabled,
-                onDelete: () => _removeItem(index),
-                // Pass update callbacks to BillItemWidget if needed for immediate updates
-                // onDescriptionChanged: (value) => _updateItem(index, description: value),
-                // onQuantityChanged: (value) => _updateItem(index, quantity: int.tryParse(value)),
-                // onPriceChanged: (value) => _updateItem(index, totalPrice: double.tryParse(value)),
-              );
-            },
-          ),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          icon: const Icon(Icons.add_circle_outline),
-          label: const Text('Add Item'),
-          onPressed: widget.enabled ? _addItem : null,
-        ),
-      ],
-    );
-*/
-
-/* Original _showEditItemDialog before checkbox logic:
-  Future<void> _showEditItemDialog(int index) async {
-    final BillItemEntity currentItem = _items[index];
-    final descriptionController = TextEditingController(text: currentItem.description);
-    final quantityController = TextEditingController(text: currentItem.quantity.toString());
-    final unitPriceController = TextEditingController(text: currentItem.unitPrice.toStringAsFixed(2));
-    final totalPriceController = TextEditingController(text: currentItem.totalPrice.toStringAsFixed(2));
-
-    // Function to calculate fields
-    void calculatePrices() {
-      final quantity = int.tryParse(quantityController.text) ?? 0;
-      final unitPrice = double.tryParse(unitPriceController.text) ?? 0.0;
-      final totalPrice = double.tryParse(totalPriceController.text) ?? 0.0;
-
-      // Basic logic: if quantity and unit price are valid, calculate total.
-      // More complex logic can be added here based on which field was last edited.
-      if (quantity > 0 && unitPrice > 0) {
-        final calculatedTotal = quantity * unitPrice;
-        // Avoid unnecessary updates if the value is already correct within tolerance
-        if ((calculatedTotal - totalPrice).abs() > 0.001) {
-           totalPriceController.text = calculatedTotal.toStringAsFixed(2);
-        }
-      }
-      // Add more cases: e.g., if total and quantity are known, calculate unit price.
-      else if (quantity > 0 && totalPrice > 0) {
-         final calculatedUnitPrice = totalPrice / quantity;
-         if ((calculatedUnitPrice - unitPrice).abs() > 0.001) {
-            unitPriceController.text = calculatedUnitPrice.toStringAsFixed(2);
-         }
-      }
-      // Add case for unit price and total known -> quantity (might result in non-integer)
-      // Handle potential division by zero if needed.
-    }
-
-    // Add listeners for calculation
-    quantityController.addListener(calculatePrices);
-    unitPriceController.addListener(calculatePrices);
-    totalPriceController.addListener(calculatePrices); // Recalculate if total is manually changed
-
-    final result = await showDialog<BillItemEntity?>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(currentItem.description.isEmpty ? 'Add Item' : 'Edit Item'),
-        content: SingleChildScrollView( // Prevent overflow
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                textCapitalization: TextCapitalization.sentences,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: quantityController,
-                      decoration: const InputDecoration(labelText: 'Quantity'),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: unitPriceController,
-                      decoration: const InputDecoration(labelText: 'Unit Price'),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: totalPriceController,
-                decoration: const InputDecoration(labelText: 'Total Price'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Delete'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () {
-              Navigator.of(context).pop(null); // Indicate deletion by returning null
-              _removeItem(index); // Remove the item
-            },
-          ),
           TextButton(
             child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(), // Return nothing on cancel
+            onPressed: () => Navigator.of(context).pop(), // Return nothing
           ),
           TextButton(
             child: const Text('Save'),
             onPressed: () {
-              // Validation before saving
-              final quantity = int.tryParse(quantityController.text);
-              final unitPrice = double.tryParse(unitPriceController.text);
-              final totalPrice = double.tryParse(totalPriceController.text);
-
-              if (descriptionController.text.trim().isEmpty) {
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Description cannot be empty.')));
-                 return;
+              // Access state via key to validate and get value
+              final contentState = contentKey.currentState;
+              if (contentState != null) {
+                final updatedItem = contentState.getUpdatedItem();
+                if (updatedItem != null) {
+                  Navigator.of(context)
+                      .pop(updatedItem); // Return the updated item
+                }
+                // If updatedItem is null, validation failed, snackbar shown in getUpdatedItem
               }
-              if (quantity == null || quantity <= 0) {
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quantity must be a positive number.')));
-                 return;
-              }
-               if (unitPrice == null || unitPrice < 0 || totalPrice == null || totalPrice < 0) {
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prices cannot be negative.')));
-                 return;
-              }
-              // Check calculation consistency (optional but recommended)
-              if ((quantity * unitPrice - totalPrice).abs() > 0.01) { // Allow small tolerance
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Total Price does not match Quantity * Unit Price. Please adjust.')));
-                 return;
-              }
-
-              final updatedItem = BillItemEntity(
-                id: currentItem.id, // Keep the original ID
-                description: descriptionController.text.trim(),
-                quantity: quantity,
-                unitPrice: unitPrice,
-                totalPrice: totalPrice,
-              );
-              Navigator.of(context).pop(updatedItem); // Return the updated item
             },
           ),
         ],
       ),
     );
 
-    // Remove listeners after dialog is closed
-    quantityController.removeListener(calculatePrices);
-    unitPriceController.removeListener(calculatePrices);
-    totalPriceController.removeListener(calculatePrices);
-    descriptionController.dispose();
-    quantityController.dispose();
-    unitPriceController.dispose();
-    totalPriceController.dispose();
+    // No local controllers to dispose here
 
     if (result != null) {
       // If the dialog returned an updated item (Save was pressed)
       _updateItem(index, result);
     }
-    // If result is null (Delete or Cancel pressed), item removal is handled by the delete button's onPressed
+    // If result is null (Cancel pressed or Delete confirmed), do nothing here
+    // Deletion is handled within the delete button's logic
   }
-*/
+}
