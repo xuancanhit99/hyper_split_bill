@@ -36,4 +36,15 @@ class BillItemEntity extends Equatable {
       totalPrice: totalPrice ?? this.totalPrice,
     );
   }
+
+  // Method to convert BillItemEntity to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      // 'id': id, // Usually not needed when sending data *to* backend unless updating
+      'description': description,
+      'quantity': quantity,
+      'unit_price': unitPrice,
+      'total_price': totalPrice,
+    };
+  }
 }

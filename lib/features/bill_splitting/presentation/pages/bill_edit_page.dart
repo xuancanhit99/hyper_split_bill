@@ -43,6 +43,12 @@ class _BillEditPageState extends State<BillEditPage> {
   bool _isEditingMode = true; // Start in editing mode
   String? _finalBillJsonString; // Stores the final JSON after saving internally
 
+  // State for optional field visibility
+  bool _showTax = false;
+  bool _showTip = false;
+  bool _showDiscount = false;
+  bool _showCurrency = false; // Currency starts hidden as per requirement
+
   @override
   void initState() {
     super.initState();
@@ -115,11 +121,21 @@ class _BillEditPageState extends State<BillEditPage> {
       _descriptionController.text = data['description'] as String? ?? '';
       _totalAmountController.text =
           _parseNum(data['total_amount'])?.toString() ?? '';
-      _taxController.text = _parseNum(data['tax_amount'])?.toString() ?? '0.0';
-      _tipController.text = _parseNum(data['tip_amount'])?.toString() ?? '0.0';
-      _discountController.text =
-          _parseNum(data['discount_amount'])?.toString() ?? '0.0';
 
+      // Parse optional fields and set initial visibility
+      final taxAmount = _parseNum(data['tax_amount']);
+      _taxController.text = taxAmount?.toString() ?? '0.0';
+      _showTax = taxAmount != null && taxAmount != 0;
+
+      final tipAmount = _parseNum(data['tip_amount']);
+      _tipController.text = tipAmount?.toString() ?? '0.0';
+      _showTip = tipAmount != null && tipAmount != 0;
+
+      final discountAmount = _parseNum(data['discount_amount']);
+      _discountController.text = discountAmount?.toString() ?? '0.0';
+      _showDiscount = discountAmount != null && discountAmount != 0;
+
+      // Currency parsing (visibility starts false, but controller needs value)
       final parsedCurrency = data['currency_code'] as String?;
       String effectiveCurrency = 'USD';
       if (parsedCurrency != null && parsedCurrency.isNotEmpty) {
@@ -308,6 +324,232 @@ class _BillEditPageState extends State<BillEditPage> {
     print("Switched back to editing mode.");
   }
 
+  // --- Helper Widget for Editable Rows ---
+  Widget _buildEditableRow({
+    required BuildContext context,
+    IconData? icon, // Optional icon
+    required String label, // Label is now just for semantics/debugging
+    required String value,
+    VoidCallback? onTap,
+    bool isBold = false,
+  }) {
+    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          fontSize: isBold ? 18 : 16, // Slightly larger if bold
+        );
+
+    return InkWell(
+      onTap: onTap, // Enable tap only if onTap is provided
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            vertical: 12.0, horizontal: 0), // Adjust padding
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon,
+                  size: 20, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12), // Space between icon and text
+            ],
+            Expanded(
+              child: Text(
+                value.isEmpty
+                    ? 'Tap to edit $label'
+                    : value, // Show placeholder if empty
+                style: textStyle,
+                overflow: TextOverflow.ellipsis, // Prevent long text overflow
+              ),
+            ),
+            if (onTap != null) // Show edit indicator only if editable
+              Icon(Icons.edit_note_outlined, size: 18, color: Colors.grey[600]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Placeholder Dialog Methods ---
+  void _showEditDescriptionDialog() {
+    // TODO: Implement dialog to edit description
+    print("Tapped to edit description");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Description editing not implemented yet.')),
+    );
+  }
+
+  void _showEditTotalAmountDialog() {
+    // TODO: Implement dialog to edit total amount
+    print("Tapped to edit total amount");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Total Amount editing not implemented yet.')),
+    );
+  }
+
+  void _showEditTaxDialog() {
+    // TODO: Implement dialog to edit tax
+    print("Tapped to edit tax");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tax editing not implemented yet.')),
+    );
+  }
+
+  void _showEditTipDialog() {
+    // TODO: Implement dialog to edit tip
+    print("Tapped to edit tip");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tip editing not implemented yet.')),
+    );
+  }
+
+  void _showEditDiscountDialog() {
+    // TODO: Implement dialog to edit discount
+    print("Tapped to edit discount");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Discount editing not implemented yet.')),
+    );
+  }
+
+  // --- Dialog to Add Optional Fields ---
+  void _showAddFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // Use StatefulBuilder to manage checkbox state within the dialog
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add Optional Fields'),
+              content: SingleChildScrollView(
+                // Use SingleChildScrollView if content might overflow
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    CheckboxListTile(
+                      title: const Text('Tax'),
+                      value: _showTax,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          _showTax = value ?? false;
+                        });
+                        // Also update the main page state when dialog closes or immediately
+                        setState(() {});
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Tip'),
+                      value: _showTip,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          _showTip = value ?? false;
+                        });
+                        setState(() {});
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Discount'),
+                      value: _showDiscount,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          _showDiscount = value ?? false;
+                        });
+                        setState(() {});
+                      },
+                    ),
+                    CheckboxListTile(
+                      title: const Text('Currency'),
+                      value: _showCurrency,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          _showCurrency = value ?? false;
+                        });
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Done'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Trigger a final setState on the main page if needed,
+                    // though individual onChanged might be sufficient.
+                    setState(() {});
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --- Helper for Currency Dropdown Row ---
+  Widget _buildCurrencyDropdownRow() {
+    final textStyle = Theme.of(context).textTheme.titleMedium;
+
+    // Find the full name for the selected currency code
+    final selectedCurrencyCode = _currencyController.text;
+    final currencyName = cCurrencyMap[selectedCurrencyCode] ??
+        selectedCurrencyCode; // Fallback to code if name not found
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          vertical: 4.0, horizontal: 0), // Reduced vertical padding slightly
+      child: Row(
+        children: [
+          Icon(Icons.attach_money_outlined,
+              size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _isEditingMode
+                ? DropdownButtonHideUnderline(
+                    // Hide default underline
+                    child: DropdownButton<String>(
+                      value: _dropdownCurrencies.contains(selectedCurrencyCode)
+                          ? selectedCurrencyCode
+                          : (_dropdownCurrencies.isNotEmpty
+                              ? _dropdownCurrencies.first
+                              : null),
+                      isExpanded: true, // Make dropdown take available space
+                      items: _dropdownCurrencies.map((String code) {
+                        final name = cCurrencyMap[code] ?? code;
+                        return DropdownMenuItem<String>(
+                          value: code,
+                          child: Text('$code - $name',
+                              style: textStyle,
+                              overflow: TextOverflow.ellipsis),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null &&
+                            _dropdownCurrencies.contains(newValue)) {
+                          setState(() {
+                            _currencyController.text = newValue;
+                          });
+                        }
+                      },
+                      menuMaxHeight: 300.0,
+                      // Style the dropdown button itself if needed
+                      // style: textStyle,
+                    ),
+                  )
+                : Text(
+                    // Display as plain text when not editing
+                    '$selectedCurrencyCode - $currencyName',
+                    style: textStyle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+          ),
+          if (_isEditingMode) // Show edit indicator only if editable
+            Icon(Icons.edit_note_outlined, size: 18, color: Colors.grey[600]),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<BillSplittingBloc, BillSplittingState>(
@@ -358,119 +600,101 @@ class _BillEditPageState extends State<BillEditPage> {
                 )
               else ...[
                 // --- Structured Data Fields ---
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: TextField(
-                        controller: _descriptionController,
-                        decoration: const InputDecoration(
-                            labelText: 'Description / Store Name'),
-                        enabled: _isEditingMode,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: _dateController,
-                        decoration: const InputDecoration(
-                          labelText: 'Bill Date',
-                          suffixIcon: Icon(Icons.calendar_today),
+                _buildEditableRow(
+                  context: context,
+                  icon: Icons.store_mall_directory_outlined,
+                  label: 'Description / Store', // Placeholder label
+                  value: _descriptionController.text,
+                  onTap: _isEditingMode
+                      ? () => _showEditDescriptionDialog()
+                      : null,
+                ),
+                const Divider(height: 1),
+                _buildEditableRow(
+                  context: context,
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Date', // Placeholder label
+                  value: _dateController.text, // Consider formatting if needed
+                  onTap: _isEditingMode ? () => _selectDate(context) : null,
+                ),
+                const Divider(height: 1),
+                _buildEditableRow(
+                  context: context,
+                  // No icon for Total Amount as per requirement, but keep structure
+                  label: 'Total Amount', // Placeholder label
+                  value:
+                      _totalAmountController.text, // Add currency symbol later
+                  isBold: true, // Apply bold style
+                  onTap: _isEditingMode
+                      ? () => _showEditTotalAmountDialog()
+                      : null,
+                ),
+                const Divider(height: 1),
+
+                // --- Optional Fields Section ---
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.end, // Align button to the right
+                    children: [
+                      // Optional: Add a label if needed
+                      // const Text("Optional Fields:"),
+                      // const Spacer(), // Pushes button to the right
+                      if (_isEditingMode) // Only show add button in edit mode
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: 'Add Tax, Tip, Discount, Currency',
+                          onPressed: _showAddFieldDialog,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                        readOnly: true,
-                        enabled: _isEditingMode,
-                        onTap:
-                            _isEditingMode ? () => _selectDate(context) : null,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _totalAmountController,
-                        decoration:
-                            const InputDecoration(labelText: 'Total Amount'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        enabled: _isEditingMode,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 1,
-                      child: DropdownButtonFormField<String>(
-                        value: _dropdownCurrencies
-                                .contains(_currencyController.text)
-                            ? _currencyController.text
-                            : (_dropdownCurrencies.isNotEmpty
-                                ? _dropdownCurrencies.first
-                                : null),
-                        items: _dropdownCurrencies
-                            .map((String currency) => DropdownMenuItem<String>(
-                                  value: currency,
-                                  child: Text(currency),
-                                ))
-                            .toList(),
-                        onChanged: _isEditingMode
-                            ? (String? newValue) {
-                                if (newValue != null &&
-                                    _dropdownCurrencies.contains(newValue)) {
-                                  setState(() {
-                                    _currencyController.text = newValue;
-                                  });
-                                }
-                              }
-                            : null,
-                        decoration:
-                            const InputDecoration(labelText: 'Currency'),
-                        menuMaxHeight: 300.0,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _taxController,
-                        decoration: const InputDecoration(labelText: 'Tax'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        enabled: _isEditingMode,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _tipController,
-                        decoration: const InputDecoration(labelText: 'Tip'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        enabled: _isEditingMode,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _discountController,
-                        decoration:
-                            const InputDecoration(labelText: 'Discount'),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        enabled: _isEditingMode,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
+
+                // Conditionally display optional fields
+                if (_showTax) ...[
+                  _buildEditableRow(
+                    context: context,
+                    icon: Icons.receipt_long_outlined, // Example icon
+                    label: 'Tax',
+                    value: _taxController.text, // Add currency symbol later
+                    onTap: _isEditingMode ? () => _showEditTaxDialog() : null,
+                  ),
+                  const Divider(height: 1),
+                ],
+                if (_showTip) ...[
+                  _buildEditableRow(
+                    context: context,
+                    icon: Icons.room_service_outlined, // Example icon
+                    label: 'Tip',
+                    value: _tipController.text, // Add currency symbol later
+                    onTap: _isEditingMode ? () => _showEditTipDialog() : null,
+                  ),
+                  const Divider(height: 1),
+                ],
+                if (_showDiscount) ...[
+                  _buildEditableRow(
+                    context: context,
+                    icon: Icons.local_offer_outlined, // Example icon
+                    label: 'Discount',
+                    value:
+                        _discountController.text, // Add currency symbol later
+                    onTap:
+                        _isEditingMode ? () => _showEditDiscountDialog() : null,
+                  ),
+                  const Divider(height: 1),
+                ],
+                if (_showCurrency) ...[
+                  _buildCurrencyDropdownRow(), // Use a specific widget for currency dropdown
+                  const Divider(height: 1),
+                ],
+
+                // Add some space before the main divider if optional fields are shown
+                if (_showTax || _showTip || _showDiscount || _showCurrency)
+                  const SizedBox(height: 16),
+
+                const Divider(), // Divider before Items section
 
                 // --- Items Section ---
                 BillItemsSection(
@@ -593,7 +817,7 @@ class _BillEditPageState extends State<BillEditPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16), // Add some space at the bottom
               ],
             ],
           ),
@@ -601,21 +825,4 @@ class _BillEditPageState extends State<BillEditPage> {
       ),
     );
   }
-}
-
-// Placeholder for missing toJson methods - replace with actual implementation if needed
-extension BillItemEntityJson on BillItemEntity {
-  Map<String, dynamic> toJson() => {
-        'description': description,
-        'quantity': quantity,
-        'unit_price': unitPrice,
-        'total_price': totalPrice,
-      };
-}
-
-extension ParticipantEntityJson on ParticipantEntity {
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        // 'user_id': userId, // Uncomment if userId is part of the entity
-      };
 }

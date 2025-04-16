@@ -31,4 +31,13 @@ class ParticipantEntity extends Equatable {
           : (linkedProfileId ?? this.linkedProfileId),
     );
   }
+
+  // Method to convert ParticipantEntity to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      // 'id': id, // Usually not needed when sending data *to* backend
+      'name': name,
+      'linked_profile_id': linkedProfileId,
+    };
+  }
 }
