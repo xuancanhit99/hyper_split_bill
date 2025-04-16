@@ -343,23 +343,26 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header Row (Optional)
+        // Header Row (Review Mode Only)
         if (_participants.isNotEmpty && !widget.enabled)
           Padding(
             padding: const EdgeInsets.only(
-                bottom: 4.0, left: 40.0), // Align with checkboxes
+                bottom: 4.0,
+                left: 40.0, // Align with checkbox space
+                right: 40.0), // Align with remove button space
             child: Row(
               children: [
                 Expanded(
+                    flex: 2, // Name takes 2 parts
                     child: Text('Name',
                         style: Theme.of(context).textTheme.labelSmall)),
-                SizedBox(
-                    width: 60,
+                Expanded(
+                    flex: 1, // Percent takes 1 part
                     child: Text('Percent',
                         textAlign: TextAlign.right,
                         style: Theme.of(context).textTheme.labelSmall)),
-                SizedBox(
-                    width: 90,
+                Expanded(
+                    flex: 1, // Amount takes 1 part
                     child: Text('Amount',
                         textAlign: TextAlign.right,
                         style: Theme.of(context).textTheme.labelSmall)),
@@ -384,7 +387,10 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             itemCount: _participants.length,
             itemBuilder: (context, index) {
               final participant = _participants[index];
-              return _buildParticipantRow(participant);
+              // Call the appropriate row builder based on mode
+              return widget.enabled
+                  ? _buildEditModeRow(participant)
+                  : _buildReviewModeRow(participant);
             },
           ),
         const SizedBox(height: 8),
@@ -398,43 +404,30 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
     );
   }
 
-  Widget _buildParticipantRow(ParticipantEntity participant) {
+  // Builds a row for Edit Mode
+  Widget _buildEditModeRow(ParticipantEntity participant) {
     final percentageController = _percentageControllers[participant.name];
     final bool isLocked = participant.isPercentageLocked;
-    final bool canRemove = widget.enabled && _participants.length > 1;
-
-    // Calculate amount for review mode
-    String displayAmount = '';
-    if (!widget.enabled &&
-        widget.totalAmount != null &&
-        widget.totalAmount! > 0 &&
-        participant.percentage != null) {
-      final amount = widget.totalAmount! * (participant.percentage! / 100.0);
-      displayAmount =
-          '${_formatCurrencyValue(amount)} ${widget.currencyCode ?? ''}';
-    }
+    final bool canRemove = _participants.length > 1;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: [
-          // Checkbox (Lock) - Only in edit mode
-          if (widget.enabled)
-            SizedBox(
-              width: 40,
-              child: Checkbox(
-                value: isLocked,
-                onChanged: (bool? value) {
-                  if (value != null) {
-                    _handleLockChange(participant, value);
-                  }
-                },
-                visualDensity: VisualDensity.compact, // Make checkbox smaller
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            )
-          else // Placeholder for alignment in review mode
-            const SizedBox(width: 40),
+          // Checkbox (Lock)
+          SizedBox(
+            width: 40,
+            child: Checkbox(
+              value: isLocked,
+              onChanged: (bool? value) {
+                if (value != null) {
+                  _handleLockChange(participant, value);
+                }
+              },
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
 
           // Name
           Expanded(
@@ -445,88 +438,123 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
           ),
           const SizedBox(width: 8),
 
-          // Percentage Input / Text
+          // Percentage Input
           SizedBox(
-            width: 60, // Fixed width for percentage input/text
-            child: widget.enabled
-                ? IntrinsicWidth(
-                    // Make TextField only as wide as needed
-                    child: TextField(
-                      controller: percentageController,
-                      enabled: !isLocked, // Disable if locked
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(
-                            r'^\d*\.?\d{0,2}')), // Allow numbers and up to 2 decimal places
-                      ],
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        hintText: '...',
-                        isDense: true, // Reduce padding
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 4),
-                        suffixText: '%',
-                        border: isLocked
-                            ? InputBorder.none
-                            : const UnderlineInputBorder(), // No border if locked
-                        enabledBorder: isLocked
-                            ? InputBorder.none
-                            : const UnderlineInputBorder(),
-                        focusedBorder: isLocked
-                            ? InputBorder.none
-                            : const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue)),
-                      ),
-                      onChanged: (value) =>
-                          _handlePercentageChange(participant, value),
-                      // Consider adding onSubmitted or FocusNode listener for validation if needed
-                    ),
-                  )
-                : Text(
-                    '${_formatCurrencyValue(participant.percentage)}%', // Display formatted percentage
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontWeight: isLocked
-                          ? FontWeight.bold
-                          : FontWeight.normal, // Bold if it was locked
-                    ),
-                  ),
+            width: 70, // Increased width
+            child: IntrinsicWidth(
+              child: TextField(
+                controller: percentageController,
+                enabled: !isLocked,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
+                textAlign: TextAlign.right,
+                decoration: InputDecoration(
+                  hintText: '...',
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  suffixText: '%',
+                  border: isLocked
+                      ? InputBorder.none
+                      : const UnderlineInputBorder(),
+                  enabledBorder: isLocked
+                      ? InputBorder.none
+                      : const UnderlineInputBorder(),
+                  focusedBorder: isLocked
+                      ? InputBorder.none
+                      : const UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.blue)),
+                ),
+                onChanged: (value) =>
+                    _handlePercentageChange(participant, value),
+              ),
+            ),
           ),
           const SizedBox(width: 8),
 
-          // Calculated Amount (Review Mode Only)
+          // Placeholder for Amount column alignment
+          const SizedBox(width: 90),
+
+          // Remove Button
           SizedBox(
-            width: 90, // Fixed width for amount
-            child: !widget.enabled
-                ? Text(
-                    displayAmount,
-                    textAlign: TextAlign.right,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall, // Smaller text for amount
+            width: 40,
+            child: canRemove
+                ? IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    color: Colors.red[300],
+                    tooltip: 'Remove ${participant.name}',
+                    onPressed: () => _removeParticipant(participant),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   )
-                : const SizedBox.shrink(), // Empty space in edit mode
+                : const SizedBox(width: 40), // Keep space if cannot remove
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Builds a row for Review Mode
+  Widget _buildReviewModeRow(ParticipantEntity participant) {
+    final bool isLocked =
+        participant.isPercentageLocked; // To show bold if it was locked
+
+    // Calculate amount
+    String displayAmount = '';
+    if (widget.totalAmount != null &&
+        widget.totalAmount! > 0 &&
+        participant.percentage != null) {
+      final amount = widget.totalAmount! * (participant.percentage! / 100.0);
+      displayAmount =
+          '${_formatCurrencyValue(amount)} ${widget.currencyCode ?? ''}';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          vertical: 4.0), // Add some vertical padding
+      child: Row(
+        children: [
+          // Placeholder for Checkbox alignment
+          const SizedBox(width: 40),
+
+          // Name (Flex 2)
+          Expanded(
+            flex: 2,
+            child: Text(
+              participant.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // const SizedBox(width: 8), // No extra space needed with Expanded
+
+          // Percentage Text (Flex 1)
+          Expanded(
+            flex: 1,
+            child: Text(
+              '${_formatCurrencyValue(participant.percentage)}%',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontWeight: isLocked ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+          // const SizedBox(width: 8), // No extra space needed with Expanded
+
+          // Calculated Amount (Flex 1)
+          Expanded(
+            flex: 1,
+            child: Text(
+              displayAmount,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
 
-          // Remove Button (Edit Mode Only)
-          if (widget.enabled)
-            SizedBox(
-              width: 40, // Width for the remove button
-              child: canRemove
-                  ? IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 20),
-                      color: Colors.red[300],
-                      tooltip: 'Remove ${participant.name}',
-                      onPressed: () => _removeParticipant(participant),
-                      padding: EdgeInsets.zero, // Remove extra padding
-                      constraints:
-                          const BoxConstraints(), // Remove constraints to allow smaller size
-                    )
-                  : const SizedBox(width: 40), // Placeholder if cannot remove
-            )
-          else // Placeholder for alignment in review mode
-            const SizedBox(width: 40),
+          // Placeholder for Remove button alignment
+          const SizedBox(width: 40),
         ],
       ),
     );
