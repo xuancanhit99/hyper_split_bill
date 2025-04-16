@@ -49,6 +49,10 @@ class _BillEditPageState extends State<BillEditPage> {
   bool _showDiscount = false;
   bool _showCurrency = false; // Currency starts hidden as per requirement
 
+  // Date formatters
+  final DateFormat _displayDateFormat = DateFormat('dd-MM-yyyy');
+  final DateFormat _isoDateFormat = DateFormat('yyyy-MM-dd');
+
   @override
   void initState() {
     super.initState();
@@ -91,8 +95,10 @@ class _BillEditPageState extends State<BillEditPage> {
     if (value is num) return allowNegative || value >= 0 ? value : null;
     if (value is String) {
       if (value.trim().isEmpty) return null;
-      final sanitizedValue =
-          value.replaceAll(RegExp(r'[$,€£¥]'), '').replaceAll(',', '').trim();
+      final sanitizedValue = value
+          .replaceAll(RegExp(r'[$,€£¥%]'), '')
+          .replaceAll(',', '')
+          .trim(); // Also remove %
       final parsedValue = num.tryParse(sanitizedValue);
       return parsedValue != null && (allowNegative || parsedValue >= 0)
           ? parsedValue
@@ -143,7 +149,6 @@ class _BillEditPageState extends State<BillEditPage> {
         if (upperCaseCurrency.length == 3) {
           effectiveCurrency = upperCaseCurrency;
           if (!_dropdownCurrencies.contains(effectiveCurrency)) {
-            // No need for setState here as it's called after parsing completes
             _dropdownCurrencies.add(effectiveCurrency);
             _dropdownCurrencies.sort();
             print(
@@ -163,18 +168,41 @@ class _BillEditPageState extends State<BillEditPage> {
       print(
           "Selected currency code after parsing: ${_currencyController.text}");
 
+      // Date Parsing with dd-MM-yyyy display format
       final dateString = data['bill_date'] as String?;
-      if (dateString != null) {
+      if (dateString != null && dateString.isNotEmpty) {
+        DateTime? parsedDate;
         try {
-          _dateController.text =
-              DateFormat('yyyy-MM-dd').format(DateTime.parse(dateString));
-        } catch (e) {
+          // First try ISO format (common backend format)
+          parsedDate = _isoDateFormat.parseStrict(dateString);
+        } catch (_) {
+          // Try common US format
+          try {
+            parsedDate = DateFormat('MM/dd/yyyy').parseStrict(dateString);
+          } catch (_) {
+            // Try common EU format
+            try {
+              parsedDate = DateFormat('dd/MM/yyyy').parseStrict(dateString);
+            } catch (_) {
+              // Try display format itself
+              try {
+                parsedDate = _displayDateFormat.parseStrict(dateString);
+              } catch (_) {
+                print(
+                    "Warning: Could not parse date string '$dateString' into known formats. Keeping original.");
+                _dateController.text = dateString; // Fallback
+              }
+            }
+          }
+        }
+        if (parsedDate != null) {
+          _dateController.text = _displayDateFormat.format(parsedDate);
+        } else if (_dateController.text.isEmpty) {
+          // Ensure controller is not empty if parsing failed but string existed
           _dateController.text = dateString;
-          print(
-              "Warning: Could not parse date string '$dateString'. Keeping original.");
         }
       } else {
-        _dateController.text = '';
+        _dateController.text = ''; // Set empty if no date string
       }
 
       if (data['items'] is List) {
@@ -219,8 +247,16 @@ class _BillEditPageState extends State<BillEditPage> {
 
   Future<void> _selectDate(BuildContext context) async {
     if (!_isEditingMode) return;
-    DateTime initialDate =
-        DateTime.tryParse(_dateController.text) ?? DateTime.now();
+    DateTime initialDate = DateTime.now(); // Default to now
+    try {
+      // Try parsing the current text in display format
+      initialDate = _displayDateFormat.parseStrict(_dateController.text);
+    } catch (_) {
+      // If parsing fails, keep the default (DateTime.now())
+      print(
+          "Could not parse current date text: ${_dateController.text}. Using today's date as initial.");
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -229,7 +265,8 @@ class _BillEditPageState extends State<BillEditPage> {
     );
     if (picked != null && picked != initialDate) {
       setState(() {
-        _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
+        // Update controller with display format
+        _dateController.text = _displayDateFormat.format(picked);
       });
     }
   }
@@ -240,23 +277,30 @@ class _BillEditPageState extends State<BillEditPage> {
   }
 
   void _saveBillInternal() {
-    final totalAmount = double.tryParse(_totalAmountController.text);
-    final billDate = DateTime.tryParse(_dateController.text);
-    final taxAmount = double.tryParse(_taxController.text) ?? 0.0;
-    final tipAmount = double.tryParse(_tipController.text) ?? 0.0;
-    final discountAmount = double.tryParse(_discountController.text) ?? 0.0;
+    final totalAmount = _parseNum(_totalAmountController.text); // Use helper
+    final taxAmount = _parseNum(_taxController.text) ?? 0.0;
+    final tipAmount = _parseNum(_tipController.text) ?? 0.0;
+    final discountAmount = _parseNum(_discountController.text) ?? 0.0;
     final currencyCode = _currencyController.text.trim().toUpperCase();
 
+    // Validate Total Amount
     if (totalAmount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter a valid total amount.')));
       return;
     }
-    if (billDate == null) {
+
+    // Validate and Parse Date
+    DateTime? parsedBillDate;
+    try {
+      parsedBillDate = _displayDateFormat.parseStrict(_dateController.text);
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please enter a valid date (YYYY-MM-DD).')));
+          content: Text('Please enter a valid date (dd-MM-yyyy).')));
       return;
     }
+
+    // Validate Currency
     if (!_dropdownCurrencies.contains(currencyCode)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content:
@@ -264,6 +308,7 @@ class _BillEditPageState extends State<BillEditPage> {
       return;
     }
 
+    // Get User ID
     final authState = context.read<AuthBloc>().state;
     String? currentUserId;
     if (authState is AuthAuthenticated) {
@@ -274,92 +319,104 @@ class _BillEditPageState extends State<BillEditPage> {
       return;
     }
 
+    // Create Bill Entity
     final currentBillData = BillEntity(
-      id: '',
-      totalAmount: totalAmount,
-      date: billDate,
+      id: '', // ID will be generated by backend/storage
+      totalAmount: totalAmount.toDouble(), // Convert num to double
+      date: parsedBillDate,
       description: _descriptionController.text.trim(),
       payerUserId: currentUserId!, // We know it's not null here
       currencyCode: currencyCode,
       items: _items,
       participants: _participants,
+      // Note: Tax, Tip, Discount are not part of BillEntity currently
+      // They are handled separately in the JSON map below if needed
     );
 
+    // Create JSON Map for potential saving/display
     final billMapForJson = {
-      'bill_date': DateFormat('yyyy-MM-dd').format(currentBillData.date),
+      'bill_date':
+          _isoDateFormat.format(currentBillData.date), // Save in ISO format
       'description': currentBillData.description,
       'currency_code': currentBillData.currencyCode,
       'total_amount': currentBillData.totalAmount,
-      'tax_amount': taxAmount,
-      'tip_amount': tipAmount,
-      'discount_amount': discountAmount,
+      'tax_amount': taxAmount, // Include tax if needed
+      'tip_amount': tipAmount, // Include tip if needed
+      'discount_amount': discountAmount, // Include discount if needed
       'payer_user_id': currentBillData.payerUserId,
-      'items': currentBillData.items?.map((item) => item.toJson()).toList() ??
-          [], // Assuming toJson exists
+      'items':
+          currentBillData.items?.map((item) => item.toJson()).toList() ?? [],
       'participants':
-          currentBillData.participants?.map((p) => p.toJson()).toList() ??
-              [], // Assuming toJson exists
+          currentBillData.participants?.map((p) => p.toJson()).toList() ?? [],
     };
     const jsonEncoder = JsonEncoder.withIndent('  ');
     final generatedJson = jsonEncoder.convert(billMapForJson);
 
-    // Removed logic to collapse tiles
-
     setState(() {
       _finalBillJsonString = generatedJson;
-      _isEditingMode = false;
+      _isEditingMode = false; // Switch to review mode
     });
 
     print("Internal save complete. Dispatching save event...");
-    _dispatchSaveEvent(currentBillData);
+    _dispatchSaveEvent(currentBillData); // Dispatch event with BillEntity
   }
 
   void _toggleEditMode() {
-    // Removed logic to collapse tiles
-
     setState(() {
-      _isEditingMode = true;
-      _finalBillJsonString = null;
+      _isEditingMode = !_isEditingMode; // Toggle edit mode
+      if (_isEditingMode) {
+        _finalBillJsonString = null; // Clear final JSON when going back to edit
+      }
     });
-    print("Switched back to editing mode.");
+    print("Switched to ${_isEditingMode ? 'editing' : 'review'} mode.");
   }
 
   // --- Helper Widget for Editable Rows ---
   Widget _buildEditableRow({
     required BuildContext context,
-    IconData? icon, // Optional icon
-    required String label, // Label is now just for semantics/debugging
+    IconData? icon,
+    String? textPrefix, // Optional text prefix instead of icon
+    required String label, // Used for placeholder text
     required String value,
+    String? valueSuffix, // Optional suffix (like '%')
     VoidCallback? onTap,
     bool isBold = false,
   }) {
     final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
           fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          fontSize: isBold ? 18 : 16, // Slightly larger if bold
+          fontSize: isBold ? 18 : 16,
         );
 
+    final displayValue =
+        value.isEmpty ? 'Tap to edit $label' : '$value${valueSuffix ?? ''}';
+
     return InkWell(
-      onTap: onTap, // Enable tap only if onTap is provided
+      onTap: _isEditingMode ? onTap : null, // Only allow tap in edit mode
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            vertical: 12.0, horizontal: 0), // Adjust padding
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 0),
         child: Row(
           children: [
             if (icon != null) ...[
               Icon(icon,
                   size: 20, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12), // Space between icon and text
+              const SizedBox(width: 12),
+            ] else if (textPrefix != null) ...[
+              Text(textPrefix,
+                  style: textStyle?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary)), // Style prefix like icon
+              const SizedBox(width: 8), // Smaller gap for text prefix
             ],
             Expanded(
               child: Text(
-                value.isEmpty
-                    ? 'Tap to edit $label'
-                    : value, // Show placeholder if empty
+                displayValue,
                 style: textStyle,
-                overflow: TextOverflow.ellipsis, // Prevent long text overflow
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (onTap != null) // Show edit indicator only if editable
+            if (_isEditingMode &&
+                onTap != null) // Show edit indicator only if editable
               Icon(Icons.edit_note_outlined, size: 18, color: Colors.grey[600]),
           ],
         ),
@@ -420,50 +477,60 @@ class _BillEditPageState extends State<BillEditPage> {
             return AlertDialog(
               title: const Text('Add Optional Fields'),
               content: SingleChildScrollView(
-                // Use SingleChildScrollView if content might overflow
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     CheckboxListTile(
                       title: const Text('Tax'),
                       value: _showTax,
-                      onChanged: (bool? value) {
-                        setDialogState(() {
-                          _showTax = value ?? false;
-                        });
-                        // Also update the main page state when dialog closes or immediately
-                        setState(() {});
-                      },
+                      onChanged: !_isEditingMode
+                          ? null
+                          : (bool? value) {
+                              // Disable in review mode
+                              setDialogState(() {
+                                _showTax = value ?? false;
+                              });
+                              setState(() {});
+                            },
                     ),
                     CheckboxListTile(
                       title: const Text('Tip'),
                       value: _showTip,
-                      onChanged: (bool? value) {
-                        setDialogState(() {
-                          _showTip = value ?? false;
-                        });
-                        setState(() {});
-                      },
+                      onChanged: !_isEditingMode
+                          ? null
+                          : (bool? value) {
+                              // Disable in review mode
+                              setDialogState(() {
+                                _showTip = value ?? false;
+                              });
+                              setState(() {});
+                            },
                     ),
                     CheckboxListTile(
                       title: const Text('Discount'),
                       value: _showDiscount,
-                      onChanged: (bool? value) {
-                        setDialogState(() {
-                          _showDiscount = value ?? false;
-                        });
-                        setState(() {});
-                      },
+                      onChanged: !_isEditingMode
+                          ? null
+                          : (bool? value) {
+                              // Disable in review mode
+                              setDialogState(() {
+                                _showDiscount = value ?? false;
+                              });
+                              setState(() {});
+                            },
                     ),
                     CheckboxListTile(
                       title: const Text('Currency'),
                       value: _showCurrency,
-                      onChanged: (bool? value) {
-                        setDialogState(() {
-                          _showCurrency = value ?? false;
-                        });
-                        setState(() {});
-                      },
+                      onChanged: !_isEditingMode
+                          ? null
+                          : (bool? value) {
+                              // Disable in review mode
+                              setDialogState(() {
+                                _showCurrency = value ?? false;
+                              });
+                              setState(() {});
+                            },
                     ),
                   ],
                 ),
@@ -473,9 +540,7 @@ class _BillEditPageState extends State<BillEditPage> {
                   child: const Text('Done'),
                   onPressed: () {
                     Navigator.of(context).pop();
-                    // Trigger a final setState on the main page if needed,
-                    // though individual onChanged might be sufficient.
-                    setState(() {});
+                    // No need for extra setState here as individual onChanged handles it
                   },
                 ),
               ],
@@ -489,15 +554,13 @@ class _BillEditPageState extends State<BillEditPage> {
   // --- Helper for Currency Dropdown Row ---
   Widget _buildCurrencyDropdownRow() {
     final textStyle = Theme.of(context).textTheme.titleMedium;
-
-    // Find the full name for the selected currency code
     final selectedCurrencyCode = _currencyController.text;
-    final currencyName = cCurrencyMap[selectedCurrencyCode] ??
-        selectedCurrencyCode; // Fallback to code if name not found
+    // Use the map constant defined in currencies.dart
+    final currencyName =
+        cCurrencyMap[selectedCurrencyCode] ?? selectedCurrencyCode;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          vertical: 4.0, horizontal: 0), // Reduced vertical padding slightly
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0),
       child: Row(
         children: [
           Icon(Icons.attach_money_outlined,
@@ -506,15 +569,15 @@ class _BillEditPageState extends State<BillEditPage> {
           Expanded(
             child: _isEditingMode
                 ? DropdownButtonHideUnderline(
-                    // Hide default underline
                     child: DropdownButton<String>(
                       value: _dropdownCurrencies.contains(selectedCurrencyCode)
                           ? selectedCurrencyCode
                           : (_dropdownCurrencies.isNotEmpty
                               ? _dropdownCurrencies.first
                               : null),
-                      isExpanded: true, // Make dropdown take available space
+                      isExpanded: true,
                       items: _dropdownCurrencies.map((String code) {
+                        // Use the map constant here as well
                         final name = cCurrencyMap[code] ?? code;
                         return DropdownMenuItem<String>(
                           value: code,
@@ -532,8 +595,6 @@ class _BillEditPageState extends State<BillEditPage> {
                         }
                       },
                       menuMaxHeight: 300.0,
-                      // Style the dropdown button itself if needed
-                      // style: textStyle,
                     ),
                   )
                 : Text(
@@ -559,30 +620,45 @@ class _BillEditPageState extends State<BillEditPage> {
             SnackBar(
                 content: Text(state.message), backgroundColor: Colors.green),
           );
+          // Optionally navigate away or disable further editing
         } else if (state is BillSplittingError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(state.message),
+                content: Text("Save Error: ${state.message}"), // Add prefix
                 backgroundColor: Theme.of(context).colorScheme.error),
           );
+          // Allow user to stay in edit mode or toggle back if save failed from review mode
           if (!_isEditingMode) {
-            _toggleEditMode(); // Go back to editing
+            setState(() {
+              _isEditingMode = true;
+            }); // Go back to editing on error
           }
+        } else if (state is BillSplittingLoading) {
+          // Optional: Show loading indicator on save button or elsewhere
         }
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text(_isEditingMode ? 'Edit Bill' : 'Review Bill'),
           actions: [
-            IconButton(
-              icon: Icon(
-                  _isEditingMode ? Icons.save_outlined : Icons.edit_outlined),
-              tooltip: _isEditingMode ? 'Save Bill Data' : 'Edit Bill Data',
-              onPressed: context.watch<BillSplittingBloc>().state
-                      is BillSplittingLoading
-                  ? null
-                  : (_isEditingMode ? _saveBillInternal : _toggleEditMode),
-            ),
+            // Show progress indicator instead of button while loading
+            if (context.watch<BillSplittingBloc>().state
+                is BillSplittingLoading)
+              const Padding(
+                padding: EdgeInsets.only(right: 16.0),
+                child: Center(
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))),
+              )
+            else
+              IconButton(
+                icon: Icon(
+                    _isEditingMode ? Icons.save_outlined : Icons.edit_outlined),
+                tooltip: _isEditingMode ? 'Save Bill Data' : 'Edit Bill Data',
+                onPressed: _isEditingMode ? _saveBillInternal : _toggleEditMode,
+              ),
           ],
         ),
         body: SafeArea(
@@ -596,105 +672,105 @@ class _BillEditPageState extends State<BillEditPage> {
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Center(
                       child: Text('Error parsing OCR data: $_parsingError',
-                          style: TextStyle(color: Colors.red))),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error))),
                 )
               else ...[
-                // --- Structured Data Fields ---
+                // --- Main Bill Info ---
                 _buildEditableRow(
                   context: context,
                   icon: Icons.store_mall_directory_outlined,
-                  label: 'Description / Store', // Placeholder label
+                  label: 'Description / Store',
                   value: _descriptionController.text,
-                  onTap: _isEditingMode
-                      ? () => _showEditDescriptionDialog()
-                      : null,
+                  onTap: _showEditDescriptionDialog,
                 ),
                 const Divider(height: 1),
                 _buildEditableRow(
                   context: context,
                   icon: Icons.calendar_today_outlined,
-                  label: 'Date', // Placeholder label
-                  value: _dateController.text, // Consider formatting if needed
-                  onTap: _isEditingMode ? () => _selectDate(context) : null,
+                  label: 'Date',
+                  value: _dateController.text,
+                  onTap: () => _selectDate(context), // Use direct call
                 ),
                 const Divider(height: 1),
                 _buildEditableRow(
                   context: context,
-                  // No icon for Total Amount as per requirement, but keep structure
-                  label: 'Total Amount', // Placeholder label
-                  value:
-                      _totalAmountController.text, // Add currency symbol later
-                  isBold: true, // Apply bold style
-                  onTap: _isEditingMode
-                      ? () => _showEditTotalAmountDialog()
-                      : null,
+                  // No icon, use text prefix
+                  textPrefix: "Total Amount:",
+                  label: 'Total Amount',
+                  value: _totalAmountController
+                      .text, // Add currency symbol formatting later if needed
+                  isBold: true,
+                  onTap: _showEditTotalAmountDialog,
                 ),
                 const Divider(height: 1),
 
-                // --- Optional Fields Section ---
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.end, // Align button to the right
-                    children: [
-                      // Optional: Add a label if needed
-                      // const Text("Optional Fields:"),
-                      // const Spacer(), // Pushes button to the right
-                      if (_isEditingMode) // Only show add button in edit mode
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
-                          tooltip: 'Add Tax, Tip, Discount, Currency',
-                          onPressed: _showAddFieldDialog,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Conditionally display optional fields
+                // --- Conditionally Display Optional Fields ---
                 if (_showTax) ...[
                   _buildEditableRow(
                     context: context,
-                    icon: Icons.receipt_long_outlined, // Example icon
+                    textPrefix: "Tax:", // Use text prefix
                     label: 'Tax',
-                    value: _taxController.text, // Add currency symbol later
-                    onTap: _isEditingMode ? () => _showEditTaxDialog() : null,
+                    value: _taxController.text,
+                    valueSuffix: "%", // Add suffix
+                    onTap: _showEditTaxDialog,
                   ),
                   const Divider(height: 1),
                 ],
                 if (_showTip) ...[
                   _buildEditableRow(
                     context: context,
-                    icon: Icons.room_service_outlined, // Example icon
+                    textPrefix: "Tip:", // Use text prefix
                     label: 'Tip',
-                    value: _tipController.text, // Add currency symbol later
-                    onTap: _isEditingMode ? () => _showEditTipDialog() : null,
+                    value: _tipController.text,
+                    valueSuffix: "%", // Add suffix
+                    onTap: _showEditTipDialog,
                   ),
                   const Divider(height: 1),
                 ],
                 if (_showDiscount) ...[
                   _buildEditableRow(
                     context: context,
-                    icon: Icons.local_offer_outlined, // Example icon
+                    textPrefix: "Discount:", // Use text prefix
                     label: 'Discount',
-                    value:
-                        _discountController.text, // Add currency symbol later
-                    onTap:
-                        _isEditingMode ? () => _showEditDiscountDialog() : null,
+                    value: _discountController.text,
+                    valueSuffix: "%", // Add suffix
+                    onTap: _showEditDiscountDialog,
                   ),
                   const Divider(height: 1),
                 ],
                 if (_showCurrency) ...[
-                  _buildCurrencyDropdownRow(), // Use a specific widget for currency dropdown
+                  _buildCurrencyDropdownRow(),
                   const Divider(height: 1),
                 ],
 
-                // Add some space before the main divider if optional fields are shown
-                if (_showTax || _showTip || _showDiscount || _showCurrency)
+                // --- Add Optional Fields Button ---
+                // Positioned below the optional fields
+                if (_isEditingMode) // Only show button in edit mode
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0), // Add space above
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: 'Add Tax, Tip, Discount, Currency',
+                          onPressed: _showAddFieldDialog,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Add space before the main divider if optional fields are shown or button is present
+                if (_showTax ||
+                    _showTip ||
+                    _showDiscount ||
+                    _showCurrency ||
+                    _isEditingMode)
                   const SizedBox(height: 16),
 
-                const Divider(), // Divider before Items section
+                // const Divider(), // Divider before Items section
 
                 // --- Items Section ---
                 BillItemsSection(
@@ -702,7 +778,11 @@ class _BillEditPageState extends State<BillEditPage> {
                   initialItems: _items,
                   enabled: _isEditingMode,
                   onItemsChanged: (updatedItems) {
-                    if (_isEditingMode) _items = updatedItems;
+                    if (_isEditingMode) {
+                      setState(() {
+                        _items = updatedItems;
+                      }); // Update state
+                    }
                   },
                 ),
                 const SizedBox(height: 24),
@@ -718,7 +798,11 @@ class _BillEditPageState extends State<BillEditPage> {
                   initialParticipants: _participants,
                   enabled: _isEditingMode,
                   onParticipantsChanged: (updatedParticipants) {
-                    if (_isEditingMode) _participants = updatedParticipants;
+                    if (_isEditingMode) {
+                      setState(() {
+                        _participants = updatedParticipants;
+                      }); // Update state
+                    }
                   },
                 ),
                 const SizedBox(height: 24),
@@ -727,8 +811,7 @@ class _BillEditPageState extends State<BillEditPage> {
                 // --- Final Bill JSON Data (Show only when not editing) ---
                 if (!_isEditingMode && _finalBillJsonString != null) ...[
                   ExpansionTile(
-                    // Removed controller and state management for expansion
-                    initiallyExpanded: true, // Keep it open initially
+                    initiallyExpanded: true,
                     title: Text('Final Bill JSON Data',
                         style: Theme.of(context).textTheme.titleMedium),
                     children: [
@@ -780,19 +863,15 @@ class _BillEditPageState extends State<BillEditPage> {
 
                 // --- Raw OCR Text (Styled like Final JSON, always available) ---
                 ExpansionTile(
-                  // Removed controller and state management for expansion
                   initiallyExpanded: false, // Default to collapsed
                   title: Text('Raw OCR/JSON Data (Initial)',
                       style: Theme.of(context).textTheme.titleSmall),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(
-                          top: 8.0, bottom: 16.0), // Match padding
+                      padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
                       child: Container(
-                        // Use Container for styling
-                        padding: const EdgeInsets.all(12.0), // Match padding
+                        padding: const EdgeInsets.all(12.0),
                         decoration: BoxDecoration(
-                            // Match decoration
                             color: Theme.of(context)
                                 .colorScheme
                                 .surfaceVariant
@@ -803,10 +882,8 @@ class _BillEditPageState extends State<BillEditPage> {
                                     .colorScheme
                                     .outlineVariant)),
                         child: SelectableText(
-                          // Use SelectableText
-                          _ocrTextController.text, // Get text from controller
+                          _ocrTextController.text,
                           style: TextStyle(
-                              // Match style
                               fontFamily: 'monospace',
                               fontSize: 12,
                               color: Theme.of(context)
