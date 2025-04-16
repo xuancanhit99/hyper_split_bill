@@ -7,121 +7,16 @@ import 'package:hyper_split_bill/features/bill_splitting/domain/entities/partici
 import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart'; // Import Bloc, Event, State
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_entity.dart'; // Import BillEntity
 import 'package:go_router/go_router.dart'; // Import go_router for pop and push
-import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_items_section.dart'; // Import items section
-import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_participants_section.dart'; // Import participants section
+import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_items_section.dart';
+import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_participants_section.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc for user ID
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes for navigation
 import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import the new currency constants file
 
-// --- Stateful Widget for Description Dialog Content ---
-class _DescriptionDialogContent extends StatefulWidget {
-  final String initialValue;
-
-  const _DescriptionDialogContent({super.key, required this.initialValue});
-
-  @override
-  _DescriptionDialogContentState createState() =>
-      _DescriptionDialogContentState();
-}
-
-class _DescriptionDialogContentState extends State<_DescriptionDialogContent> {
-  late final TextEditingController controller;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  String get currentValue => controller.text.trim();
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      autofocus: true,
-      decoration:
-          const InputDecoration(hintText: 'Enter description or store name'),
-      textCapitalization: TextCapitalization.sentences,
-    );
-  }
-}
-
-// --- Stateful Widget for Numeric Dialog Content ---
-class _NumericDialogContent extends StatefulWidget {
-  final String initialValue;
-  final String? hintText;
-  final String? valueSuffix;
-  final bool allowNegative;
-  final num? Function(dynamic, {bool allowNegative})
-      parseNumFunc; // Pass helper
-
-  const _NumericDialogContent({
-    super.key,
-    required this.initialValue,
-    this.hintText,
-    this.valueSuffix,
-    this.allowNegative = false,
-    required this.parseNumFunc,
-  });
-
-  @override
-  _NumericDialogContentState createState() => _NumericDialogContentState();
-}
-
-class _NumericDialogContentState extends State<_NumericDialogContent> {
-  late final TextEditingController controller;
-  final formKey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    super.initState();
-    controller = TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  String get currentValue => controller.text.isEmpty ? '0' : controller.text;
-  bool validate() => formKey.currentState!.validate();
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: formKey,
-      child: TextFormField(
-        controller: controller,
-        autofocus: true,
-        keyboardType: TextInputType.numberWithOptions(
-            decimal: true, signed: widget.allowNegative),
-        decoration: InputDecoration(
-          hintText: widget.hintText ?? 'Enter value',
-          suffixText: widget.valueSuffix,
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return null; // Allow empty, treat as 0
-          }
-          final number =
-              widget.parseNumFunc(value, allowNegative: widget.allowNegative);
-          if (number == null) {
-            return 'Please enter a valid number';
-          }
-          return null; // Valid
-        },
-      ),
-    );
-  }
-}
+// Import newly created widgets
+import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_dialog_content.dart';
+import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_bill_info_section.dart';
+import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/json_expansion_tile.dart';
 
 class BillEditPage extends StatefulWidget {
   final String structuredJsonString; // Receive the structured JSON string
@@ -491,64 +386,11 @@ class _BillEditPageState extends State<BillEditPage> {
     print("Switched to ${_isEditingMode ? 'editing' : 'review'} mode.");
   }
 
-  // --- Helper Widget for Editable Rows ---
-  Widget _buildEditableRow({
-    required BuildContext context,
-    IconData? icon,
-    String? textPrefix, // Optional text prefix instead of icon
-    required String label, // Used for placeholder text
-    required String value,
-    String? valueSuffix, // Optional suffix (like '%')
-    VoidCallback? onTap,
-    bool isBold = false,
-  }) {
-    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          fontSize: isBold ? 18 : 16,
-        );
-
-    final displayValue =
-        value.isEmpty ? 'Tap to edit $label' : '$value${valueSuffix ?? ''}';
-
-    return InkWell(
-      onTap: _isEditingMode ? onTap : null, // Only allow tap in edit mode
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 0),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              Icon(icon,
-                  size: 20, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12),
-            ] else if (textPrefix != null) ...[
-              Text(textPrefix,
-                  style: textStyle?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary)), // Style prefix like icon
-              const SizedBox(width: 8), // Smaller gap for text prefix
-            ],
-            Expanded(
-              child: Text(
-                displayValue,
-                style: textStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (_isEditingMode &&
-                onTap != null) // Show edit indicator only if editable
-              Icon(Icons.edit_note_outlined, size: 18, color: Colors.grey[600]),
-          ],
-        ),
-      ),
-    );
-  }
-
   // --- Edit Dialog Methods ---
   Future<void> _showEditDescriptionDialog() async {
-    // Key to access the state of the dialog content
-    final GlobalKey<_DescriptionDialogContentState> contentKey =
-        GlobalKey<_DescriptionDialogContentState>();
+    // Key to access the state of the dialog content (use public state type)
+    final GlobalKey<DescriptionDialogContentState> contentKey =
+        GlobalKey<DescriptionDialogContentState>();
 
     final String? newDescription = await showDialog<String>(
       context: context,
@@ -556,7 +398,8 @@ class _BillEditPageState extends State<BillEditPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Edit Description'),
-        content: _DescriptionDialogContent(
+        // Use the imported widget
+        content: DescriptionDialogContent(
           key: contentKey, // Assign key
           initialValue: _descriptionController.text,
         ),
@@ -604,9 +447,9 @@ class _BillEditPageState extends State<BillEditPage> {
     String? valueSuffix,
     bool allowNegative = false,
   }) async {
-    // Key to access the state of the dialog content
-    final GlobalKey<_NumericDialogContentState> contentKey =
-        GlobalKey<_NumericDialogContentState>();
+    // Key to access the state of the dialog content (use public state type)
+    final GlobalKey<NumericDialogContentState> contentKey =
+        GlobalKey<NumericDialogContentState>();
 
     final String? newValue = await showDialog<String>(
       context: context,
@@ -614,7 +457,8 @@ class _BillEditPageState extends State<BillEditPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: Text(title),
-        content: _NumericDialogContent(
+        // Use the imported widget
+        content: NumericDialogContent(
           key: contentKey, // Assign key
           initialValue: initialValue,
           hintText: hintText,
@@ -810,64 +654,13 @@ class _BillEditPageState extends State<BillEditPage> {
     );
   }
 
-  // --- Helper for Currency Dropdown Row ---
-  Widget _buildCurrencyDropdownRow() {
-    final textStyle = Theme.of(context).textTheme.titleMedium;
-    final selectedCurrencyCode = _currencyController.text;
-    // Use the map constant defined in currencies.dart
-    final currencyName =
-        cCurrencyMap[selectedCurrencyCode] ?? selectedCurrencyCode;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0),
-      child: Row(
-        children: [
-          Icon(Icons.attach_money_outlined,
-              size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _isEditingMode
-                ? DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _dropdownCurrencies.contains(selectedCurrencyCode)
-                          ? selectedCurrencyCode
-                          : (_dropdownCurrencies.isNotEmpty
-                              ? _dropdownCurrencies.first
-                              : null),
-                      isExpanded: true,
-                      items: _dropdownCurrencies.map((String code) {
-                        // Use the map constant here as well
-                        final name = cCurrencyMap[code] ?? code;
-                        return DropdownMenuItem<String>(
-                          value: code,
-                          child: Text('$code - $name',
-                              style: textStyle,
-                              overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null &&
-                            _dropdownCurrencies.contains(newValue)) {
-                          setState(() {
-                            _currencyController.text = newValue;
-                          });
-                        }
-                      },
-                      menuMaxHeight: 300.0,
-                    ),
-                  )
-                : Text(
-                    // Display as plain text when not editing
-                    '$selectedCurrencyCode - $currencyName',
-                    style: textStyle,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-          ),
-          if (_isEditingMode) // Show edit indicator only if editable
-            Icon(Icons.edit_note_outlined, size: 18, color: Colors.grey[600]),
-        ],
-      ),
-    );
+  // --- Currency Change Handler ---
+  void _handleCurrencyChanged(String? newValue) {
+    if (newValue != null && _dropdownCurrencies.contains(newValue)) {
+      setState(() {
+        _currencyController.text = newValue;
+      });
+    }
   }
 
   @override
@@ -935,99 +728,31 @@ class _BillEditPageState extends State<BillEditPage> {
                               color: Theme.of(context).colorScheme.error))),
                 )
               else ...[
-                // --- Main Bill Info ---
-                _buildEditableRow(
-                  context: context,
-                  icon: Icons.store_mall_directory_outlined,
-                  label: 'Description / Store',
-                  value: _descriptionController.text,
-                  onTap: _showEditDescriptionDialog,
+                // --- Use the new EditBillInfoSection ---
+                EditBillInfoSection(
+                  isEditingMode: _isEditingMode,
+                  descriptionController: _descriptionController,
+                  dateController: _dateController,
+                  totalAmountController: _totalAmountController,
+                  taxController: _taxController,
+                  tipController: _tipController,
+                  discountController: _discountController,
+                  currencyController: _currencyController,
+                  showTax: _showTax,
+                  showTip: _showTip,
+                  showDiscount: _showDiscount,
+                  showCurrency: _showCurrency,
+                  dropdownCurrencies: _dropdownCurrencies,
+                  onEditDescription: _showEditDescriptionDialog,
+                  onSelectDate: () => _selectDate(context),
+                  onEditTotalAmount: _showEditTotalAmountDialog,
+                  onEditTax: _showEditTaxDialog,
+                  onEditTip: _showEditTipDialog,
+                  onEditDiscount: _showEditDiscountDialog,
+                  onCurrencyChanged: _handleCurrencyChanged,
+                  onAddOptionalFields: _showAddFieldDialog,
+                  formatCurrencyValue: _formatCurrencyValue,
                 ),
-                const Divider(height: 1),
-                _buildEditableRow(
-                  context: context,
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Date',
-                  value: _dateController.text,
-                  onTap: () => _selectDate(context), // Use direct call
-                ),
-                const Divider(height: 1),
-                _buildEditableRow(
-                  context: context,
-                  textPrefix: "Total Amount:",
-                  label: 'Total Amount',
-                  value: _formatCurrencyValue(_parseNum(
-                      _totalAmountController.text)), // Format for display
-                  isBold: true,
-                  onTap: _showEditTotalAmountDialog,
-                ),
-                const Divider(height: 1),
-
-                // --- Conditionally Display Optional Fields ---
-                if (_showTax) ...[
-                  _buildEditableRow(
-                    context: context,
-                    textPrefix: "Tax:", // Use text prefix
-                    label: 'Tax',
-                    value: _taxController.text, // Raw value from controller
-                    valueSuffix: "%", // Add suffix
-                    onTap: _showEditTaxDialog,
-                  ),
-                  const Divider(height: 1),
-                ],
-                if (_showTip) ...[
-                  _buildEditableRow(
-                    context: context,
-                    textPrefix: "Tip:", // Use text prefix
-                    label: 'Tip',
-                    value: _tipController.text, // Raw value from controller
-                    valueSuffix: "%", // Add suffix
-                    onTap: _showEditTipDialog,
-                  ),
-                  const Divider(height: 1),
-                ],
-                if (_showDiscount) ...[
-                  _buildEditableRow(
-                    context: context,
-                    textPrefix: "Discount:", // Use text prefix
-                    label: 'Discount',
-                    value:
-                        _discountController.text, // Raw value from controller
-                    valueSuffix: "%", // Add suffix
-                    onTap: _showEditDiscountDialog,
-                  ),
-                  const Divider(height: 1),
-                ],
-                if (_showCurrency) ...[
-                  _buildCurrencyDropdownRow(),
-                  const Divider(height: 1),
-                ],
-
-                // --- Add Optional Fields Button ---
-                // Positioned below the optional fields
-                if (_isEditingMode) // Only show button in edit mode
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0), // Add space above
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
-                          tooltip: 'Add Tax, Tip, Discount, Currency',
-                          onPressed: _showAddFieldDialog,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Add space before the main divider if optional fields are shown or button is present
-                if (_showTax ||
-                    _showTip ||
-                    _showDiscount ||
-                    _showCurrency ||
-                    _isEditingMode)
-                  const SizedBox(height: 16),
 
                 const Divider(), // Divider before Items section
 
@@ -1069,37 +794,10 @@ class _BillEditPageState extends State<BillEditPage> {
 
                 // --- Final Bill JSON Data (Show only when not editing) ---
                 if (!_isEditingMode && _finalBillJsonString != null) ...[
-                  ExpansionTile(
+                  JsonExpansionTile(
+                    title: 'Final Bill JSON Data',
+                    jsonString: _finalBillJsonString!,
                     initiallyExpanded: true,
-                    title: Text('Final Bill JSON Data',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                        child: Container(
-                          padding: const EdgeInsets.all(12.0),
-                          decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceVariant
-                                  .withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(4.0),
-                              border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outlineVariant)),
-                          child: SelectableText(
-                            _finalBillJsonString!,
-                            style: TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1121,37 +819,10 @@ class _BillEditPageState extends State<BillEditPage> {
                 ],
 
                 // --- Raw OCR Text (Styled like Final JSON, always available) ---
-                ExpansionTile(
-                  initiallyExpanded: false, // Default to collapsed
-                  title: Text('Raw OCR/JSON Data (Initial)',
-                      style: Theme.of(context).textTheme.titleSmall),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(12.0),
-                        decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceVariant
-                                .withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(4.0),
-                            border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant)),
-                        child: SelectableText(
-                          _ocrTextController.text,
-                          style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant),
-                        ),
-                      ),
-                    ),
-                  ],
+                JsonExpansionTile(
+                  title: 'Raw OCR/JSON Data (Initial)',
+                  jsonString: _ocrTextController.text,
+                  initiallyExpanded: false,
                 ),
                 const SizedBox(height: 16), // Add some space at the bottom
               ],
