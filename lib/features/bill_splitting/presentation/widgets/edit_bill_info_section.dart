@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/editable_row.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/currency_dropdown_row.dart';
+import 'dart:math'; // For abs()
 
 class EditBillInfoSection extends StatelessWidget {
   final bool isEditingMode;
@@ -25,6 +26,10 @@ class EditBillInfoSection extends StatelessWidget {
   final ValueChanged<String?> onCurrencyChanged;
   final VoidCallback onAddOptionalFields;
   final String Function(num?) formatCurrencyValue; // Pass formatting function
+  final double?
+      calculatedTotalAmount; // Newly added: Calculated total from parent
+  final VoidCallback?
+      onUpdateTotalAmount; // Newly added: Callback to update total
 
   const EditBillInfoSection({
     super.key,
@@ -50,17 +55,37 @@ class EditBillInfoSection extends StatelessWidget {
     required this.onCurrencyChanged,
     required this.onAddOptionalFields,
     required this.formatCurrencyValue,
+    this.calculatedTotalAmount, // Make optional for now
+    this.onUpdateTotalAmount, // Make optional for now
   });
 
-  // Helper to parse number from controller text safely for display formatting
+  // Helper to parse number from controller text safely
   num? _parseNumFromController(TextEditingController controller) {
     if (controller.text.isEmpty) return null;
-    // Basic parsing for display, assumes _parseNum handles complex cases elsewhere
-    return num.tryParse(controller.text.replaceAll(',', '.'));
+    // Basic parsing, assumes _parseNum handles complex cases elsewhere
+    final sanitized =
+        controller.text.replaceAll(RegExp(r'[^\d.,]'), '').replaceAll(',', '.');
+    return num.tryParse(sanitized);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Determine if the update button should be enabled
+    bool showUpdateButton = false;
+    bool isUpdateButtonEnabled = false;
+    if (isEditingMode &&
+        calculatedTotalAmount != null &&
+        onUpdateTotalAmount != null) {
+      final currentTotal = _parseNumFromController(totalAmountController);
+      // Show button if calculated value exists
+      showUpdateButton = true;
+      // Enable button only if current total is parseable and differs significantly
+      if (currentTotal != null &&
+          (currentTotal - calculatedTotalAmount!).abs() > 0.01) {
+        isUpdateButtonEnabled = true;
+      }
+    }
+
     return Column(
       children: [
         // --- Main Bill Info ---
@@ -136,14 +161,39 @@ class EditBillInfoSection extends StatelessWidget {
           const Divider(height: 1),
         ],
 
-        // --- Add Optional Fields Button ---
-        // Positioned below the optional fields
-        if (isEditingMode) // Only show button in edit mode
+        // --- Action Buttons Row ---
+        if (isEditingMode)
           Padding(
-            padding: const EdgeInsets.only(top: 8.0), // Add space above
+            padding: const EdgeInsets.only(top: 8.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween, // Align buttons
               children: [
+                // Update Total Button (conditionally shown and enabled)
+                if (showUpdateButton)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Update Total'),
+                    onPressed: isUpdateButtonEnabled
+                        ? onUpdateTotalAmount
+                        : null, // Enable/disable based on comparison
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isUpdateButtonEnabled
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey,
+                      side: BorderSide(
+                          color: isUpdateButtonEnabled
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      textStyle: const TextStyle(fontSize: 13),
+                    ),
+                  )
+                else
+                  const SizedBox(), // Placeholder to maintain alignment if button not shown
+
+                // Add Optional Fields Button
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline),
                   tooltip: 'Add Tax, Tip, Discount, Currency',

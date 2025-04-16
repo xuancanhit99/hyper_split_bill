@@ -54,6 +54,10 @@ class _BillEditPageState extends State<BillEditPage> {
   bool _showDiscount = false;
   bool _showCurrency = false; // Currency starts hidden as per requirement
 
+  // State for calculated total comparison
+  double?
+      _calculatedTotalAmount; // Holds the sum of items + tax + tip - discount
+
   // Date formatters
   final DateFormat _displayDateFormat = DateFormat('dd-MM-yyyy');
   final DateFormat _isoDateFormat = DateFormat('yyyy-MM-dd');
@@ -79,6 +83,8 @@ class _BillEditPageState extends State<BillEditPage> {
 
     // Parse the received JSON string directly, which might update _dropdownCurrencies
     _parseStructuredJson(widget.structuredJsonString);
+    // Initial calculation after parsing
+    _recalculateAndCompareTotal();
   }
 
   @override
@@ -257,6 +263,8 @@ class _BillEditPageState extends State<BillEditPage> {
       setState(() {
         _parsingError = 'Failed to parse structured data: $e';
       });
+      // Recalculate total after parsing is complete and state is set
+      _recalculateAndCompareTotal();
     }
   }
 
@@ -386,6 +394,68 @@ class _BillEditPageState extends State<BillEditPage> {
     print("Switched to ${_isEditingMode ? 'editing' : 'review'} mode.");
   }
 
+  // --- Total Amount Calculation and Update ---
+
+  void _recalculateAndCompareTotal() {
+    if (!mounted) return; // Ensure widget is still active
+
+    final itemsSubtotal =
+        _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+
+    // Use _parseNum which handles null/empty/invalid safely, default to 0
+    final taxPercent = _showTax ? (_parseNum(_taxController.text) ?? 0.0) : 0.0;
+    final tipPercent = _showTip ? (_parseNum(_tipController.text) ?? 0.0) : 0.0;
+    // Discount is usually negative, but let's treat the input as positive %
+    final discountPercent =
+        _showDiscount ? (_parseNum(_discountController.text) ?? 0.0) : 0.0;
+
+    // Calculate amounts based on itemsSubtotal
+    final taxAmount = itemsSubtotal * (taxPercent / 100.0);
+    final tipAmount = itemsSubtotal * (tipPercent / 100.0);
+    final discountAmount = itemsSubtotal * (discountPercent / 100.0);
+
+    final newCalculatedTotal =
+        itemsSubtotal + taxAmount + tipAmount - discountAmount;
+    // Update the state variable directly, as this method is now called
+    // at appropriate times (e.g., within addPostFrameCallback elsewhere or directly)
+    if (mounted) {
+      setState(() {
+        _calculatedTotalAmount = newCalculatedTotal;
+      });
+    }
+
+    // Optional: Print comparison for debugging
+    // final currentTotalInController = _parseNum(_totalAmountController.text) ?? 0.0;
+    // print("Recalculated Total: $newCalculatedTotal, Current Total in Controller: $currentTotalInController");
+  }
+
+  void _updateTotalAmountFromCalculation() {
+    // Update the controller and recalculate directly
+    if (_calculatedTotalAmount != null && mounted) {
+      setState(() {
+        // Format before setting to controller
+        _totalAmountController.text =
+            _formatCurrencyValue(_calculatedTotalAmount);
+      });
+      // Recalculate again immediately to update the comparison state
+      _recalculateAndCompareTotal();
+    }
+  }
+
+  // --- Handle Item Changes ---
+  void _handleItemsChanged(List<BillItemEntity> updatedItems) {
+    if (!mounted) return;
+    // Use addPostFrameCallback for safety
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _items = updatedItems;
+        });
+        _recalculateAndCompareTotal(); // Recalculate when items change
+      }
+    });
+  }
+
   // --- Edit Dialog Methods ---
   Future<void> _showEditDescriptionDialog() async {
     // Key to access the state of the dialog content (use public state type)
@@ -436,6 +506,8 @@ class _BillEditPageState extends State<BillEditPage> {
           });
         }
       });
+      // Recalculate total after description change (though it doesn't affect total)
+      // _recalculateAndCompareTotal(); // Not strictly needed here
     }
   }
 
@@ -498,7 +570,7 @@ class _BillEditPageState extends State<BillEditPage> {
     final String? newValue = await _showEditNumericDialog(
       title: 'Edit Total Amount',
       initialValue: _totalAmountController.text,
-      allowNegative: false,
+      allowNegative: false, // Total amount usually shouldn't be negative
     );
     if (newValue != null && newValue != _totalAmountController.text) {
       // Delay setState until after the frame finishes
@@ -507,6 +579,8 @@ class _BillEditPageState extends State<BillEditPage> {
           setState(() {
             _totalAmountController.text = newValue;
           });
+          // Recalculate *after* state is set inside the callback
+          _recalculateAndCompareTotal();
         }
       });
     }
@@ -517,7 +591,7 @@ class _BillEditPageState extends State<BillEditPage> {
       title: 'Edit Tax',
       initialValue: _taxController.text,
       valueSuffix: '%',
-      allowNegative: false,
+      allowNegative: false, // Tax percentage usually non-negative
     );
     if (newValue != null && newValue != _taxController.text) {
       // Delay setState until after the frame finishes
@@ -526,6 +600,8 @@ class _BillEditPageState extends State<BillEditPage> {
           setState(() {
             _taxController.text = newValue;
           });
+          // Recalculate *after* state is set inside the callback
+          _recalculateAndCompareTotal();
         }
       });
     }
@@ -536,7 +612,7 @@ class _BillEditPageState extends State<BillEditPage> {
       title: 'Edit Tip',
       initialValue: _tipController.text,
       valueSuffix: '%',
-      allowNegative: false,
+      allowNegative: false, // Tip percentage usually non-negative
     );
     if (newValue != null && newValue != _tipController.text) {
       // Delay setState until after the frame finishes
@@ -545,6 +621,8 @@ class _BillEditPageState extends State<BillEditPage> {
           setState(() {
             _tipController.text = newValue;
           });
+          // Recalculate *after* state is set inside the callback
+          _recalculateAndCompareTotal();
         }
       });
     }
@@ -555,7 +633,7 @@ class _BillEditPageState extends State<BillEditPage> {
       title: 'Edit Discount',
       initialValue: _discountController.text,
       valueSuffix: '%',
-      allowNegative: false,
+      allowNegative: false, // Discount percentage usually non-negative
     );
     if (newValue != null && newValue != _discountController.text) {
       // Delay setState until after the frame finishes
@@ -564,6 +642,8 @@ class _BillEditPageState extends State<BillEditPage> {
           setState(() {
             _discountController.text = newValue;
           });
+          // Recalculate *after* state is set inside the callback
+          _recalculateAndCompareTotal();
         }
       });
     }
@@ -593,7 +673,8 @@ class _BillEditPageState extends State<BillEditPage> {
                               setDialogState(() {
                                 _showTax = value ?? false;
                               });
-                              setState(() {});
+                              setState(() {}); // Update main page UI
+                              _recalculateAndCompareTotal(); // Recalculate
                             },
                     ),
                     CheckboxListTile(
@@ -606,7 +687,8 @@ class _BillEditPageState extends State<BillEditPage> {
                               setDialogState(() {
                                 _showTip = value ?? false;
                               });
-                              setState(() {});
+                              setState(() {}); // Update main page UI
+                              _recalculateAndCompareTotal(); // Recalculate
                             },
                     ),
                     CheckboxListTile(
@@ -619,7 +701,8 @@ class _BillEditPageState extends State<BillEditPage> {
                               setDialogState(() {
                                 _showDiscount = value ?? false;
                               });
-                              setState(() {});
+                              setState(() {}); // Update main page UI
+                              _recalculateAndCompareTotal(); // Recalculate
                             },
                     ),
                     CheckboxListTile(
@@ -632,7 +715,9 @@ class _BillEditPageState extends State<BillEditPage> {
                               setDialogState(() {
                                 _showCurrency = value ?? false;
                               });
-                              setState(() {});
+                              setState(() {}); // Update main page UI
+                              // Currency change doesn't affect total calculation based on items/fees
+                              // _recalculateAndCompareTotal(); // Not needed here
                             },
                     ),
                   ],
@@ -752,6 +837,9 @@ class _BillEditPageState extends State<BillEditPage> {
                   onCurrencyChanged: _handleCurrencyChanged,
                   onAddOptionalFields: _showAddFieldDialog,
                   formatCurrencyValue: _formatCurrencyValue,
+                  // Pass calculation results and update callback
+                  calculatedTotalAmount: _calculatedTotalAmount,
+                  onUpdateTotalAmount: _updateTotalAmountFromCalculation,
                 ),
 
                 const Divider(), // Divider before Items section
@@ -761,13 +849,8 @@ class _BillEditPageState extends State<BillEditPage> {
                   key: ValueKey('items_${_items.hashCode}_$_isEditingMode'),
                   initialItems: _items,
                   enabled: _isEditingMode,
-                  onItemsChanged: (updatedItems) {
-                    if (_isEditingMode) {
-                      setState(() {
-                        _items = updatedItems;
-                      }); // Update state
-                    }
-                  },
+                  // Use the dedicated handler
+                  onItemsChanged: _handleItemsChanged,
                 ),
                 const SizedBox(height: 24),
                 const Divider(),
