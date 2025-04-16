@@ -1,91 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For input formatters
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart';
 import 'package:intl/intl.dart'; // For number formatting
 
-// A widget to display and edit a single bill item within the BillEditPage list.
+// A widget to display a single bill item within the BillItemsSection list.
 class BillItemWidget extends StatelessWidget {
   final BillItemEntity item;
-  final TextEditingController descriptionController;
-  final TextEditingController quantityController;
-  final TextEditingController priceController;
-  final VoidCallback onDelete; // Callback when delete button is pressed
-  final bool enabled; // To disable editing when saving
+  final VoidCallback onEdit; // Callback when edit button is pressed
+  // final bool enabled; // Keep if needed to disable the edit button itself
 
   const BillItemWidget({
     super.key,
     required this.item,
-    required this.descriptionController,
-    required this.quantityController,
-    required this.priceController,
-    required this.onDelete,
-    this.enabled = true, // Default to enabled
+    required this.onEdit,
+    // this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Formatter for currency display
+    final currencyFormat = NumberFormat.currency(
+        locale: 'en_US', symbol: ''); // Adjust symbol/locale as needed
+    final quantityFormat = NumberFormat.decimalPattern();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically
         children: [
           Expanded(
-            flex: 4, // Adjust flex factor for description width
-            child: TextField(
-              controller: descriptionController,
-              enabled: enabled,
-              decoration: const InputDecoration(
-                isDense: true,
-                hintText: 'Item Description',
-                border: UnderlineInputBorder(), // Simpler border for list items
-              ),
-              // No need for onChanged here if state is managed via controllers in parent
+            flex: 4,
+            child: Text(
+              item.description,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             flex: 1,
-            child: TextField(
-              controller: quantityController,
-              enabled: enabled,
+            child: Text(
+              quantityFormat.format(item.quantity),
               textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly
-              ], // Allow only digits
-              decoration: const InputDecoration(
-                isDense: true,
-                hintText: 'Qty',
-                border: UnderlineInputBorder(),
-              ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            flex: 2, // Adjust flex factor for price width
-            child: TextField(
-              controller: priceController,
-              enabled: enabled,
+            flex: 2,
+            child: Text(
+              // Display unit price
+              currencyFormat.format(item.unitPrice),
               textAlign: TextAlign.right,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                // Allow numbers and one decimal point
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              decoration: const InputDecoration(
-                isDense: true,
-                hintText: 'Total Price',
-                border: UnderlineInputBorder(),
-                // prefixText: '\$', // Optional: Add currency symbol
-              ),
             ),
           ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: Text(
+              // Display total price
+              currencyFormat.format(item.totalPrice),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          // IconButton for editing
           IconButton(
-            icon: const Icon(Icons.delete_outline),
-            color: Colors.red,
-            tooltip: 'Delete Item',
-            // Disable delete button if editing is disabled
-            onPressed: enabled ? onDelete : null,
+            icon: const Icon(Icons.more_vert),
+            iconSize: 20.0, // Make icon slightly smaller if needed
+            padding: EdgeInsets.zero, // Remove default padding
+            constraints:
+                const BoxConstraints(), // Remove constraints to allow zero padding
+            tooltip: 'Edit Item',
+            // Disable edit button if editing is disabled (using parent's enabled state)
+            // onPressed: enabled ? onEdit : null,
+            onPressed: onEdit, // Assuming parent handles enabled state
           ),
         ],
       ),
