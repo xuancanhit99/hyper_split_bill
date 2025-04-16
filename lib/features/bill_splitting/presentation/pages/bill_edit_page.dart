@@ -473,8 +473,6 @@ class _BillEditPageState extends State<BillEditPage> {
                 const Divider(),
 
                 // --- Items Section ---
-                Text('Items:', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
                 BillItemsSection(
                   key: ValueKey('items_${_items.hashCode}_$_isEditingMode'),
                   initialItems: _items,
