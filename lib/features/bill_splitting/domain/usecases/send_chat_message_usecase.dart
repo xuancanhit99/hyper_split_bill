@@ -37,7 +37,7 @@ class SendChatMessageUseCase {
       // Combine initial context, history, and new message
       // Adjust the prompt structure as needed for your specific Chat API
       final fullPrompt = """
-You are a helpful assistant for splitting bills. Here is the bill data in JSON format:
+You are a helpful assistant for splitting bills. Always respond in Russian. Here is the bill data in JSON format:
 ```json
 $billContextJson
 ```
