@@ -269,5 +269,23 @@
     }
   },
   "homePageSplitNewBillButton": "Разделить новый счет",
-  "homePageViewHistoryButton": "Просмотреть историю счетов"
+  "homePageViewHistoryButton": "Просмотреть историю счетов",
+
+  "authPageErrorOccurred": "Произошла ошибка: {message}",
+  "@authPageErrorOccurred": {
+    "description": "Префикс общего сообщения об ошибке, отображаемый в snackbar на странице аутентификации",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Неверные учетные данные"
+      }
+    }
+  },
+  "authPagePasswordResetEmailSent": "Письмо для сброса пароля отправлено! Проверьте ваш почтовый ящик.",
+  "authPageHeaderTitle": "С возвращением!",
+  "authPageHeaderSubtitle": "Войдите или создайте аккаунт, чтобы начать.",
+  "authPageSignUpSuccess": "Регистрация успешна! Проверьте вашу почту для верификации.",
+  "authPageUnexpectedError": "Произошла непредвиденная ошибка.",
+  "authPageTermsLink": "Условия",
+  "authPagePrivacyLink": "Конфиденциальность"
 }

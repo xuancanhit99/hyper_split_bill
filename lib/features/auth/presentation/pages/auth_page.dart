@@ -5,6 +5,7 @@ import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
     as app_auth;
 // Import the common header widget
 import 'package:hyper_split_bill/common/header_form.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 // No GoRouter needed here directly for navigation *within* auth,
 // but keep it in scope if needed for other actions.
@@ -14,6 +15,8 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // Get localizations instance
+
     // Listen for specific Bloc states if needed for feedback (e.g., password reset)
     return BlocListener<app_auth.AuthBloc, app_auth.AuthState>(
       listener: (context, state) {
@@ -22,7 +25,8 @@ class LoginPage extends StatelessWidget {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                content: Text('An error occurred: ${state.message}'),
+                content: Text(
+                    l10n.authPageErrorOccurred(state.message)), // Localized
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
@@ -31,9 +35,7 @@ class LoginPage extends StatelessWidget {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                content: const Text(
-                  'Password recovery email sent! Check your inbox.',
-                ),
+                content: Text(l10n.authPagePasswordResetEmailSent), // Localized
                 backgroundColor: Colors.green,
               ),
             );
@@ -48,10 +50,11 @@ class LoginPage extends StatelessWidget {
             padding: const EdgeInsets.all(24.0),
             children: [
               // --- Header ---
-              const HeaderForm(
+              HeaderForm(
+                // Assuming HeaderForm doesn't need internal localization or accepts localized strings
                 image: 'assets/logo/mirea.png',
-                title: 'Welcome Back!',
-                subtitle: 'Sign in or create an account to get started.',
+                title: l10n.authPageHeaderTitle, // Localized
+                subtitle: l10n.authPageHeaderSubtitle, // Localized
                 // Center align the header content
                 crossAxisAlignment: CrossAxisAlignment.center,
                 textAlign: TextAlign.center,
@@ -89,10 +92,8 @@ class LoginPage extends StatelessWidget {
                     );
                     // Optionally show a message like "Please check your email to verify your account."
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Sign Up successful! Check your email for verification.',
-                        ),
+                      SnackBar(
+                        content: Text(l10n.authPageSignUpSuccess), // Localized
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -110,8 +111,9 @@ class LoginPage extends StatelessWidget {
                     SnackBar(
                       content: Text(
                         error is AuthException
-                            ? error.message
-                            : 'An unexpected error occurred.',
+                            ? error.message // Keep Supabase error message as is
+                            : l10n
+                                .authPageUnexpectedError, // Localized fallback
                       ),
                       backgroundColor: Theme.of(context).colorScheme.error,
                     ),
@@ -126,7 +128,7 @@ class LoginPage extends StatelessWidget {
                   // Use the BlocListener above to show feedback from AuthPasswordResetEmailSent state
                   // Or show direct feedback here:
                   // ScaffoldMessenger.of(context).showSnackBar(
-                  //    const SnackBar(content: Text('Password recovery email sent! Check your inbox.'), backgroundColor: Colors.green),
+                  //    SnackBar(content: Text(l10n.authPagePasswordResetEmailSent), backgroundColor: Colors.green),
                   // );
                 },
                 // This callback uses Supabase.instance.client.auth.resetPasswordForEmail internally
@@ -151,9 +153,9 @@ class LoginPage extends StatelessWidget {
               // Row(
               //    mainAxisAlignment: MainAxisAlignment.center,
               //    children: [
-              //       TextButton(onPressed: () { /* Navigate */ }, child: Text('Terms')),
+              //       TextButton(onPressed: () { /* Navigate */ }, child: Text(l10n.authPageTermsLink)), // Localized
               //       Text(' | '),
-              //       TextButton(onPressed: () { /* Navigate */ }, child: Text('Privacy')),
+              //       TextButton(onPressed: () { /* Navigate */ }, child: Text(l10n.authPagePrivacyLink)), // Localized
               //    ]
               // )
             ],

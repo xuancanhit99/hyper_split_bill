@@ -269,5 +269,23 @@
     }
   },
   "homePageSplitNewBillButton": "Split a New Bill",
-  "homePageViewHistoryButton": "View Bill History"
+  "homePageViewHistoryButton": "View Bill History",
+
+  "authPageErrorOccurred": "An error occurred: {message}",
+  "@authPageErrorOccurred": {
+    "description": "Generic error message prefix shown in a snackbar on the auth page",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Invalid credentials"
+      }
+    }
+  },
+  "authPagePasswordResetEmailSent": "Password recovery email sent! Check your inbox.",
+  "authPageHeaderTitle": "Welcome Back!",
+  "authPageHeaderSubtitle": "Sign in or create an account to get started.",
+  "authPageSignUpSuccess": "Sign Up successful! Check your email for verification.",
+  "authPageUnexpectedError": "An unexpected error occurred.",
+  "authPageTermsLink": "Terms",
+  "authPagePrivacyLink": "Privacy"
 }
