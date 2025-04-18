@@ -253,18 +253,14 @@ class _BillUploadViewState extends State<_BillUploadView> {
                               ),
                             ),
                           ] else ...[
-                            // Placeholder
+                            // Placeholder Image
                             Expanded(
-                              // Remove const
-                              child: Center(
-                                child: Text(
-                                  l10n.billUploadPagePlaceholder, // Use l10n
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    // Move const here
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(
+                                    8.0), // Add some padding around the placeholder
+                                child: Image.asset(
+                                  'assets/images/Two-Cat-Scan-Bill.png', // Path to your default image
+                                  fit: BoxFit.contain, // Adjust fit as needed
                                 ),
                               ),
                             ),
