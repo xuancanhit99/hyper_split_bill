@@ -287,5 +287,17 @@
   "authPageSignUpSuccess": "Sign Up successful! Check your email for verification.",
   "authPageUnexpectedError": "An unexpected error occurred.",
   "authPageTermsLink": "Terms",
-  "authPagePrivacyLink": "Privacy"
+  "authPagePrivacyLink": "Privacy",
+
+  "editBillInfoSectionTotalAmountPrefix": "Total Amount:",
+  "editBillInfoSectionTotalAmountLabel": "Total Amount",
+
+  "editBillInfoSectionDescriptionLabel": "Description / Store",
+  "editBillInfoSectionDateLabel": "Date",
+  "editBillInfoSectionTaxLabel": "Tax",
+  "editBillInfoSectionTipLabel": "Tip",
+  "editBillInfoSectionDiscountLabel": "Discount",
+  "editBillInfoSectionToggleDetailsHideTooltip": "Hide Item Quantity & Unit Price",
+  "editBillInfoSectionToggleDetailsShowTooltip": "Show Item Quantity & Unit Price",
+  "editBillInfoSectionAddOptionalTooltip": "Add Tax, Tip, Discount, Currency"
 }

@@ -101,7 +101,7 @@ class EditBillInfoSection extends StatelessWidget {
         EditableRow(
           isEditingMode: isEditingMode,
           icon: Icons.store_mall_directory_outlined,
-          label: 'Description / Store',
+          label: l10n.editBillInfoSectionDescriptionLabel, // Localized
           value: descriptionController.text,
           onTap: onEditDescription,
         ),
@@ -109,15 +109,15 @@ class EditBillInfoSection extends StatelessWidget {
         EditableRow(
           isEditingMode: isEditingMode,
           icon: Icons.calendar_today_outlined,
-          label: 'Date',
+          label: l10n.editBillInfoSectionDateLabel, // Localized
           value: dateController.text,
           onTap: onSelectDate,
         ),
         const Divider(height: 1),
         EditableRow(
           isEditingMode: isEditingMode,
-          textPrefix: "Total Amount:",
-          label: 'Total Amount',
+          textPrefix: l10n.editBillInfoSectionTotalAmountPrefix, // Localized
+          label: l10n.editBillInfoSectionTotalAmountLabel, // Localized
           // Format the parsed value for display
           value: formatCurrencyValue(
               _parseNumFromController(totalAmountController)),
@@ -130,8 +130,9 @@ class EditBillInfoSection extends StatelessWidget {
         if (showTax) ...[
           EditableRow(
             isEditingMode: isEditingMode,
-            textPrefix: "Tax:", // Use text prefix
-            label: 'Tax',
+            textPrefix:
+                "${l10n.editBillInfoSectionTaxLabel}:", // Localized + colon
+            label: l10n.editBillInfoSectionTaxLabel, // Localized
             value: taxController.text, // Raw value from controller
             valueSuffix: "%", // Add suffix
             onTap: onEditTax,
@@ -141,8 +142,9 @@ class EditBillInfoSection extends StatelessWidget {
         if (showTip) ...[
           EditableRow(
             isEditingMode: isEditingMode,
-            textPrefix: "Tip:", // Use text prefix
-            label: 'Tip',
+            textPrefix:
+                "${l10n.editBillInfoSectionTipLabel}:", // Localized + colon
+            label: l10n.editBillInfoSectionTipLabel, // Localized
             value: tipController.text, // Raw value from controller
             valueSuffix: "%", // Add suffix
             onTap: onEditTip,
@@ -152,8 +154,9 @@ class EditBillInfoSection extends StatelessWidget {
         if (showDiscount) ...[
           EditableRow(
             isEditingMode: isEditingMode,
-            textPrefix: "Discount:", // Use text prefix
-            label: 'Discount',
+            textPrefix:
+                "${l10n.editBillInfoSectionDiscountLabel}:", // Localized + colon
+            label: l10n.editBillInfoSectionDiscountLabel, // Localized
             value: discountController.text, // Raw value from controller
             valueSuffix: "%", // Add suffix
             onTap: onEditDiscount,
@@ -213,8 +216,10 @@ class EditBillInfoSection extends StatelessWidget {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined),
                       tooltip: showItemDetails
-                          ? 'Hide Item Quantity & Unit Price'
-                          : 'Show Item Quantity & Unit Price',
+                          ? l10n
+                              .editBillInfoSectionToggleDetailsHideTooltip // Localized
+                          : l10n
+                              .editBillInfoSectionToggleDetailsShowTooltip, // Localized
                       onPressed: onToggleItemDetails,
                       color: Theme.of(context)
                           .colorScheme
@@ -224,7 +229,8 @@ class EditBillInfoSection extends StatelessWidget {
                     // Add Optional Fields Button
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline),
-                      tooltip: 'Add Tax, Tip, Discount, Currency',
+                      tooltip: l10n
+                          .editBillInfoSectionAddOptionalTooltip, // Localized
                       onPressed: onAddOptionalFields,
                       color: Theme.of(context).colorScheme.primary,
                     ),

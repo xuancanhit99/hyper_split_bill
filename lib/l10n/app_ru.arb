@@ -287,5 +287,17 @@
   "authPageSignUpSuccess": "Регистрация успешна! Проверьте вашу почту для верификации.",
   "authPageUnexpectedError": "Произошла непредвиденная ошибка.",
   "authPageTermsLink": "Условия",
-  "authPagePrivacyLink": "Конфиденциальность"
+  "authPagePrivacyLink": "Конфиденциальность",
+
+  "editBillInfoSectionTotalAmountPrefix": "Общая сумма:",
+  "editBillInfoSectionTotalAmountLabel": "Общая сумма",
+
+  "editBillInfoSectionDescriptionLabel": "Описание / Магазин",
+  "editBillInfoSectionDateLabel": "Дата",
+  "editBillInfoSectionTaxLabel": "Налог",
+  "editBillInfoSectionTipLabel": "Чаевые",
+  "editBillInfoSectionDiscountLabel": "Скидка",
+  "editBillInfoSectionToggleDetailsHideTooltip": "Скрыть кол-во и цену за ед.",
+  "editBillInfoSectionToggleDetailsShowTooltip": "Показать кол-во и цену за ед.",
+  "editBillInfoSectionAddOptionalTooltip": "Добавить налог, чаевые, скидку, валюту"
 }
