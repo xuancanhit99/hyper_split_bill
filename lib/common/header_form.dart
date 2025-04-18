@@ -31,7 +31,7 @@ class HeaderForm extends StatelessWidget {
             image: AssetImage(image),
             color: imageColor,
             height: size.height * imageHeight,
-            width: size.width * 0.6),
+            width: size.width * 1),
         SizedBox(height: heightBetween,),
         Text(title, style: Theme.of(context).textTheme.headlineMedium),
         Text(subtitle, textAlign: textAlign, style: Theme.of(context).textTheme.bodyLarge),

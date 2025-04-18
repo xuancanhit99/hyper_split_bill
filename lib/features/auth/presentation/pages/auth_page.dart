@@ -52,7 +52,7 @@ class LoginPage extends StatelessWidget {
               // --- Header ---
               HeaderForm(
                 // Assuming HeaderForm doesn't need internal localization or accepts localized strings
-                image: 'assets/logo/mirea.png',
+                image: 'assets/images/Two-Cat-Hello.png',
                 title: l10n.authPageHeaderTitle, // Localized
                 subtitle: l10n.authPageHeaderSubtitle, // Localized
                 // Center align the header content

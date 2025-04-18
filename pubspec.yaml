@@ -69,20 +69,40 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   build_runner: ^2.4.15
   injectable_generator: ^2.7.0
+  flutter_launcher_icons: ^0.13.1 # Add launcher icons dependency
+  rename: ^3.0.2 # Add rename dependency
 
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo/11.png"
+  min_sdk_android: 21 # Optional: Specify minimum SDK version for Android adaptive icons
+  web:
+    generate: true
+    image_path: "assets/logo/11.png"
+    background_color: "#ffffff" # Optional: Set background color for web icon
+    theme_color: "#ffffff" # Optional: Set theme color for web icon
+  windows:
+    generate: true
+    image_path: "assets/logo/11.png"
+    icon_size: 48 # Optional: Specify icon size for Windows
+  macos:
+    generate: true
+    image_path: "assets/logo/11.png"
 
 flutter_native_splash:
   color: "#ffffff"
-  image: assets/logo/mirea.png
+  image: assets/images/A-Cat-OCR.png
   #  branding: assets/images/email-service.png
   color_dark: "#000000"
-  image_dark: assets/logo/mirea.png
+  image_dark: assets/images/A-Cat-OCR.png
   #  branding_dark: assets/images/email-service.png
 
   android_12:
-    image: assets/logo/android12splash-mirea.png
+    image: assets/images/android12splash-cat.png
     # icon_background_color: "#ffffff" # Removed, usually not needed with image
-    image_dark: assets/logo/android12splash-mirea.png
+    image_dark: assets/images/android12splash-cat.png
     # icon_background_color_dark: "#000000" # Removed, usually not needed with image_dark
 
   web: false
