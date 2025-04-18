@@ -4,27 +4,32 @@ import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Added import for AppRoutes
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:hyper_split_bill/features/settings/presentation/pages/settings_page.dart'; // Import SettingsPage
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // Get localizations instance
     // Get user info from AuthBloc state safely
     final authState = context.watch<AuthBloc>().state;
-    String userGreeting = 'Welcome!'; // Default greeting
+    String userGreeting;
     if (authState is AuthAuthenticated) {
-      userGreeting = 'Welcome, ${authState.user.email ?? 'User'}!';
+      // Use placeholder for user email, provide default if null
+      userGreeting = l10n.homePageWelcomeUser(authState.user.email ?? 'User');
+    } else {
+      userGreeting = l10n.homePageWelcomeDefault;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home Page'),
+        title: Text(l10n.homePageTitle),
         actions: [
           // Settings Icon
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Settings', // TODO: Localize this tooltip
+            tooltip: l10n.homePageSettingsTooltip,
             onPressed: () {
               context.push(SettingsPage.routeName);
             },
@@ -33,20 +38,18 @@ class HomePage extends StatelessWidget {
           if (authState is AuthAuthenticated)
             IconButton(
               icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out', // TODO: Localize this tooltip
+              tooltip: l10n.homePageSignOutTooltip,
               onPressed: () {
                 // Show confirmation dialog before signing out
                 showDialog(
                   context: context,
                   builder: (dialogContext) => AlertDialog(
-                    title: const Text('Confirm Sign Out'),
-                    content: const Text(
-                      'Are you sure you want to sign out?',
-                    ),
+                    title: Text(l10n.homePageSignOutDialogTitle),
+                    content: Text(l10n.homePageSignOutDialogContent),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: const Text('Cancel'),
+                        child: Text(l10n.buttonCancel), // Reusing existing key
                       ),
                       TextButton(
                         onPressed: () {
@@ -56,7 +59,7 @@ class HomePage extends StatelessWidget {
                                 AuthSignOutRequested(),
                               );
                         },
-                        child: const Text('Sign Out'),
+                        child: Text(l10n.homePageSignOutDialogConfirmButton),
                       ),
                     ],
                   ),
@@ -81,7 +84,7 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 40),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add_a_photo_outlined), // Changed icon
-                  label: const Text('Split a New Bill'),
+                  label: Text(l10n.homePageSplitNewBillButton),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 30,
@@ -102,7 +105,7 @@ class HomePage extends StatelessWidget {
                     // Uncommented
                     context.push(AppRoutes.history); // Uncommented
                   }, // Uncommented
-                  child: const Text('View Bill History'), // Uncommented
+                  child: Text(l10n.homePageViewHistoryButton), // Uncommented
                 ), // Removed comment marker
               ],
             ),

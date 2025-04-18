@@ -249,5 +249,25 @@
   "settingsPageTitle": "Настройки",
   "settingsPageLanguageLabel": "Язык",
   "settingsPageCurrentLanguage": "Текущий язык",
-  "settingsPageSelectLanguageTitle": "Выберите язык"
+  "settingsPageSelectLanguageTitle": "Выберите язык",
+
+  "homePageTitle": "Главная страница",
+  "homePageSettingsTooltip": "Настройки",
+  "homePageSignOutTooltip": "Выйти",
+  "homePageSignOutDialogTitle": "Подтвердите выход",
+  "homePageSignOutDialogContent": "Вы уверены, что хотите выйти?",
+  "homePageSignOutDialogConfirmButton": "Выйти",
+  "homePageWelcomeDefault": "Добро пожаловать!",
+  "homePageWelcomeUser": "Добро пожаловать, {userEmail}!",
+  "@homePageWelcomeUser": {
+    "description": "Приветственное сообщение для аутентифицированного пользователя",
+    "placeholders": {
+      "userEmail": {
+        "type": "String",
+        "example": "user@example.com"
+      }
+    }
+  },
+  "homePageSplitNewBillButton": "Разделить новый счет",
+  "homePageViewHistoryButton": "Просмотреть историю счетов"
 }
