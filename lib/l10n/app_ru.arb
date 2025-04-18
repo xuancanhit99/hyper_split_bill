@@ -1,0 +1,253 @@
+{
+  "@@locale": "ru",
+  "appTitle": "Гипер Сплит Билл",
+  "billEditPageEditTitle": "Редактировать счет",
+  "billEditPageReviewTitle": "Просмотр счета",
+  "billEditPageSaveTooltip": "Сохранить данные счета",
+  "billEditPageEditTooltip": "Редактировать данные счета",
+  "billEditPageParticipantsSectionTitle": "Участники:",
+  "billEditPageSplitEquallyButtonLabel": "Разделить поровну между {count}",
+  "@billEditPageSplitEquallyButtonLabel": {
+    "description": "Надпись на кнопке для разделения счета поровну между участниками",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "billEditPageFinalJsonTileTitle": "Итоговые данные счета (JSON)",
+  "billEditPageAskBillBotButtonLabel": "Спросить Билл Бота",
+  "billEditPageRawJsonTileTitle": "Исходные данные OCR/JSON",
+  "billEditPageErrorParsingOcr": "Ошибка разбора данных OCR: {error}",
+  "@billEditPageErrorParsingOcr": {
+    "description": "Сообщение об ошибке при сбое разбора данных OCR",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Неверный формат"
+      }
+    }
+  },
+  "billEditPageSaveErrorSnackbar": "Ошибка сохранения: {message}",
+  "@billEditPageSaveErrorSnackbar": {
+    "description": "Сообщение в Snackbar при ошибке сохранения счета",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Ошибка сетевого подключения"
+      }
+    }
+  },
+  "billEditPageSuccessSnackbar": "{message}",
+  "@billEditPageSuccessSnackbar": {
+    "description": "Сообщение в Snackbar при успешном сохранении счета. Само сообщение приходит из состояния BLoC.",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Счет успешно сохранен!"
+      }
+    }
+  },
+  "billEditPageValidationErrorTotalAmount": "Пожалуйста, введите действительную общую сумму.",
+  "billEditPageValidationErrorPercentages": "Проценты участников должны в сумме составлять 100%. Текущая сумма: {totalPercentage}%",
+  "@billEditPageValidationErrorPercentages": {
+    "description": "Ошибка валидации, когда сумма процентов участников не равна 100",
+    "placeholders": {
+      "totalPercentage": {
+        "type": "String",
+        "example": "99.50"
+      }
+    }
+  },
+  "billEditPageValidationErrorDate": "Пожалуйста, введите действительную дату (дд-ММ-гггг).",
+  "billEditPageValidationErrorCurrency": "Выбрана недействительная валюта. Пожалуйста, выберите из списка.",
+  "billEditPageValidationErrorAuth": "Ошибка: Пользователь не аутентифицирован.",
+  "billEditPageDefaultItemDescription": "Неизвестный товар",
+  "billEditPageDefaultParticipantName": "Я",
+  "billEditPageErrorParsingJson": "Не удалось разобрать структурированные данные: {error}",
+   "@billEditPageErrorParsingJson": {
+    "description": "Сообщение об ошибке при сбое разбора исходного JSON",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Неожиданный токен"
+      }
+    }
+  },
+  "dialogEditDescriptionTitle": "Редактировать описание",
+  "dialogEditTotalAmountTitle": "Редактировать общую сумму",
+  "dialogEditTaxTitle": "Редактировать налог",
+  "dialogEditTipTitle": "Редактировать чаевые",
+  "dialogEditDiscountTitle": "Редактировать скидку",
+  "dialogAddOptionalFieldsTitle": "Добавить необязательные поля",
+  "checkboxTaxLabel": "Налог",
+  "checkboxTipLabel": "Чаевые",
+  "checkboxDiscountLabel": "Скидка",
+  "checkboxCurrencyLabel": "Валюта",
+  "buttonCancel": "Отмена",
+  "buttonSave": "Сохранить",
+  "buttonDone": "Готово",
+  "editBillInfoSectionUpdateTotalButtonLabel": "Обновить сумму",
+  "participantSectionInvalidPercentageLock": "Пожалуйста, введите действительный процент (0-100) перед блокировкой.",
+  "participantSectionAddDialogTitle": "Добавить участника",
+  "participantSectionAddDialogHint": "Введите имя участника",
+  "participantSectionAddDialogButton": "Добавить",
+  "participantSectionExistsSnackbar": "Участник \"{name}\" уже существует.",
+  "@participantSectionExistsSnackbar": {
+    "description": "Сообщение об ошибке при попытке добавить существующего участника",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Алиса"
+      }
+    }
+  },
+  "participantSectionCannotRemoveLastSnackbar": "Нельзя удалить последнего участника.",
+  "participantSectionHeaderName": "Имя",
+  "participantSectionHeaderPercent": "Процент",
+  "participantSectionHeaderAmount": "Сумма",
+  "participantSectionEmptyListEdit": "Участники еще не добавлены.",
+  "participantSectionEmptyListReview": "Нет участников.",
+  "participantSectionAddButtonLabel": "Добавить участника",
+  "participantSectionRemoveTooltip": "Удалить {name}",
+  "@participantSectionRemoveTooltip": {
+    "description": "Подсказка для кнопки удаления участника",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Боб"
+      }
+    }
+  },
+  "currencyDisplayFormat": "{code} - {name}",
+  "@currencyDisplayFormat": {
+    "description": "Строка формата для отображения кода и названия валюты",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "RUB"
+      },
+      "name": {
+        "type": "String",
+        "example": "Российский рубль"
+      }
+    }
+  },
+  "itemDialogValidationDescriptionEmpty": "Описание не может быть пустым.",
+  "itemDialogValidationQuantityNegative": "Количество должно быть неотрицательным числом.",
+  "itemDialogValidationPriceNegative": "Цены не могут быть отрицательными.",
+  "itemDialogValidationConfirmTwo": "Пожалуйста, подтвердите ровно два значения (Количество, Цена за единицу или Общая цена) с помощью флажков.",
+  "itemDialogValidationInconsistent": "Ошибка: Итоговые значения несовместимы (Кол-во * Цена за ед. != Общая цена). Пожалуйста, подтвердите заново.",
+  "itemDialogDescriptionLabel": "Описание",
+  "itemDialogQuantityLabel": "Кол-во",
+  "itemDialogUnitPriceLabel": "Цена за ед.",
+  "itemDialogTotalPriceLabel": "Общая цена",
+  "itemSectionDeletedSnackbar": "Позиция удалена",
+  "itemSectionEmptyList": "Позиции еще не добавлены.",
+  "itemSectionConfirmDeleteDialogTitle": "Подтвердить удаление",
+  "itemSectionConfirmDeleteDialogContent": "Вы уверены, что хотите удалить \"{description}\"?",
+  "@itemSectionConfirmDeleteDialogContent": {
+    "description": "Сообщение подтверждения для удаления позиции",
+    "placeholders": {
+      "description": {
+        "type": "String",
+        "example": "Пицца"
+      }
+    }
+  },
+  "itemSectionConfirmDeleteDialogFallbackItemName": "эту позицию",
+  "itemSectionDeleteButton": "Удалить",
+  "itemSectionAddButtonLabel": "Добавить позицию",
+  "itemSectionHeaderDescription": "Описание",
+  "itemSectionHeaderQty": "Кол-во",
+  "itemSectionHeaderUnitPrice": "Цена за ед.",
+  "itemSectionHeaderTotalPrice": "Общая цена",
+  "itemDialogAddTitle": "Добавить новую позицию",
+  "itemDialogEditTitle": "Редактировать позицию",
+  "imageCropPageTitle": "Обрезать изображение счета",
+  "imageCropPageErrorSnackbar": "Ошибка обрезки изображения: {error}",
+  "@imageCropPageErrorSnackbar": {
+    "description": "Сообщение в Snackbar при ошибке обрезки изображения",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Не удалось загрузить изображение"
+      }
+    }
+  },
+  "chatbotPageTitle": "Билл Бот Помощник",
+  "chatbotPageAnalyzingMessage": "Анализирую счет и готовлю предложения...",
+  "chatbotPageErrorStartingChat": "Извините, не удалось начать чат: {error}",
+  "@chatbotPageErrorStartingChat": {
+    "description": "Сообщение об ошибке при сбое инициализации чата",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Ошибка подключения к API"
+      }
+    }
+  },
+  "chatbotPageErrorSendingMessage": "Извините, произошла ошибка: {error}",
+  "@chatbotPageErrorSendingMessage": {
+    "description": "Сообщение об ошибке при сбое отправки сообщения в чат",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Тайм-аут"
+      }
+    }
+  },
+  "chatbotPageSuggestionTooltip": "Отправить \"{suggestion}\"",
+  "@chatbotPageSuggestionTooltip": {
+    "description": "Подсказка для чипов с предложениями",
+    "placeholders": {
+      "suggestion": {
+        "type": "String",
+        "example": "Сколько должна Алиса?"
+      }
+    }
+  },
+  "chatbotPageInputHint": "Спросите, как разделить счет...",
+  "chatbotPageSendButtonTooltip": "Отправить сообщение",
+
+  "billUploadPageTitle": "Загрузить счет",
+  "billUploadPageNoImageToRetrySnackbar": "Нет изображения для повторного OCR.",
+  "billUploadPageOcrFailedSnackbar": "Ошибка OCR: {message}",
+  "@billUploadPageOcrFailedSnackbar": {
+    "description": "Сообщение в Snackbar при ошибке OCR",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Низкое качество изображения"
+      }
+    }
+  },
+  "billUploadPageProcessingErrorDefault": "Не удалось обработать изображение. Пожалуйста, попробуйте еще раз.",
+  "billUploadPageNotAReceiptError": "🤖 Это изображение не похоже на чек/счет/инвойс. Пожалуйста, загрузите действительный документ.",
+  "billUploadPageNotAReceiptButCategoryError": "🤖 Это изображение не похоже на чек/счет/инвойс. Похоже, это '{category}'. Пожалуйста, загрузите действительный документ.",
+  "@billUploadPageNotAReceiptButCategoryError": {
+    "description": "Сообщение об ошибке, когда изображение не является чеком, но категория определена",
+    "placeholders": {
+      "category": {
+        "type": "String",
+        "example": "документ"
+      }
+    }
+  },
+  "billUploadPageUnknownCategory": "неизвестно",
+  "billUploadPageCannotDetermineReceiptError": "Не удалось определить, является ли изображение чеком. Пожалуйста, попробуйте еще раз.",
+  "billUploadPageJsonProcessingError": "Не удалось обработать структурированные данные.",
+  "billUploadPageOcrSuccessSnackbar": "Чек распознан! Переход к редактированию...",
+  "billUploadPagePlaceholder": "Выберите изображение или сфотографируйте ваш счет.",
+  "billUploadPageRetryOcrButtonLabel": "Повторить OCR",
+  "billUploadPageGalleryButtonLabel": "Выбрать из галереи",
+  "billUploadPageCameraButtonLabel": "Сделать фото",
+  "billUploadPageLoadingStructuring": "Структурирование данных...",
+  "billUploadPageLoadingProcessing": "Обработка изображения...",
+
+  "settingsPageTitle": "Настройки",
+  "settingsPageLanguageLabel": "Язык",
+  "settingsPageCurrentLanguage": "Текущий язык",
+  "settingsPageSelectLanguageTitle": "Выберите язык"
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/editable_row.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/currency_dropdown_row.dart';
 import 'dart:math'; // For abs()
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class EditBillInfoSection extends StatelessWidget {
   final bool isEditingMode;
@@ -75,6 +76,9 @@ class EditBillInfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     // Determine if the update button should be enabled
     bool showUpdateButton = false;
     bool isUpdateButtonEnabled = false;
@@ -178,7 +182,8 @@ class EditBillInfoSection extends StatelessWidget {
                 if (showUpdateButton)
                   OutlinedButton.icon(
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Update Total'),
+                    label: Text(l10n
+                        .editBillInfoSectionUpdateTotalButtonLabel), // Use localized string
                     onPressed: isUpdateButtonEnabled
                         ? onUpdateTotalAmount
                         : null, // Enable/disable based on comparison

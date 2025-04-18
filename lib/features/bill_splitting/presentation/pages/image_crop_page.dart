@@ -7,6 +7,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart'; // Import c
 import 'package:path_provider/path_provider.dart'; // Import path_provider
 import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart';
 import 'package:hyper_split_bill/core/constants/app_colors.dart'; // For theme colors if needed
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class ImageCropPage extends StatefulWidget {
   final String imagePath; // Receive the path of the image to crop
@@ -35,13 +36,16 @@ class _ImageCropPageState extends State<ImageCropPage> {
     CroppedFile? croppedFile;
     File? finalResultFile; // To store the potentially compressed file
 
+    // Get l10n instance - needed before async gap for uiSettings
+    final l10n = AppLocalizations.of(context)!;
+
     try {
       // 1. Crop the image
       croppedFile = await ImageCropper().cropImage(
         sourcePath: widget.imagePath,
         uiSettings: [
           AndroidUiSettings(
-              toolbarTitle: 'Crop Bill Image',
+              toolbarTitle: l10n.imageCropPageTitle, // Use l10n
               toolbarColor: Theme.of(context).appBarTheme.backgroundColor ??
                   AppColors.facebookBlue,
               toolbarWidgetColor:
@@ -49,7 +53,7 @@ class _ImageCropPageState extends State<ImageCropPage> {
               initAspectRatio: CropAspectRatioPreset.original,
               lockAspectRatio: false),
           IOSUiSettings(
-            title: 'Crop Bill Image',
+            title: l10n.imageCropPageTitle, // Use l10n
           ),
         ],
       );
@@ -99,8 +103,13 @@ class _ImageCropPageState extends State<ImageCropPage> {
     } catch (cropError) {
       print("Error during image cropping: $cropError");
       if (mounted) {
+        // Check mount status again after async gap
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error cropping image: $cropError')),
+          SnackBar(
+              content: Text(AppLocalizations.of(
+                      context)! // Get l10n again after async gap
+                  .imageCropPageErrorSnackbar(cropError.toString()))),
         );
       }
       finalResultFile = null; // Error during cropping

@@ -10,11 +10,27 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     await dotenv.load(fileName: ".env");
+
+    // Manually create AppConfig to test its factory method
+    final AppConfig appConfig;
+    try {
+      appConfig = AppConfig.fromEnv();
+      debugPrint('AppConfig manually created successfully.');
+      debugPrint(
+          'Supabase URL from manual config: ${appConfig.supabaseUrl}'); // Example print
+    } catch (e) {
+      debugPrint('Error manually creating AppConfig: $e');
+      // Re-throw or handle as appropriate, maybe show error UI
+      throw Exception('Failed to create AppConfig from .env: $e');
+    }
+
+    // Now configure GetIt dependencies
     await di.configureDependencies();
-    final appConfig = di.sl<AppConfig>();
+
+    // Initialize Supabase using the manually created config
     await Supabase.initialize(
-      url: appConfig.supabaseUrl,
-      anonKey: appConfig.supabaseAnonKey,
+      url: appConfig.supabaseUrl, // Use manually created instance
+      anonKey: appConfig.supabaseAnonKey, // Use manually created instance
     );
     runApp(const MyApp());
   } catch (e) {

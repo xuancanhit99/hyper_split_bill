@@ -1,0 +1,253 @@
+{
+  "@@locale": "en",
+  "appTitle": "Hyper Split Bill",
+  "billEditPageEditTitle": "Edit Bill",
+  "billEditPageReviewTitle": "Review Bill",
+  "billEditPageSaveTooltip": "Save Bill Data",
+  "billEditPageEditTooltip": "Edit Bill Data",
+  "billEditPageParticipantsSectionTitle": "Participants:",
+  "billEditPageSplitEquallyButtonLabel": "Split Equally Among {count}",
+  "@billEditPageSplitEquallyButtonLabel": {
+    "description": "Button label for splitting the bill equally among a number of participants",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "billEditPageFinalJsonTileTitle": "Final Bill JSON Data",
+  "billEditPageAskBillBotButtonLabel": "Ask Bill Bot",
+  "billEditPageRawJsonTileTitle": "Raw OCR/JSON Data (Initial)",
+  "billEditPageErrorParsingOcr": "Error parsing OCR data: {error}",
+  "@billEditPageErrorParsingOcr": {
+    "description": "Error message shown when OCR data parsing fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Invalid format"
+      }
+    }
+  },
+  "billEditPageSaveErrorSnackbar": "Save Error: {message}",
+  "@billEditPageSaveErrorSnackbar": {
+    "description": "Snackbar message shown when saving the bill fails",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Network connection failed"
+      }
+    }
+  },
+  "billEditPageSuccessSnackbar": "{message}",
+  "@billEditPageSuccessSnackbar": {
+    "description": "Snackbar message shown when saving the bill succeeds. The message itself comes from the BLoC state.",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Bill saved successfully!"
+      }
+    }
+  },
+  "billEditPageValidationErrorTotalAmount": "Please enter a valid total amount.",
+  "billEditPageValidationErrorPercentages": "Participant percentages must add up to 100%. Current total: {totalPercentage}%",
+  "@billEditPageValidationErrorPercentages": {
+    "description": "Validation error when participant percentages don't sum to 100",
+    "placeholders": {
+      "totalPercentage": {
+        "type": "String",
+        "example": "99.50"
+      }
+    }
+  },
+  "billEditPageValidationErrorDate": "Please enter a valid date (dd-MM-yyyy).",
+  "billEditPageValidationErrorCurrency": "Invalid currency selected. Please choose from the list.",
+  "billEditPageValidationErrorAuth": "Error: User not authenticated.",
+  "billEditPageDefaultItemDescription": "Unknown Item",
+  "billEditPageDefaultParticipantName": "Me",
+  "billEditPageErrorParsingJson": "Failed to parse structured data: {error}",
+   "@billEditPageErrorParsingJson": {
+    "description": "Error message shown when parsing the initial JSON fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Unexpected token"
+      }
+    }
+  },
+  "dialogEditDescriptionTitle": "Edit Description",
+  "dialogEditTotalAmountTitle": "Edit Total Amount",
+  "dialogEditTaxTitle": "Edit Tax",
+  "dialogEditTipTitle": "Edit Tip",
+  "dialogEditDiscountTitle": "Edit Discount",
+  "dialogAddOptionalFieldsTitle": "Add Optional Fields",
+  "checkboxTaxLabel": "Tax",
+  "checkboxTipLabel": "Tip",
+  "checkboxDiscountLabel": "Discount",
+  "checkboxCurrencyLabel": "Currency",
+  "buttonCancel": "Cancel",
+  "buttonSave": "Save",
+  "buttonDone": "Done",
+  "editBillInfoSectionUpdateTotalButtonLabel": "Update Total",
+  "participantSectionInvalidPercentageLock": "Please enter a valid percentage (0-100) before locking.",
+  "participantSectionAddDialogTitle": "Add Participant",
+  "participantSectionAddDialogHint": "Enter participant name",
+  "participantSectionAddDialogButton": "Add",
+  "participantSectionExistsSnackbar": "Participant \"{name}\" already exists.",
+  "@participantSectionExistsSnackbar": {
+    "description": "Error message when trying to add a participant that already exists",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "participantSectionCannotRemoveLastSnackbar": "Cannot remove the last participant.",
+  "participantSectionHeaderName": "Name",
+  "participantSectionHeaderPercent": "Percent",
+  "participantSectionHeaderAmount": "Amount",
+  "participantSectionEmptyListEdit": "No participants added yet.",
+  "participantSectionEmptyListReview": "No participants.",
+  "participantSectionAddButtonLabel": "Add Participant",
+  "participantSectionRemoveTooltip": "Remove {name}",
+  "@participantSectionRemoveTooltip": {
+    "description": "Tooltip for the remove participant button",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bob"
+      }
+    }
+  },
+  "currencyDisplayFormat": "{code} - {name}",
+  "@currencyDisplayFormat": {
+    "description": "Format string for displaying currency code and name",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "USD"
+      },
+      "name": {
+        "type": "String",
+        "example": "United States Dollar"
+      }
+    }
+  },
+  "itemDialogValidationDescriptionEmpty": "Description cannot be empty.",
+  "itemDialogValidationQuantityNegative": "Quantity must be a non-negative number.",
+  "itemDialogValidationPriceNegative": "Prices cannot be negative.",
+  "itemDialogValidationConfirmTwo": "Please confirm exactly two values (Quantity, Unit Price, or Total Price) using the checkboxes.",
+  "itemDialogValidationInconsistent": "Error: Final values are inconsistent (Qty * Unit Price != Total Price). Please re-confirm.",
+  "itemDialogDescriptionLabel": "Description",
+  "itemDialogQuantityLabel": "Quantity",
+  "itemDialogUnitPriceLabel": "Unit Price",
+  "itemDialogTotalPriceLabel": "Total Price",
+  "itemSectionDeletedSnackbar": "Item deleted",
+  "itemSectionEmptyList": "No items added yet.",
+  "itemSectionConfirmDeleteDialogTitle": "Confirm Delete",
+  "itemSectionConfirmDeleteDialogContent": "Are you sure you want to delete \"{description}\"?",
+  "@itemSectionConfirmDeleteDialogContent": {
+    "description": "Confirmation message for deleting an item",
+    "placeholders": {
+      "description": {
+        "type": "String",
+        "example": "Pizza"
+      }
+    }
+  },
+  "itemSectionConfirmDeleteDialogFallbackItemName": "this item",
+  "itemSectionDeleteButton": "Delete",
+  "itemSectionAddButtonLabel": "Add Item",
+  "itemSectionHeaderDescription": "Description",
+  "itemSectionHeaderQty": "Qty",
+  "itemSectionHeaderUnitPrice": "Unit Price",
+  "itemSectionHeaderTotalPrice": "Total Price",
+  "itemDialogAddTitle": "Add New Item",
+  "itemDialogEditTitle": "Edit Item",
+  "imageCropPageTitle": "Crop Bill Image",
+  "imageCropPageErrorSnackbar": "Error cropping image: {error}",
+  "@imageCropPageErrorSnackbar": {
+    "description": "Snackbar message shown when image cropping fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Unable to load image"
+      }
+    }
+  },
+  "chatbotPageTitle": "Bill Bot Assistant",
+  "chatbotPageAnalyzingMessage": "Analyzing bill and preparing suggestions...",
+  "chatbotPageErrorStartingChat": "Sorry, I had trouble starting the chat: {error}",
+  "@chatbotPageErrorStartingChat": {
+    "description": "Error message when the initial chat message fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "API connection failed"
+      }
+    }
+  },
+  "chatbotPageErrorSendingMessage": "Sorry, I encountered an error: {error}",
+  "@chatbotPageErrorSendingMessage": {
+    "description": "Error message when sending a chat message fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Timeout"
+      }
+    }
+  },
+  "chatbotPageSuggestionTooltip": "Send \"{suggestion}\"",
+  "@chatbotPageSuggestionTooltip": {
+    "description": "Tooltip for the suggestion chips",
+    "placeholders": {
+      "suggestion": {
+        "type": "String",
+        "example": "How much does Alice owe?"
+      }
+    }
+  },
+  "chatbotPageInputHint": "Ask how to split the bill...",
+  "chatbotPageSendButtonTooltip": "Send message",
+
+  "billUploadPageTitle": "Upload Bill",
+  "billUploadPageNoImageToRetrySnackbar": "No image available to retry OCR.",
+  "billUploadPageOcrFailedSnackbar": "OCR Failed: {message}",
+  "@billUploadPageOcrFailedSnackbar": {
+    "description": "Snackbar message shown when OCR processing fails",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Image quality too low"
+      }
+    }
+  },
+  "billUploadPageProcessingErrorDefault": "Could not process the image. Please try again.",
+  "billUploadPageNotAReceiptError": "🤖 This image does not appear to be a receipt/bill/invoice. Please upload a valid document.",
+  "billUploadPageNotAReceiptButCategoryError": "🤖 This image does not appear to be a receipt/bill/invoice. It looks like a '{category}'. Please upload a valid document.",
+  "@billUploadPageNotAReceiptButCategoryError": {
+    "description": "Error message when the image is not a receipt but a category is identified",
+    "placeholders": {
+      "category": {
+        "type": "String",
+        "example": "document"
+      }
+    }
+  },
+  "billUploadPageUnknownCategory": "unknown",
+  "billUploadPageCannotDetermineReceiptError": "Could not determine if the image is a receipt. Please try again.",
+  "billUploadPageJsonProcessingError": "Failed to process the structured data.",
+  "billUploadPageOcrSuccessSnackbar": "Receipt detected! Navigating to edit...",
+  "billUploadPagePlaceholder": "Select an image or take a photo of your bill.",
+  "billUploadPageRetryOcrButtonLabel": "Retry OCR",
+  "billUploadPageGalleryButtonLabel": "Choose from Gallery",
+  "billUploadPageCameraButtonLabel": "Take Photo",
+  "billUploadPageLoadingStructuring": "Structuring data...",
+  "billUploadPageLoadingProcessing": "Processing image...",
+
+  "settingsPageTitle": "Settings",
+  "settingsPageLanguageLabel": "Language",
+  "settingsPageCurrentLanguage": "Current language",
+  "settingsPageSelectLanguageTitle": "Select Language"
+}

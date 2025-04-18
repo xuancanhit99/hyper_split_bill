@@ -7,6 +7,7 @@ import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_
 import 'package:hyper_split_bill/injection_container.dart'; // For sl
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes
 import 'package:go_router/go_router.dart'; // Import go_router for context.push
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 // Wrap the page with BlocProvider to provide the Bloc instance
 class BillUploadPage extends StatelessWidget {
@@ -119,13 +120,19 @@ class _BillUploadViewState extends State<_BillUploadView> {
       print("Retry OCR called but no image is selected.");
       // Optionally show a message to the user
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No image available to retry OCR.')),
+        SnackBar(
+            // Remove const
+            content: Text(AppLocalizations.of(context)!
+                .billUploadPageNoImageToRetrySnackbar)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     // Wrap the Scaffold with BlocListener to react to state changes
     return BlocListener<BillSplittingBloc, BillSplittingState>(
       listener: (context, state) {
@@ -134,9 +141,10 @@ class _BillUploadViewState extends State<_BillUploadView> {
         if (state is BillSplittingOcrSuccess) {
           // OCR Success: Validate JSON before navigating
           bool isReceipt = false; // Default to false
-          String errorMessage =
-              'Could not process the image. Please try again.'; // Generic default
-          String imageCategory = 'unknown'; // Default category
+          // Use localized default error message
+          String errorMessage = l10n.billUploadPageProcessingErrorDefault;
+          String imageCategory = l10n
+              .billUploadPageUnknownCategory; // Use localized default category
 
           try {
             final data =
@@ -150,14 +158,15 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
               if (!isReceipt) {
                 // 2. If it's not a receipt, try to get the category
-                imageCategory = data['image_category'] as String? ?? 'unknown';
+                imageCategory = data['image_category'] as String? ??
+                    l10n.billUploadPageUnknownCategory; // Use localized default
                 // Construct specific error message
-                if (imageCategory == 'unknown') {
+                if (imageCategory == l10n.billUploadPageUnknownCategory) {
                   errorMessage =
-                      '🤖 This image does not appear to be a receipt/bill/invoice. Please upload a valid document.';
+                      l10n.billUploadPageNotAReceiptError; // Use l10n
                 } else {
-                  errorMessage =
-                      "🤖 This image does not appear to be a receipt/bill/invoice. It looks like a '$imageCategory'. Please upload a valid document.";
+                  errorMessage = l10n.billUploadPageNotAReceiptButCategoryError(
+                      imageCategory); // Use l10n with placeholder
                 }
               }
               // If isReceipt is true, we don't need to set an error message here.
@@ -166,23 +175,23 @@ class _BillUploadViewState extends State<_BillUploadView> {
               print(
                   "Warning: 'is_receipt' field missing or not a boolean in JSON response.");
               errorMessage =
-                  'Could not determine if the image is a receipt. Please try again.';
+                  l10n.billUploadPageCannotDetermineReceiptError; // Use l10n
               isReceipt = false; // Treat as invalid if field is missing/wrong
             }
             // --- End Validation ---
           } catch (e) {
             print("Error decoding structured JSON: $e");
-            errorMessage =
-                'Failed to process the structured data.'; // Error during JSON decoding
+            errorMessage = l10n.billUploadPageJsonProcessingError; // Use l10n
             isReceipt = false; // Treat as invalid on decoding error
           }
 
           if (isReceipt) {
             // Navigate only if it's confirmed to be a receipt
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text(
-                      'Receipt detected! Navigating to edit...')), // Updated message
+              SnackBar(
+                  // Remove const
+                  content:
+                      Text(l10n.billUploadPageOcrSuccessSnackbar)), // Use l10n
             );
             context.push(AppRoutes.editBill, extra: state.structuredJson);
           } else {
@@ -200,7 +209,8 @@ class _BillUploadViewState extends State<_BillUploadView> {
           // OCR Failure: Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('OCR Failed: ${state.message}'),
+              content: Text(l10n.billUploadPageOcrFailedSnackbar(
+                  state.message)), // Use l10n with placeholder
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -209,7 +219,7 @@ class _BillUploadViewState extends State<_BillUploadView> {
       child: Scaffold(
         // The actual UI remains inside the listener's child
         appBar: AppBar(
-          title: const Text('Upload Bill'),
+          title: Text(l10n.billUploadPageTitle), // Use l10n
           // Remove loading indicator from AppBar actions
           actions: [], // Define an empty actions list
         ),
@@ -244,13 +254,17 @@ class _BillUploadViewState extends State<_BillUploadView> {
                             ),
                           ] else ...[
                             // Placeholder
-                            const Expanded(
+                            Expanded(
+                              // Remove const
                               child: Center(
                                 child: Text(
-                                  'Select an image or take a photo of your bill.',
+                                  l10n.billUploadPagePlaceholder, // Use l10n
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: 16, color: Colors.grey),
+                                  style: const TextStyle(
+                                    // Move const here
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                             ),
@@ -260,7 +274,8 @@ class _BillUploadViewState extends State<_BillUploadView> {
                           if (_selectedImage != null) ...[
                             ElevatedButton.icon(
                               icon: const Icon(Icons.refresh),
-                              label: const Text('Retry OCR'),
+                              label: Text(l10n
+                                  .billUploadPageRetryOcrButtonLabel), // Use l10n
                               onPressed: isLoading ? null : _retryOcr,
                               style: ElevatedButton.styleFrom(
                                 padding:
@@ -275,7 +290,8 @@ class _BillUploadViewState extends State<_BillUploadView> {
                           // Buttons (still disable based on isLoading)
                           ElevatedButton.icon(
                             icon: const Icon(Icons.photo_library_outlined),
-                            label: const Text('Choose from Gallery'),
+                            label: Text(l10n
+                                .billUploadPageGalleryButtonLabel), // Use l10n
                             onPressed: isLoading ? null : _pickImageFromGallery,
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 15),
@@ -284,7 +300,8 @@ class _BillUploadViewState extends State<_BillUploadView> {
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.camera_alt_outlined),
-                            label: const Text('Take Photo'),
+                            label: Text(l10n
+                                .billUploadPageCameraButtonLabel), // Use l10n
                             onPressed: isLoading ? null : _pickImageFromCamera,
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 15),
@@ -310,8 +327,10 @@ class _BillUploadViewState extends State<_BillUploadView> {
                               const SizedBox(height: 16),
                               Text(
                                 state is BillSplittingStructuring
-                                    ? 'Structuring data...' // Specific text for structuring
-                                    : 'Processing image...', // Generic text for OCR
+                                    ? l10n
+                                        .billUploadPageLoadingStructuring // Use l10n
+                                    : l10n
+                                        .billUploadPageLoadingProcessing, // Use l10n
                                 style: const TextStyle(
                                     color: Colors.white, fontSize: 16),
                               ),

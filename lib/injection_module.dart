@@ -1,6 +1,8 @@
 import 'package:http/http.dart' as http;
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hyper_split_bill/core/providers/locale_provider.dart'; // Import LocaleProvider
 
 // This module tells GetIt how to create instances of external dependencies
 // that are needed by other injectable classes.
@@ -14,4 +16,14 @@ abstract class RegisterModule {
   // Provides an http.Client instance.
   @lazySingleton
   http.Client get httpClient => http.Client();
+
+  // Provides the SharedPreferences instance
+  @preResolve
+  Future<SharedPreferences> get sharedPreferences =>
+      SharedPreferences.getInstance();
+
+  // Provides the LocaleProvider instance
+  @lazySingleton
+  LocaleProvider localeProvider(SharedPreferences sharedPreferences) =>
+      LocaleProvider(sharedPreferences);
 }

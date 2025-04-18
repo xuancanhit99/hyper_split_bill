@@ -4,6 +4,7 @@ import 'dart:convert'; // For jsonDecode if needed later
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/chat_message_entity.dart'; // Import ChatMessageEntity
 import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/send_chat_message_usecase.dart'; // Import UseCase
 import 'package:hyper_split_bill/injection_container.dart'; // Import sl for GetIt
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class ChatbotPage extends StatefulWidget {
   final String billJson; // Receive the final bill JSON
@@ -21,6 +22,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
   final List<ChatMessageEntity> _messages = []; // List to hold chat messages
   List<String> _suggestions = []; // List for suggestions
   bool _isLoading = false; // To track bot response loading
+  bool _isChatInitializing = true; // Flag to ensure init runs once
 
   // Get UseCase instance
   late final SendChatMessageUseCase _sendChatMessageUseCase;
@@ -30,7 +32,17 @@ class _ChatbotPageState extends State<ChatbotPage> {
     super.initState();
     _sendChatMessageUseCase =
         sl<SendChatMessageUseCase>(); // Get instance from GetIt
-    _initializeChat();
+    // _initializeChat(); // Moved to didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize chat here where context is available
+    if (_isChatInitializing) {
+      _initializeChat();
+      _isChatInitializing = false; // Ensure it only runs once
+    }
   }
 
   @override
@@ -59,7 +71,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
       _isLoading = true; // Show loading for initial message
       _messages.add(ChatMessageEntity(
           sender: ChatMessageSender.bot,
-          text: 'Analyzing bill and preparing suggestions...',
+          text: AppLocalizations.of(context)!
+              .chatbotPageAnalyzingMessage, // Use l10n
           timestamp: DateTime.now()));
     });
     _scrollToBottom();
@@ -80,7 +93,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
         (failure) {
           _messages.add(ChatMessageEntity(
             sender: ChatMessageSender.bot,
-            text: 'Sorry, I had trouble starting the chat: ${failure.message}',
+            text: AppLocalizations.of(context)!
+                .chatbotPageErrorStartingChat(failure.message), // Use l10n
             timestamp: DateTime.now(),
           ));
         },
@@ -132,7 +146,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
         (failure) {
           _messages.add(ChatMessageEntity(
             sender: ChatMessageSender.bot,
-            text: 'Sorry, I encountered an error: ${failure.message}',
+            text: AppLocalizations.of(context)!
+                .chatbotPageErrorSendingMessage(failure.message), // Use l10n
             timestamp: DateTime.now(),
           ));
         },
@@ -157,9 +172,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bill Bot Assistant'),
+        title: Text(l10n.chatbotPageTitle), // Use l10n
       ),
       body: SafeArea(
         // Added SafeArea
@@ -194,7 +212,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
                       .map((s) => ActionChip(
                             label: Text(s),
                             onPressed: () => _onSuggestionTap(s),
-                            tooltip: 'Send "$s"',
+                            tooltip: l10n
+                                .chatbotPageSuggestionTooltip(s), // Use l10n
                           ))
                       .toList(),
                 ),
@@ -211,8 +230,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      decoration: const InputDecoration(
-                        hintText: 'Ask how to split the bill...',
+                      decoration: InputDecoration(
+                        // Remove const
+                        hintText: l10n.chatbotPageInputHint, // Use l10n
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(
                             horizontal: 12.0, vertical: 8.0), // Adjust padding
@@ -236,7 +256,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
                       : IconButton(
                           icon: const Icon(Icons.send),
                           onPressed: _sendMessage,
-                          tooltip: 'Send message',
+                          tooltip:
+                              l10n.chatbotPageSendButtonTooltip, // Use l10n
                         ),
                 ],
               ),

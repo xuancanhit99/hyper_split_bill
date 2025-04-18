@@ -12,6 +12,7 @@ import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bi
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc for user ID
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes for navigation
 import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import the new currency constants file
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 // Import newly created widgets
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_dialog_content.dart';
@@ -84,10 +85,23 @@ class _BillEditPageState extends State<BillEditPage> {
     _dropdownCurrencies =
         List.from(cCommonCurrencies); // Start with common currencies
 
-    // Parse the received JSON string directly, which might update _dropdownCurrencies
-    _parseStructuredJson(widget.structuredJsonString);
-    // Initial calculation after parsing
-    _recalculateAndCompareTotal();
+    // Initial calculation (can run before parsing if needed, or moved)
+    // _recalculateAndCompareTotal(); // Moved to didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Parse JSON here, as context is available and it runs after initState
+    // Use a flag to ensure it only runs once during initialization
+    if (_isInitializing) {
+      _parseStructuredJson(widget.structuredJsonString);
+      // Perform initial calculation *after* parsing is complete
+      _recalculateAndCompareTotal();
+      // Set the flag to false after the first run
+      // Note: _parseStructuredJson already sets _isInitializing = false internally
+      // If it didn't, we would set it here: _isInitializing = false;
+    }
   }
 
   @override
@@ -236,8 +250,9 @@ class _BillEditPageState extends State<BillEditPage> {
             try {
               _items.add(BillItemEntity(
                 id: 'temp_${itemIndex++}',
-                description:
-                    itemMap['description'] as String? ?? 'Unknown Item',
+                description: itemMap['description'] as String? ??
+                    AppLocalizations.of(context)!
+                        .billEditPageDefaultItemDescription, // Use localized default
                 quantity: _parseNum(itemMap['quantity'], allowNegative: false)
                         ?.toInt() ??
                     1,
@@ -254,9 +269,12 @@ class _BillEditPageState extends State<BillEditPage> {
       }
 
       final authState = context.read<AuthBloc>().state;
-      String currentUserName = 'Me';
+      // Use localized default name
+      String currentUserName =
+          AppLocalizations.of(context)!.billEditPageDefaultParticipantName;
       if (authState is AuthAuthenticated) {
-        currentUserName = authState.user.email?.split('@').first ?? 'Me';
+        currentUserName = authState.user.email?.split('@').first ??
+            AppLocalizations.of(context)!.billEditPageDefaultParticipantName;
       }
       // Initialize with the first participant and set their percentage to 100%
       _participants = [
@@ -271,7 +289,8 @@ class _BillEditPageState extends State<BillEditPage> {
     } catch (e, s) {
       print("Error parsing structured JSON: $e\nStackTrace: $s");
       setState(() {
-        _parsingError = 'Failed to parse structured data: $e';
+        _parsingError = AppLocalizations.of(context)!
+            .billEditPageErrorParsingJson(e.toString());
       });
       // Recalculate total after parsing is complete and state is set
       _recalculateAndCompareTotal();
@@ -318,8 +337,9 @@ class _BillEditPageState extends State<BillEditPage> {
 
     // Validate Total Amount
     if (totalAmount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid total amount.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .billEditPageValidationErrorTotalAmount)));
       return;
     }
 
@@ -340,11 +360,12 @@ class _BillEditPageState extends State<BillEditPage> {
         _participants.fold(0.0, (sum, p) => sum + (p.percentage ?? 0.0));
     if ((totalPercentage - 100.0).abs() > 0.01) {
       // Allow for small floating point inaccuracies
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Participant percentages must add up to 100%. Current total: ${totalPercentage.toStringAsFixed(2)}%')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .billEditPageValidationErrorPercentages(
+                      totalPercentage.toStringAsFixed(
+                          2)))) // Add missing parenthesis for SnackBar
+          );
       return;
     }
 
@@ -353,16 +374,19 @@ class _BillEditPageState extends State<BillEditPage> {
     try {
       parsedBillDate = _displayDateFormat.parseStrict(_dateController.text);
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please enter a valid date (dd-MM-yyyy).')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          // Remove const
+          content: Text(
+              AppLocalizations.of(context)!.billEditPageValidationErrorDate)));
       return;
     }
 
     // Validate Currency
     if (!_dropdownCurrencies.contains(currencyCode)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Invalid currency selected. Please choose from the list.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          // Remove const
+          content: Text(AppLocalizations.of(context)!
+              .billEditPageValidationErrorCurrency))); // Remove extra parenthesis
       return;
     }
 
@@ -372,8 +396,9 @@ class _BillEditPageState extends State<BillEditPage> {
     if (authState is AuthAuthenticated) {
       currentUserId = authState.user.id;
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: User not authenticated.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              AppLocalizations.of(context)!.billEditPageValidationErrorAuth)));
       return;
     }
 
@@ -508,7 +533,7 @@ class _BillEditPageState extends State<BillEditPage> {
       // Prevent dismissal by tapping outside - ensures proper flow
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Description'),
+        title: Text(AppLocalizations.of(context)!.dialogEditDescriptionTitle),
         // Use the imported widget
         content: DescriptionDialogContent(
           key: contentKey, // Assign key
@@ -518,7 +543,7 @@ class _BillEditPageState extends State<BillEditPage> {
           TextButton(
             onPressed: () =>
                 Navigator.of(context).pop(), // Return null on cancel
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.buttonCancel),
           ),
           TextButton(
             onPressed: () {
@@ -526,7 +551,7 @@ class _BillEditPageState extends State<BillEditPage> {
               final value = contentKey.currentState?.currentValue;
               Navigator.of(context).pop(value);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.buttonSave),
           ),
         ],
       ),
@@ -583,7 +608,7 @@ class _BillEditPageState extends State<BillEditPage> {
           TextButton(
             onPressed: () =>
                 Navigator.of(context).pop(), // Return null on cancel
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.buttonCancel),
           ),
           TextButton(
             onPressed: () {
@@ -593,7 +618,7 @@ class _BillEditPageState extends State<BillEditPage> {
                 Navigator.of(context).pop(contentState.currentValue);
               }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.buttonSave),
           ),
         ],
       ),
@@ -609,7 +634,7 @@ class _BillEditPageState extends State<BillEditPage> {
 
   Future<void> _showEditTotalAmountDialog() async {
     final String? newValue = await _showEditNumericDialog(
-      title: 'Edit Total Amount',
+      title: AppLocalizations.of(context)!.dialogEditTotalAmountTitle,
       initialValue: _totalAmountController.text,
       allowNegative: false, // Total amount usually shouldn't be negative
     );
@@ -629,7 +654,7 @@ class _BillEditPageState extends State<BillEditPage> {
 
   Future<void> _showEditTaxDialog() async {
     final String? newValue = await _showEditNumericDialog(
-      title: 'Edit Tax',
+      title: AppLocalizations.of(context)!.dialogEditTaxTitle,
       initialValue: _taxController.text,
       valueSuffix: '%',
       allowNegative: false, // Tax percentage usually non-negative
@@ -650,7 +675,7 @@ class _BillEditPageState extends State<BillEditPage> {
 
   Future<void> _showEditTipDialog() async {
     final String? newValue = await _showEditNumericDialog(
-      title: 'Edit Tip',
+      title: AppLocalizations.of(context)!.dialogEditTipTitle,
       initialValue: _tipController.text,
       valueSuffix: '%',
       allowNegative: false, // Tip percentage usually non-negative
@@ -671,7 +696,7 @@ class _BillEditPageState extends State<BillEditPage> {
 
   Future<void> _showEditDiscountDialog() async {
     final String? newValue = await _showEditNumericDialog(
-      title: 'Edit Discount',
+      title: AppLocalizations.of(context)!.dialogEditDiscountTitle,
       initialValue: _discountController.text,
       valueSuffix: '%',
       allowNegative: false, // Discount percentage usually non-negative
@@ -699,13 +724,15 @@ class _BillEditPageState extends State<BillEditPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Add Optional Fields'),
+              title: Text(
+                  AppLocalizations.of(context)!.dialogAddOptionalFieldsTitle),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     CheckboxListTile(
-                      title: const Text('Tax'),
+                      title:
+                          Text(AppLocalizations.of(context)!.checkboxTaxLabel),
                       value: _showTax,
                       onChanged: !_isEditingMode
                           ? null
@@ -719,7 +746,8 @@ class _BillEditPageState extends State<BillEditPage> {
                             },
                     ),
                     CheckboxListTile(
-                      title: const Text('Tip'),
+                      title:
+                          Text(AppLocalizations.of(context)!.checkboxTipLabel),
                       value: _showTip,
                       onChanged: !_isEditingMode
                           ? null
@@ -733,7 +761,8 @@ class _BillEditPageState extends State<BillEditPage> {
                             },
                     ),
                     CheckboxListTile(
-                      title: const Text('Discount'),
+                      title: Text(
+                          AppLocalizations.of(context)!.checkboxDiscountLabel),
                       value: _showDiscount,
                       onChanged: !_isEditingMode
                           ? null
@@ -747,7 +776,8 @@ class _BillEditPageState extends State<BillEditPage> {
                             },
                     ),
                     CheckboxListTile(
-                      title: const Text('Currency'),
+                      title: Text(
+                          AppLocalizations.of(context)!.checkboxCurrencyLabel),
                       value: _showCurrency,
                       onChanged: !_isEditingMode
                           ? null
@@ -766,7 +796,7 @@ class _BillEditPageState extends State<BillEditPage> {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('Done'),
+                  child: Text(AppLocalizations.of(context)!.buttonDone),
                   onPressed: () {
                     Navigator.of(context).pop();
                     // No need for extra setState here as individual onChanged handles it
@@ -798,18 +828,23 @@ class _BillEditPageState extends State<BillEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocListener<BillSplittingBloc, BillSplittingState>(
       listener: (context, state) {
         if (state is BillSplittingSuccess && !_isEditingMode) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(state.message), backgroundColor: Colors.green),
+                content: Text(l10n.billEditPageSuccessSnackbar(state.message)),
+                backgroundColor: Colors.green),
           );
           // Optionally navigate away or disable further editing
         } else if (state is BillSplittingError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text("Save Error: ${state.message}"), // Add prefix
+                content:
+                    Text(l10n.billEditPageSaveErrorSnackbar(state.message)),
                 backgroundColor: Theme.of(context).colorScheme.error),
           );
           // Allow user to stay in edit mode or toggle back if save failed from review mode
@@ -824,7 +859,9 @@ class _BillEditPageState extends State<BillEditPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_isEditingMode ? 'Edit Bill' : 'Review Bill'),
+          title: Text(_isEditingMode
+              ? l10n.billEditPageEditTitle
+              : l10n.billEditPageReviewTitle),
           actions: [
             // Show progress indicator instead of button while loading
             if (context.watch<BillSplittingBloc>().state
@@ -841,7 +878,9 @@ class _BillEditPageState extends State<BillEditPage> {
               IconButton(
                 icon: Icon(
                     _isEditingMode ? Icons.save_outlined : Icons.edit_outlined),
-                tooltip: _isEditingMode ? 'Save Bill Data' : 'Edit Bill Data',
+                tooltip: _isEditingMode
+                    ? l10n.billEditPageSaveTooltip
+                    : l10n.billEditPageEditTooltip,
                 onPressed: _isEditingMode ? _saveBillInternal : _toggleEditMode,
               ),
           ],
@@ -856,7 +895,9 @@ class _BillEditPageState extends State<BillEditPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Center(
-                      child: Text('Error parsing OCR data: $_parsingError',
+                      child: Text(
+                          l10n.billEditPageErrorParsingOcr(
+                              _parsingError ?? 'Unknown error'),
                           style: TextStyle(
                               color: Theme.of(context).colorScheme.error))),
                 )
@@ -910,7 +951,7 @@ class _BillEditPageState extends State<BillEditPage> {
                 const Divider(),
 
                 // --- Participants Section ---
-                Text('Participants:',
+                Text(l10n.billEditPageParticipantsSectionTitle,
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 BillParticipantsSection(
@@ -934,8 +975,8 @@ class _BillEditPageState extends State<BillEditPage> {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: TextButton.icon(
                       icon: const Icon(Icons.pie_chart_outline, size: 18),
-                      label:
-                          Text('Split Equally Among ${_participants.length}'),
+                      label: Text(l10n.billEditPageSplitEquallyButtonLabel(
+                          _participants.length)),
                       style: TextButton.styleFrom(
                         textStyle: const TextStyle(fontStyle: FontStyle.italic),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -996,7 +1037,7 @@ class _BillEditPageState extends State<BillEditPage> {
                 // --- Final Bill JSON Data (Show only when not editing) ---
                 if (!_isEditingMode && _finalBillJsonString != null) ...[
                   JsonExpansionTile(
-                    title: 'Final Bill JSON Data',
+                    title: l10n.billEditPageFinalJsonTileTitle,
                     jsonString: _finalBillJsonString!,
                     initiallyExpanded: true,
                   ),
@@ -1007,7 +1048,7 @@ class _BillEditPageState extends State<BillEditPage> {
                 if (!_isEditingMode && _finalBillJsonString != null) ...[
                   ElevatedButton.icon(
                     icon: const Icon(Icons.chat_bubble_outline),
-                    label: const Text('Ask Bill Bot'),
+                    label: Text(l10n.billEditPageAskBillBotButtonLabel),
                     onPressed: () {
                       context.push(AppRoutes.chatbot,
                           extra: _finalBillJsonString);
@@ -1021,7 +1062,7 @@ class _BillEditPageState extends State<BillEditPage> {
 
                 // --- Raw OCR Text (Styled like Final JSON, always available) ---
                 JsonExpansionTile(
-                  title: 'Raw OCR/JSON Data (Initial)',
+                  title: l10n.billEditPageRawJsonTileTitle,
                   jsonString: _ocrTextController.text,
                   initiallyExpanded: false,
                 ),

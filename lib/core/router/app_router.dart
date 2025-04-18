@@ -14,6 +14,7 @@ import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/chat
 import 'package:flutter_bloc/flutter_bloc.dart'; // Import BlocProvider
 import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart'; // Import the Bloc
 import 'package:hyper_split_bill/injection_container.dart'; // Import sl
+import 'package:hyper_split_bill/features/settings/presentation/pages/settings_page.dart'; // Import SettingsPage
 // Removed import for reset_password_page.dart
 
 // --- Define Route Paths ---
@@ -29,6 +30,7 @@ class AppRoutes {
   static const chatbot = '/chatbot'; // Added route for the chatbot
   static const resetPassword =
       '/reset-password'; // Path kept for potential future use, but route removed
+  static const settings = '/settings'; // Use string literal for const
 }
 
 class AppRouter {
@@ -145,6 +147,12 @@ class AppRouter {
               // Use the actual ChatbotPage
               return ChatbotPage(billJson: billJson);
             }),
+        GoRoute(
+          path: AppRoutes.settings,
+          name: AppRoutes.settings,
+          // Use the imported SettingsPage class
+          builder: (context, state) => const SettingsPage(),
+        ),
         // Removed GoRoute for resetPassword
       ],
 
@@ -180,7 +188,9 @@ class AppRouter {
               state.matchedLocation == AppRoutes.editBill ||
               state.matchedLocation ==
                   AppRoutes.chatbot || // Add chatbot to protected routes
-              state.matchedLocation == AppRoutes.history;
+              state.matchedLocation == AppRoutes.history ||
+              state.matchedLocation ==
+                  AppRoutes.settings; // Add settings to protected routes
           if (isProtected) {
             debugPrint(
                 "Redirecting unauthenticated user to login from ${state.matchedLocation}");

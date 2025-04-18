@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart';
 import 'package:intl/intl.dart'; // For number formatting
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 // Helper to format currency
 String _formatCurrencyValue(num? value) {
@@ -217,9 +218,10 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             currentPercentage < 0 ||
             currentPercentage > 100)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Please enter a valid percentage (0-100) before locking.')),
+        SnackBar(
+            // Remove const
+            content: Text(AppLocalizations.of(context)!
+                .participantSectionInvalidPercentageLock)),
       );
       // Don't proceed with locking if value is invalid
       // We need to trigger a rebuild to uncheck the checkbox visually
@@ -265,20 +267,23 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Add Participant'),
+          title: Text(
+              AppLocalizations.of(context)!.participantSectionAddDialogTitle),
           content: TextField(
             controller: nameController,
             autofocus: true,
-            decoration:
-                const InputDecoration(hintText: 'Enter participant name'),
+            decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!
+                    .participantSectionAddDialogHint),
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.buttonCancel),
               onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
-              child: const Text('Add'),
+              child: Text(AppLocalizations.of(context)!
+                  .participantSectionAddDialogButton),
               onPressed: () {
                 final name = nameController.text.trim();
                 if (name.isNotEmpty) {
@@ -298,7 +303,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                     Navigator.of(dialogContext).pop(); // Close dialog first
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('Participant "$name" already exists.')),
+                          content: Text(AppLocalizations.of(context)!
+                              .participantSectionExistsSnackbar(name))),
                     );
                   }
                 }
@@ -313,7 +319,10 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   void _removeParticipant(ParticipantEntity participant) {
     if (_participants.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot remove the last participant.')),
+        SnackBar(
+            // Remove const
+            content: Text(AppLocalizations.of(context)!
+                .participantSectionCannotRemoveLastSnackbar)),
       );
       return;
     }
@@ -340,6 +349,9 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,16 +366,16 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
               children: [
                 Expanded(
                     flex: 2, // Name takes 2 parts
-                    child: Text('Name',
+                    child: Text(l10n.participantSectionHeaderName,
                         style: Theme.of(context).textTheme.labelSmall)),
                 Expanded(
                     flex: 1, // Percent takes 1 part
-                    child: Text('Percent',
+                    child: Text(l10n.participantSectionHeaderPercent,
                         textAlign: TextAlign.right,
                         style: Theme.of(context).textTheme.labelSmall)),
                 Expanded(
                     flex: 1, // Amount takes 1 part
-                    child: Text('Amount',
+                    child: Text(l10n.participantSectionHeaderAmount,
                         textAlign: TextAlign.right,
                         style: Theme.of(context).textTheme.labelSmall)),
               ],
@@ -374,8 +386,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               widget.enabled
-                  ? 'No participants added yet.'
-                  : 'No participants.',
+                  ? l10n.participantSectionEmptyListEdit
+                  : l10n.participantSectionEmptyListReview,
               style: TextStyle(color: Colors.grey[600]),
             ),
           )
@@ -389,7 +401,7 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
               final participant = _participants[index];
               // Call the appropriate row builder based on mode
               return widget.enabled
-                  ? _buildEditModeRow(participant)
+                  ? _buildEditModeRow(l10n, participant) // Pass l10n instance
                   : _buildReviewModeRow(participant);
             },
           ),
@@ -397,7 +409,7 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
         if (widget.enabled)
           TextButton.icon(
             icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Add Participant'),
+            label: Text(l10n.participantSectionAddButtonLabel),
             onPressed: _addParticipantDialog,
           ),
       ],
@@ -405,7 +417,9 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   }
 
   // Builds a row for Edit Mode
-  Widget _buildEditModeRow(ParticipantEntity participant) {
+  Widget _buildEditModeRow(
+      AppLocalizations l10n, ParticipantEntity participant) {
+    // Add l10n parameter
     final percentageController = _percentageControllers[participant.name];
     final bool isLocked = participant.isPercentageLocked;
     final bool canRemove = _participants.length > 1;
@@ -485,7 +499,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                 ? IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 20),
                     color: Colors.red[300],
-                    tooltip: 'Remove ${participant.name}',
+                    tooltip:
+                        l10n.participantSectionRemoveTooltip(participant.name),
                     onPressed: () => _removeParticipant(participant),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),

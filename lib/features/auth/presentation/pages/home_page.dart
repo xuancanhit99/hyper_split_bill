@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Added import for AppRoutes
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:hyper_split_bill/features/settings/presentation/pages/settings_page.dart'; // Import SettingsPage
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -20,11 +21,19 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Home Page'),
         actions: [
+          // Settings Icon
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings', // TODO: Localize this tooltip
+            onPressed: () {
+              context.push(SettingsPage.routeName);
+            },
+          ),
           // Only show logout if authenticated
           if (authState is AuthAuthenticated)
             IconButton(
               icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out',
+              tooltip: 'Sign Out', // TODO: Localize this tooltip
               onPressed: () {
                 // Show confirmation dialog before signing out
                 showDialog(

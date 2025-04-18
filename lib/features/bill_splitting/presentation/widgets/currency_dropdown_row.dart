@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import currency map
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class CurrencyDropdownRow extends StatelessWidget {
   final bool isEditingMode;
@@ -17,6 +18,9 @@ class CurrencyDropdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     final textStyle = Theme.of(context).textTheme.titleMedium;
     final selectedCurrencyCode = currencyController.text;
     // Use the map constant defined in currencies.dart
@@ -45,7 +49,9 @@ class CurrencyDropdownRow extends StatelessWidget {
                         final name = cCurrencyMap[code] ?? code;
                         return DropdownMenuItem<String>(
                           value: code,
-                          child: Text('$code - $name',
+                          child: Text(
+                              l10n.currencyDisplayFormat(
+                                  code, name), // Use localized format
                               style: textStyle,
                               overflow: TextOverflow.ellipsis),
                         );
@@ -56,7 +62,8 @@ class CurrencyDropdownRow extends StatelessWidget {
                   )
                 : Text(
                     // Display as plain text when not editing
-                    '$selectedCurrencyCode - $currencyName',
+                    l10n.currencyDisplayFormat(selectedCurrencyCode,
+                        currencyName), // Use localized format
                     style: textStyle,
                     overflow: TextOverflow.ellipsis,
                   ),

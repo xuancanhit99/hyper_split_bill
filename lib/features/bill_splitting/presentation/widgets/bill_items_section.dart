@@ -3,6 +3,7 @@ import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_it
 import 'package:flutter/services.dart'; // For input formatters
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_item_widget.dart';
 import 'dart:math'; // For random number generation
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 // --- Stateful Widget for Item Edit Dialog Content ---
 class _ItemDialogContent extends StatefulWidget {
@@ -144,23 +145,26 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
 
     // --- Start Validation ---
     if (description.isEmpty) {
-      _showValidationError('Description cannot be empty.');
+      _showValidationError(
+          AppLocalizations.of(context)!.itemDialogValidationDescriptionEmpty);
       return null;
     }
     if (quantity == null || quantity < 0) {
-      _showValidationError('Quantity must be a non-negative number.');
+      _showValidationError(
+          AppLocalizations.of(context)!.itemDialogValidationQuantityNegative);
       return null;
     }
     if (unitPrice == null ||
         unitPrice < 0 ||
         totalPrice == null ||
         totalPrice < 0) {
-      _showValidationError('Prices cannot be negative.');
+      _showValidationError(
+          AppLocalizations.of(context)!.itemDialogValidationPriceNegative);
       return null;
     }
     if (confirmedCount != 2) {
       _showValidationError(
-          'Please confirm exactly two values (Quantity, Unit Price, or Total Price) using the checkboxes.');
+          AppLocalizations.of(context)!.itemDialogValidationConfirmTwo);
       return null;
     }
 
@@ -169,7 +173,7 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
     if ((finalCalculatedTotal - totalPrice).abs() > 0.01) {
       // Tolerance
       _showValidationError(
-          'Error: Final values are inconsistent (Qty * Unit Price != Total Price). Please re-confirm.');
+          AppLocalizations.of(context)!.itemDialogValidationInconsistent);
       return null;
     }
     // --- End Validation ---
@@ -194,6 +198,9 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     // Determine which fields are enabled based on confirmations
     bool quantityEnabled = !isQuantityConfirmed &&
         !(isUnitPriceConfirmed && isTotalPriceConfirmed);
@@ -209,7 +216,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
         children: [
           TextField(
             controller: descriptionController,
-            decoration: const InputDecoration(labelText: 'Description'),
+            decoration:
+                InputDecoration(labelText: l10n.itemDialogDescriptionLabel),
             textCapitalization: TextCapitalization.sentences,
           ),
           const SizedBox(height: 12),
@@ -218,7 +226,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
               Expanded(
                 child: TextField(
                   controller: quantityController,
-                  decoration: const InputDecoration(labelText: 'Quantity'),
+                  decoration:
+                      InputDecoration(labelText: l10n.itemDialogQuantityLabel),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   enabled: quantityEnabled,
@@ -246,7 +255,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
               Expanded(
                 child: TextField(
                   controller: unitPriceController,
-                  decoration: const InputDecoration(labelText: 'Unit Price'),
+                  decoration:
+                      InputDecoration(labelText: l10n.itemDialogUnitPriceLabel),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
@@ -276,7 +286,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
               Expanded(
                 child: TextField(
                   controller: totalPriceController,
-                  decoration: const InputDecoration(labelText: 'Total Price'),
+                  decoration: InputDecoration(
+                      labelText: l10n.itemDialogTotalPriceLabel),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
@@ -379,6 +390,8 @@ class _BillItemsSectionState extends State<BillItemsSection> {
   }
 
   void _removeItemById(String itemId) {
+    // Get l10n instance here as it's outside build scope
+    final l10n = AppLocalizations.of(context)!;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final originalLength = _items.length;
@@ -389,7 +402,8 @@ class _BillItemsSectionState extends State<BillItemsSection> {
         if (_items.length < originalLength) {
           widget.onItemsChanged(_items);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Item deleted')),
+            SnackBar(
+                content: Text(l10n.itemSectionDeletedSnackbar)), // Use l10n
           );
         }
       }
@@ -398,14 +412,17 @@ class _BillItemsSectionState extends State<BillItemsSection> {
 
   @override
   Widget build(BuildContext context) {
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       children: [
-        _buildHeader(), // Add header row
+        _buildHeader(l10n), // Pass l10n to header builder
         const Divider(height: 1, thickness: 1), // Divider below header
         if (_items.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Text('No items added yet.',
+            child: Text(l10n.itemSectionEmptyList, // Use l10n
                 style: TextStyle(color: Colors.grey[600])),
           )
         else
@@ -427,19 +444,25 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                         context: context,
                         builder: (BuildContext context) {
                           return AlertDialog(
-                            title: const Text('Confirm Delete'),
+                            title: Text(l10n
+                                .itemSectionConfirmDeleteDialogTitle), // Use l10n
                             content: Text(
-                                'Are you sure you want to delete "${item.description.isNotEmpty ? item.description : "this item"}"?'),
+                                l10n.itemSectionConfirmDeleteDialogContent(item
+                                        .description.isNotEmpty
+                                    ? item.description
+                                    : l10n
+                                        .itemSectionConfirmDeleteDialogFallbackItemName)), // Use l10n
                             actions: <Widget>[
                               TextButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(false),
-                                child: const Text('Cancel'),
+                                child: Text(l10n.buttonCancel), // Use l10n
                               ),
                               TextButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(true),
-                                child: const Text('Delete',
+                                child: Text(
+                                    l10n.itemSectionDeleteButton, // Use l10n
                                     style: TextStyle(color: Colors.red)),
                               ),
                             ],
@@ -462,7 +485,8 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                   item: item,
                   // Pass the item to edit to the dialog function
                   onEdit: widget.enabled
-                      ? () => _showItemDialog(itemToEdit: item)
+                      ? () =>
+                          _showItemDialog(l10n, itemToEdit: item) // Pass l10n
                       : () {},
                   showItemDetails: widget.showItemDetails, // Pass down
                 ),
@@ -477,9 +501,9 @@ class _BillItemsSectionState extends State<BillItemsSection> {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Add Item'),
+              label: Text(l10n.itemSectionAddButtonLabel), // Use l10n
               // Call _showItemDialog without itemToEdit for adding
-              onPressed: () => _showItemDialog(),
+              onPressed: () => _showItemDialog(l10n), // Pass l10n
             ),
           ),
       ],
@@ -487,23 +511,26 @@ class _BillItemsSectionState extends State<BillItemsSection> {
   }
 
   // Header Row Widget
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
+    // Add l10n parameter
     return Padding(
       padding: const EdgeInsets.symmetric(
           vertical: 8.0, horizontal: 4.0), // Match item padding
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
+            // Remove const
             flex: 4,
-            child: Text('Description',
+            child: Text(l10n.itemSectionHeaderDescription, // Use l10n
                 style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
           // Conditionally show Qty header
           if (widget.showItemDetails) ...[
-            const Expanded(
+            Expanded(
+              // Remove const
               flex: 1,
-              child: Text('Qty',
+              child: Text(l10n.itemSectionHeaderQty, // Use l10n
                   textAlign: TextAlign.center,
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
@@ -511,17 +538,19 @@ class _BillItemsSectionState extends State<BillItemsSection> {
           ],
           // Conditionally show Unit Price header
           if (widget.showItemDetails) ...[
-            const Expanded(
+            Expanded(
+              // Remove const
               flex: 2,
-              child: Text('Unit Price',
+              child: Text(l10n.itemSectionHeaderUnitPrice, // Use l10n
                   textAlign: TextAlign.right,
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 8),
           ],
-          const Expanded(
+          Expanded(
+            // Remove const
             flex: 2,
-            child: Text('Total Price',
+            child: Text(l10n.itemSectionHeaderTotalPrice, // Use l10n
                 textAlign: TextAlign.right,
                 style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -540,7 +569,8 @@ class _BillItemsSectionState extends State<BillItemsSection> {
   }
 
   // --- Unified Add/Edit Item Dialog ---
-  Future<void> _showItemDialog({BillItemEntity? itemToEdit}) async {
+  Future<void> _showItemDialog(AppLocalizations l10n, // Add l10n parameter
+      {BillItemEntity? itemToEdit}) async {
     final bool isAdding = itemToEdit == null;
     // Provide default values if adding
     final BillItemEntity initialItemData = itemToEdit ??
@@ -559,7 +589,9 @@ class _BillItemsSectionState extends State<BillItemsSection> {
       context: context,
       barrierDismissible: false, // Prevent accidental dismiss
       builder: (context) => AlertDialog(
-        title: Text(isAdding ? 'Add New Item' : 'Edit Item'),
+        title: Text(isAdding
+            ? l10n.itemDialogAddTitle
+            : l10n.itemDialogEditTitle), // Use l10n
         content: _ItemDialogContent(
           key: contentKey,
           initialItem: initialItemData,
@@ -568,25 +600,31 @@ class _BillItemsSectionState extends State<BillItemsSection> {
           // Only show delete button when editing
           if (!isAdding)
             TextButton(
-              child: const Text('Delete'),
+              child: Text(l10n.itemSectionDeleteButton), // Use l10n
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: const Text('Confirm Delete'),
-                          content: Text(
-                              'Are you sure you want to delete "${itemToEdit.description.isNotEmpty ? itemToEdit.description : "this item"}"?'),
+                          title: Text(l10n
+                              .itemSectionConfirmDeleteDialogTitle), // Use l10n
+                          content: Text(l10n
+                              .itemSectionConfirmDeleteDialogContent(itemToEdit!
+                                      .description.isNotEmpty
+                                  ? itemToEdit.description
+                                  : l10n
+                                      .itemSectionConfirmDeleteDialogFallbackItemName)), // Use l10n
                           actions: <Widget>[
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
+                              child: Text(l10n.buttonCancel), // Use l10n
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Delete',
-                                  style: TextStyle(color: Colors.red)),
+                              child:
+                                  Text(l10n.itemSectionDeleteButton, // Use l10n
+                                      style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         );
@@ -602,11 +640,11 @@ class _BillItemsSectionState extends State<BillItemsSection> {
               },
             ),
           TextButton(
-            child: const Text('Cancel'),
+            child: Text(l10n.buttonCancel), // Use l10n
             onPressed: () => Navigator.of(context).pop(), // Return null
           ),
           TextButton(
-            child: const Text('Save'),
+            child: Text(l10n.buttonSave), // Use l10n
             onPressed: () {
               final contentState = contentKey.currentState;
               if (contentState != null) {
