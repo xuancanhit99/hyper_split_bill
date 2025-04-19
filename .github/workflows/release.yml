@@ -3,7 +3,11 @@ name: Create Release and Upload APK
 on:
   push:
     tags:
-      - 'v1.0.16' # Trigger on tags like v1.0.0, v1.2.3, etc.
+      - 'v1.0.17' # Trigger on tags like v1.0.0, v1.2.3, etc.
+
+# Add permissions for creating releases and uploading assets
+permissions:
+  contents: write
 
 jobs:
   build-and-release:
