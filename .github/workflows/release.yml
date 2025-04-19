@@ -3,7 +3,7 @@ name: Create Release and Upload APK
 on:
   push:
     tags:
-      - 'v1.0.14' # Trigger on tags like v1.0.0, v1.2.3, etc.
+      - 'v1.0.15' # Trigger on tags like v1.0.0, v1.2.3, etc.
 
 jobs:
   build-and-release:
