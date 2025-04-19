@@ -3,7 +3,7 @@ name: Create Release and Upload APK
 on:
   push:
     tags:
-      - 'v1.0.15' # Trigger on tags like v1.0.0, v1.2.3, etc.
+      - 'v1.0.16' # Trigger on tags like v1.0.0, v1.2.3, etc.
 
 jobs:
   build-and-release:
@@ -31,6 +31,17 @@ jobs:
       # Optional: Run tests
       # - name: Run tests
       #   run: flutter test
+
+      - name: Create .env file from secrets
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+          echo "GEMINI_OCR_BASE_URL=${{ secrets.GEMINI_OCR_BASE_URL }}" >> .env
+          echo "GROK_OCR_BASE_URL=${{ secrets.GROK_OCR_BASE_URL }}" >> .env
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env
+          echo "XAI_API_KEY=${{ secrets.XAI_API_KEY }}" >> .env
+        # Make sure the secret names above match exactly the names
+        # you create in your GitHub repository secrets settings.
 
       - name: Build release APK
         run: flutter build apk --release
