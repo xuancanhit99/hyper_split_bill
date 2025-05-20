@@ -28,7 +28,7 @@ class OcrDataSourceImpl implements OcrDataSource {
     String? prompt,
     // String? modelName, // Optional model override
   }) async {
-    final endpoint = '/ocr/extract-text';
+    final endpoint = appConfig.grokOcrPath;
     final queryParameters = <String, String>{};
     if (prompt != null && prompt.isNotEmpty) {
       queryParameters['prompt'] = prompt;

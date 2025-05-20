@@ -25,7 +25,7 @@ class ChatDataSourceImpl implements ChatDataSource {
     List<Map<String, String>>? history,
     String? modelName,
   }) async {
-    final endpoint = '/chat/'; // As per API doc
+    final endpoint = appConfig.grokChatPath;
     final uri = Uri.parse('$_chatBaseUrl$endpoint');
 
     final headers = {
