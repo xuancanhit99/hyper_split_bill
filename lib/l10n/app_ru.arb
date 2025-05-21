@@ -251,6 +251,12 @@
   "settingsPageCurrentLanguage": "Текущий язык",
   "settingsPageSelectLanguageTitle": "Выберите язык",
 
+  "settingsPageOcrServiceLabel": "Сервис OCR",
+  "settingsPageChatServiceLabel": "Сервис чата",
+  "aiServiceGemini": "Gemini",
+  "aiServiceGrok": "Grok",
+  "aiServiceGigaChat": "GigaChat",
+
   "homePageTitle": "Главная страница",
   "homePageSettingsTooltip": "Настройки",
   "homePageSignOutTooltip": "Выйти",

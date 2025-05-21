@@ -251,6 +251,12 @@
   "settingsPageCurrentLanguage": "Current language",
   "settingsPageSelectLanguageTitle": "Select Language",
 
+  "settingsPageOcrServiceLabel": "OCR Service",
+  "settingsPageChatServiceLabel": "Chat Service",
+  "aiServiceGemini": "Gemini",
+  "aiServiceGrok": "Grok",
+  "aiServiceGigaChat": "GigaChat",
+
   "homePageTitle": "Home Page",
   "homePageSettingsTooltip": "Settings",
   "homePageSignOutTooltip": "Sign Out",

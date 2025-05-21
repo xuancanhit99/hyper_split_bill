@@ -1,23 +1,27 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:injectable/injectable.dart';
 import 'package:hyper_split_bill/core/config/app_config.dart';
+import 'package:hyper_split_bill/core/config/settings_service.dart'; // Import SettingsService
+import 'package:hyper_split_bill/core/constants/ai_service_types.dart'; // Import AiServiceType
 import 'package:hyper_split_bill/core/error/exceptions.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/datasources/chat_data_source.dart';
-import 'package:injectable/injectable.dart';
 
 @LazySingleton(as: ChatDataSource)
 class ChatDataSourceImpl implements ChatDataSource {
   final http.Client httpClient;
   final AppConfig appConfig;
+  final SettingsService settingsService; // Inject SettingsService
 
-  late final String _chatBaseUrl;
-  late final String? _apiKey;
-
-  ChatDataSourceImpl({required this.httpClient, required this.appConfig}) {
-    _chatBaseUrl = appConfig.grokOcrBaseUrl; // Sử dụng Grok chat service
-    _apiKey = appConfig.xaiApiKey;
-  }
+  ChatDataSourceImpl({
+    required this.httpClient,
+    required this.appConfig,
+    required this.settingsService, // Add SettingsService to constructor
+  });
 
   @override
   Future<String> sendMessage({
@@ -25,20 +29,42 @@ class ChatDataSourceImpl implements ChatDataSource {
     List<Map<String, String>>? history,
     String? modelName,
   }) async {
-    final endpoint = appConfig.grokChatPath;
-    final uri = Uri.parse('$_chatBaseUrl$endpoint');
+    // Get the selected Chat service from settings
+    final selectedChatService = settingsService.selectedChatService;
+
+    // Get the configuration for the selected service
+    final chatConfig = appConfig.getChatConfig(selectedChatService);
+
+    final endpoint = chatConfig.path;
+    final baseUrl = chatConfig.baseUrl;
+    final apiKey = chatConfig.apiKey;
+    final model = chatConfig.model;
+
+    final uri = Uri.parse('$baseUrl$endpoint');
 
     final headers = {
       'Content-Type': 'application/json',
-      if (_apiKey != null && _apiKey!.isNotEmpty) 'X-API-Key': _apiKey!,
     };
+
+    // Add API Key header if available for the service.
+    if (apiKey != null && apiKey.isNotEmpty) {
+      String headerName = 'X-API-Key'; // Default header name
+      // Based on AppConfig and .env, Grok and GigaChat likely use X-API-Key.
+      // If Gemini uses a different header ('x-goog-api-key') or query param,
+      // this logic needs to be more sophisticated. For now, stick with X-API-Key
+      // as it's used by Grok and potentially GigaChat on the backend.
+      headers[headerName] = apiKey;
+    }
 
     final body = json.encode({
       'message': message,
       if (history != null) 'history': history,
-      'model_name': modelName ??
-          appConfig.grokChatModel, // Sử dụng model mặc định từ AppConfig
+      // Use the model from config if available, otherwise fallback to the provided modelName
+      'model_name': model ?? modelName, // Use config model > provided model
     });
+
+    print(
+        "Sending Chat request to URI: $uri using $selectedChatService"); // Log the final URI and service
 
     try {
       final response = await httpClient.post(

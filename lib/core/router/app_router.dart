@@ -151,7 +151,8 @@ class AppRouter {
           path: AppRoutes.settings,
           name: AppRoutes.settings,
           // Use the imported SettingsPage class
-          builder: (context, state) => const SettingsPage(),
+          builder: (context, state) => SettingsPage(
+              settingsService: sl()), // Get and pass SettingsService
         ),
         // Removed GoRoute for resetPassword
       ],

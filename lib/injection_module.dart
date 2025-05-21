@@ -3,6 +3,7 @@ import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hyper_split_bill/core/providers/locale_provider.dart'; // Import LocaleProvider
+import 'package:hyper_split_bill/core/config/settings_service.dart'; // Import SettingsService
 
 // This module tells GetIt how to create instances of external dependencies
 // that are needed by other injectable classes.
@@ -26,4 +27,9 @@ abstract class RegisterModule {
   @lazySingleton
   LocaleProvider localeProvider(SharedPreferences sharedPreferences) =>
       LocaleProvider(sharedPreferences);
+
+  // Provides the SettingsService instance
+  @lazySingleton
+  SettingsService settingsService(SharedPreferences sharedPreferences) =>
+      SettingsService(sharedPreferences);
 }

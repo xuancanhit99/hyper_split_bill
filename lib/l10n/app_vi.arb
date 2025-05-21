@@ -1,0 +1,311 @@
+{
+  "@@locale": "vi",
+  "appTitle": "Hyper Split Bill",
+
+  "billEditPageEditTitle": "Chỉnh sửa hóa đơn",
+  "billEditPageReviewTitle": "Xem lại hóa đơn",
+  "billEditPageSaveTooltip": "Lưu dữ liệu hóa đơn",
+  "billEditPageEditTooltip": "Chỉnh sửa dữ liệu hóa đơn",
+  "billEditPageParticipantsSectionTitle": "Người tham gia:",
+  "billEditPageSplitEquallyButtonLabel": "Chia đều cho {count}",
+  "@billEditPageSplitEquallyButtonLabel": {
+    "description": "Nhãn nút để chia đều hóa đơn cho một số lượng người tham gia",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "billEditPageFinalJsonTileTitle": "Dữ liệu hóa đơn cuối cùng (JSON)",
+  "billEditPageAskBillBotButtonLabel": "Hỏi Bill Bot",
+  "billEditPageRawJsonTileTitle": "Dữ liệu OCR/JSON thô (Ban đầu)",
+  "billEditPageErrorParsingOcr": "Lỗi phân tích dữ liệu OCR: {error}",
+  "@billEditPageErrorParsingOcr": {
+    "description": "Thông báo lỗi hiển thị khi phân tích dữ liệu OCR thất bại",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Định dạng không hợp lệ"
+      }
+    }
+  },
+  "billEditPageSaveErrorSnackbar": "Lỗi lưu: {message}",
+  "@billEditPageSaveErrorSnackbar": {
+    "description": "Thông báo Snackbar hiển thị khi lưu hóa đơn thất bại",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Kết nối mạng thất bại"
+      }
+    }
+  },
+  "billEditPageSuccessSnackbar": "{message}",
+  "@billEditPageSuccessSnackbar": {
+    "description": "Thông báo Snackbar hiển thị khi lưu hóa đơn thành công. Thông báo này đến từ trạng thái BLoC.",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Đã lưu hóa đơn thành công!"
+      }
+    }
+  },
+  "billEditPageValidationErrorTotalAmount": "Vui lòng nhập tổng số tiền hợp lệ.",
+  "billEditPageValidationErrorPercentages": "Tổng phần trăm người tham gia phải là 100%. Tổng hiện tại: {totalPercentage}%",
+  "@billEditPageValidationErrorPercentages": {
+    "description": "Lỗi xác thực khi tổng phần trăm người tham gia không bằng 100",
+    "placeholders": {
+      "totalPercentage": {
+        "type": "String",
+        "example": "99.50"
+      }
+    }
+  },
+  "billEditPageValidationErrorDate": "Vui lòng nhập ngày hợp lệ (dd-MM-yyyy).",
+  "billEditPageValidationErrorCurrency": "Đã chọn tiền tệ không hợp lệ. Vui lòng chọn từ danh sách.",
+  "billEditPageValidationErrorAuth": "Lỗi: Người dùng chưa được xác thực.",
+  "billEditPageDefaultItemDescription": "Mục không xác định",
+  "billEditPageDefaultParticipantName": "Tôi",
+  "billEditPageErrorParsingJson": "Không thể phân tích dữ liệu cấu trúc: {error}",
+   "@billEditPageErrorParsingJson": {
+    "description": "Thông báo lỗi hiển thị khi phân tích JSON ban đầu thất bại",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Token không mong đợi"
+      }
+    }
+  },
+  "dialogEditDescriptionTitle": "Chỉnh sửa mô tả",
+  "dialogEditTotalAmountTitle": "Chỉnh sửa tổng số tiền",
+  "dialogEditTaxTitle": "Chỉnh sửa thuế",
+  "dialogEditTipTitle": "Chỉnh sửa tiền boa",
+  "dialogEditDiscountTitle": "Chỉnh sửa giảm giá",
+  "dialogAddOptionalFieldsTitle": "Thêm các trường tùy chọn",
+  "checkboxTaxLabel": "Thuế",
+  "checkboxTipLabel": "Tiền boa",
+  "checkboxDiscountLabel": "Giảm giá",
+  "checkboxCurrencyLabel": "Tiền tệ",
+  "buttonCancel": "Hủy",
+  "buttonSave": "Lưu",
+  "buttonDone": "Hoàn thành",
+  "editBillInfoSectionUpdateTotalButtonLabel": "Cập nhật tổng",
+  "participantSectionInvalidPercentageLock": "Vui lòng nhập phần trăm hợp lệ (0-100) trước khi khóa.",
+  "participantSectionAddDialogTitle": "Thêm người tham gia",
+  "participantSectionAddDialogHint": "Nhập tên người tham gia",
+  "participantSectionAddDialogButton": "Thêm",
+  "participantSectionExistsSnackbar": "Người tham gia \"{name}\" đã tồn tại.",
+  "@participantSectionExistsSnackbar": {
+    "description": "Thông báo lỗi khi cố gắng thêm người tham gia đã tồn tại",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "participantSectionCannotRemoveLastSnackbar": "Không thể xóa người tham gia cuối cùng.",
+  "participantSectionHeaderName": "Tên",
+  "participantSectionHeaderPercent": "Phần trăm",
+  "participantSectionHeaderAmount": "Số tiền",
+  "participantSectionEmptyListEdit": "Chưa có người tham gia nào được thêm.",
+  "participantSectionEmptyListReview": "Không có người tham gia.",
+  "participantSectionAddButtonLabel": "Thêm người tham gia",
+  "participantSectionRemoveTooltip": "Xóa {name}",
+  "@participantSectionRemoveTooltip": {
+    "description": "Tooltip cho nút xóa người tham gia",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bob"
+      }
+    }
+  },
+  "currencyDisplayFormat": "{code} - {name}",
+  "@currencyDisplayFormat": {
+    "description": "Chuỗi định dạng để hiển thị mã và tên tiền tệ",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "VND"
+      },
+      "name": {
+        "type": "String",
+        "example": "Đồng Việt Nam"
+      }
+    }
+  },
+  "itemDialogValidationDescriptionEmpty": "Mô tả không được để trống.",
+  "itemDialogValidationQuantityNegative": "Số lượng phải là số không âm.",
+  "itemDialogValidationPriceNegative": "Giá không được âm.",
+  "itemDialogValidationConfirmTwo": "Vui lòng xác nhận chính xác hai giá trị (Số lượng, Đơn giá hoặc Tổng giá) bằng cách sử dụng hộp kiểm.",
+  "itemDialogValidationInconsistent": "Lỗi: Các giá trị cuối cùng không nhất quán (Số lượng * Đơn giá != Tổng giá). Vui lòng xác nhận lại.",
+  "itemDialogDescriptionLabel": "Mô tả",
+  "itemDialogQuantityLabel": "Số lượng",
+  "itemDialogUnitPriceLabel": "Đơn giá",
+  "itemDialogTotalPriceLabel": "Tổng giá",
+  "itemSectionDeletedSnackbar": "Đã xóa mục",
+  "itemSectionEmptyList": "Chưa có mục nào được thêm.",
+  "itemSectionConfirmDeleteDialogTitle": "Xác nhận xóa",
+  "itemSectionConfirmDeleteDialogContent": "Bạn có chắc chắn muốn xóa \"{description}\"?",
+  "@itemSectionConfirmDeleteDialogContent": {
+    "description": "Thông báo xác nhận để xóa một mục",
+    "placeholders": {
+      "description": {
+        "type": "String",
+        "example": "Pizza"
+      }
+    }
+  },
+  "itemSectionConfirmDeleteDialogFallbackItemName": "mục này",
+  "itemSectionDeleteButton": "Xóa",
+  "itemSectionAddButtonLabel": "Thêm mục",
+  "itemSectionHeaderDescription": "Mô tả",
+  "itemSectionHeaderQty": "SL",
+  "itemSectionHeaderUnitPrice": "Đơn giá",
+  "itemSectionHeaderTotalPrice": "Tổng giá",
+  "itemDialogAddTitle": "Thêm mục mới",
+  "itemDialogEditTitle": "Chỉnh sửa mục",
+  "imageCropPageTitle": "Cắt ảnh hóa đơn",
+  "imageCropPageErrorSnackbar": "Lỗi cắt ảnh: {error}",
+  "@imageCropPageErrorSnackbar": {
+    "description": "Thông báo Snackbar hiển thị khi cắt ảnh thất bại",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Không thể tải ảnh"
+      }
+    }
+  },
+  "chatbotPageTitle": "Trợ lý Bill Bot",
+  "chatbotPageAnalyzingMessage": "Đang phân tích hóa đơn và chuẩn bị gợi ý...",
+  "chatbotPageErrorStartingChat": "Xin lỗi, tôi gặp sự cố khi bắt đầu trò chuyện: {error}",
+  "@chatbotPageErrorStartingChat": {
+    "description": "Thông báo lỗi khi tin nhắn chat ban đầu thất bại",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Kết nối API thất bại"
+      }
+    }
+  },
+  "chatbotPageErrorSendingMessage": "Xin lỗi, tôi gặp lỗi: {error}",
+  "@chatbotPageErrorSendingMessage": {
+    "description": "Thông báo lỗi khi gửi tin nhắn chat thất bại",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Hết thời gian chờ"
+      }
+    }
+  },
+  "chatbotPageSuggestionTooltip": "Gửi \"{suggestion}\"",
+  "@chatbotPageSuggestionTooltip": {
+    "description": "Tooltip cho các chip gợi ý",
+    "placeholders": {
+      "suggestion": {
+        "type": "String",
+        "example": "Alice nợ bao nhiêu?"
+      }
+    }
+  },
+  "chatbotPageInputHint": "Hỏi cách chia hóa đơn...",
+  "chatbotPageSendButtonTooltip": "Gửi tin nhắn",
+
+  "billUploadPageTitle": "Tải hóa đơn lên",
+  "billUploadPageNoImageToRetrySnackbar": "Không có hình ảnh để thử lại OCR.",
+  "billUploadPageOcrFailedSnackbar": "OCR thất bại: {message}",
+  "@billUploadPageOcrFailedSnackbar": {
+    "description": "Thông báo Snackbar hiển thị khi xử lý OCR thất bại",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Chất lượng hình ảnh quá thấp"
+      }
+    }
+  },
+  "billUploadPageProcessingErrorDefault": "Không thể xử lý hình ảnh. Vui lòng thử lại.",
+  "billUploadPageNotAReceiptError": "🤖 Hình ảnh này không giống hóa đơn/biên lai/hóa đơn. Vui lòng tải lên một tài liệu hợp lệ.",
+  "billUploadPageNotAReceiptButCategoryError": "🤖 Hình ảnh này không giống hóa đơn/biên lai/hóa đơn. Nó giống như một '{category}'. Vui lòng tải lên một tài liệu hợp lệ.",
+  "@billUploadPageNotAReceiptButCategoryError": {
+    "description": "Thông báo lỗi khi hình ảnh không phải là hóa đơn nhưng xác định được danh mục",
+    "placeholders": {
+      "category": {
+        "type": "String",
+        "example": "tài liệu"
+      }
+    }
+  },
+  "billUploadPageUnknownCategory": "không xác định",
+  "billUploadPageCannotDetermineReceiptError": "Không thể xác định xem hình ảnh có phải là hóa đơn hay không. Vui lòng thử lại.",
+  "billUploadPageJsonProcessingError": "Không thể xử lý dữ liệu cấu trúc.",
+  "billUploadPageOcrSuccessSnackbar": "Đã phát hiện hóa đơn! Đang chuyển đến chỉnh sửa...",
+  "billUploadPagePlaceholder": "Chọn hình ảnh hoặc chụp ảnh hóa đơn của bạn.",
+  "billUploadPageRetryOcrButtonLabel": "Thử lại OCR",
+  "billUploadPageGalleryButtonLabel": "Chọn từ Thư viện",
+  "billUploadPageCameraButtonLabel": "Chụp ảnh",
+  "billUploadPageLoadingStructuring": "Đang cấu trúc dữ liệu...",
+  "billUploadPageLoadingProcessing": "Đang xử lý hình ảnh...",
+
+  "settingsPageTitle": "Cài đặt",
+  "settingsPageLanguageLabel": "Ngôn ngữ",
+  "settingsPageCurrentLanguage": "Ngôn ngữ hiện tại",
+  "settingsPageSelectLanguageTitle": "Chọn ngôn ngữ",
+
+  "settingsPageOcrServiceLabel": "Dịch vụ OCR",
+  "settingsPageChatServiceLabel": "Dịch vụ Chat",
+  "aiServiceGemini": "Gemini",
+  "aiServiceGrok": "Grok",
+  "aiServiceGigaChat": "GigaChat",
+
+
+  "homePageTitle": "Trang chủ",
+  "homePageSettingsTooltip": "Cài đặt",
+  "homePageSignOutTooltip": "Đăng xuất",
+  "homePageSignOutDialogTitle": "Xác nhận đăng xuất",
+  "homePageSignOutDialogContent": "Bạn có chắc chắn muốn đăng xuất không?",
+  "homePageSignOutDialogConfirmButton": "Đăng xuất",
+  "homePageWelcomeDefault": "Chào mừng!",
+  "homePageWelcomeUser": "Chào mừng, {userEmail}!",
+  "@homePageWelcomeUser": {
+    "description": "Thông báo chào mừng người dùng đã xác thực",
+    "placeholders": {
+      "userEmail": {
+        "type": "String",
+        "example": "user@example.com"
+      }
+    }
+  },
+  "homePageSplitNewBillButton": "Chia hóa đơn mới",
+  "homePageViewHistoryButton": "Xem lịch sử hóa đơn",
+
+  "authPageErrorOccurred": "Đã xảy ra lỗi: {message}",
+  "@authPageErrorOccurred": {
+    "description": "Tiền tố thông báo lỗi chung hiển thị trong snackbar trên trang xác thực",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Thông tin đăng nhập không hợp lệ"
+      }
+    }
+  },
+  "authPagePasswordResetEmailSent": "Đã gửi email khôi phục mật khẩu! Kiểm tra hộp thư đến của bạn.",
+  "authPageHeaderTitle": "Chào mừng trở lại!",
+  "authPageHeaderSubtitle": "Đăng nhập hoặc tạo tài khoản để bắt đầu.",
+  "authPageSignUpSuccess": "Đăng ký thành công! Kiểm tra email của bạn để xác minh.",
+  "authPageUnexpectedError": "Đã xảy ra lỗi không mong đợi.",
+  "authPageTermsLink": "Điều khoản",
+  "authPagePrivacyLink": "Bảo mật",
+
+  "editBillInfoSectionTotalAmountPrefix": "Tổng số tiền:",
+  "editBillInfoSectionTotalAmountLabel": "Tổng số tiền",
+
+  "editBillInfoSectionDescriptionLabel": "Mô tả / Cửa hàng",
+  "editBillInfoSectionDateLabel": "Ngày",
+  "editBillInfoSectionTaxLabel": "Thuế",
+  "editBillInfoSectionTipLabel": "Tiền boa",
+  "editBillInfoSectionDiscountLabel": "Giảm giá",
+  "editBillInfoSectionToggleDetailsHideTooltip": "Ẩn Số lượng & Đơn giá",
+  "editBillInfoSectionToggleDetailsShowTooltip": "Hiển thị Số lượng & Đơn giá",
+  "editBillInfoSectionAddOptionalTooltip": "Thêm Thuế, Tiền boa, Giảm giá, Tiền tệ"
+}

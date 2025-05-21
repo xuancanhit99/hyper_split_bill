@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart' as _i460;
 import 'package:supabase_flutter/supabase_flutter.dart' as _i454;
 
 import 'core/config/app_config.dart' as _i828;
+import 'core/config/settings_service.dart' as _i12;
 import 'core/providers/locale_provider.dart' as _i766;
 import 'features/auth/data/datasources/auth_remote_data_source.dart' as _i767;
 import 'features/auth/data/repositories/auth_repository_impl.dart' as _i111;
@@ -67,39 +68,43 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i828.AppConfig>(() => _i828.AppConfig.fromEnv());
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i519.Client>(() => registerModule.httpClient);
+    gh.lazySingleton<_i766.LocaleProvider>(
+        () => registerModule.localeProvider(gh<_i460.SharedPreferences>()));
+    gh.lazySingleton<_i12.SettingsService>(
+        () => registerModule.settingsService(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i232.ChatDataSource>(() => _i103.ChatDataSourceImpl(
           httpClient: gh<_i519.Client>(),
           appConfig: gh<_i828.AppConfig>(),
+          settingsService: gh<_i12.SettingsService>(),
         ));
-    gh.lazySingleton<_i868.OcrDataSource>(() => _i729.OcrDataSourceImpl(
-          httpClient: gh<_i519.Client>(),
-          appConfig: gh<_i828.AppConfig>(),
-        ));
-    gh.lazySingleton<_i766.LocaleProvider>(
-        () => registerModule.localeProvider(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i646.SendChatMessageUseCase>(
         () => _i646.SendChatMessageUseCase(gh<_i232.ChatDataSource>()));
     gh.lazySingleton<_i767.AuthRemoteDataSource>(
         () => _i767.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()));
     gh.lazySingleton<_i747.BillRemoteDataSource>(
         () => _i1073.BillRemoteDataSourceImpl(gh<_i454.SupabaseClient>()));
-    gh.lazySingleton<_i10.ProcessBillOcrUseCase>(
-        () => _i10.ProcessBillOcrUseCase(gh<_i868.OcrDataSource>()));
     gh.lazySingleton<_i765.BillRepository>(() => _i29.BillRepositoryImpl(
         remoteDataSource: gh<_i747.BillRemoteDataSource>()));
     gh.lazySingleton<_i1015.AuthRepository>(() => _i111.AuthRepositoryImpl(
         remoteDataSource: gh<_i767.AuthRemoteDataSource>()));
+    gh.lazySingleton<_i868.OcrDataSource>(() => _i729.OcrDataSourceImpl(
+          httpClient: gh<_i519.Client>(),
+          appConfig: gh<_i828.AppConfig>(),
+          settingsService: gh<_i12.SettingsService>(),
+        ));
     gh.lazySingleton<_i1034.CreateBillUseCase>(
         () => _i1034.CreateBillUseCase(gh<_i765.BillRepository>()));
     gh.lazySingleton<_i950.GetBillsUseCase>(
         () => _i950.GetBillsUseCase(gh<_i765.BillRepository>()));
+    gh.lazySingleton<_i10.ProcessBillOcrUseCase>(
+        () => _i10.ProcessBillOcrUseCase(gh<_i868.OcrDataSource>()));
+    gh.factory<_i363.AuthBloc>(
+        () => _i363.AuthBloc(gh<_i1015.AuthRepository>()));
     gh.lazySingleton<_i802.BillSplittingBloc>(() => _i802.BillSplittingBloc(
           gh<_i950.GetBillsUseCase>(),
           gh<_i10.ProcessBillOcrUseCase>(),
           gh<_i1034.CreateBillUseCase>(),
         ));
-    gh.factory<_i363.AuthBloc>(
-        () => _i363.AuthBloc(gh<_i1015.AuthRepository>()));
     return this;
   }
 }
