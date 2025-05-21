@@ -1048,7 +1048,7 @@ class _BillEditPageState extends State<BillEditPage> {
                   JsonExpansionTile(
                     title: l10n.billEditPageFinalJsonTileTitle,
                     jsonString: _finalBillJsonString!,
-                    initiallyExpanded: true,
+                    initiallyExpanded: false,
                   ),
                   const SizedBox(height: 16),
                 ],
