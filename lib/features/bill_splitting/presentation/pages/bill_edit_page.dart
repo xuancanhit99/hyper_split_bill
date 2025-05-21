@@ -4,6 +4,7 @@ import 'dart:convert'; // For jsonDecode, utf8, JsonEncoder
 import 'package:intl/intl.dart'; // For date formatting
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart';
+import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/calculate_split_bill_usecase.dart'; // Import Usecase
 import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart'; // Import Bloc, Event, State
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_entity.dart'; // Import BillEntity
 import 'package:go_router/go_router.dart'; // Import go_router for pop and push
@@ -18,6 +19,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generate
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_dialog_content.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_bill_info_section.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/json_expansion_tile.dart';
+
+// Enum for input type
+enum AmountType { percentage, fixed }
 
 class BillEditPage extends StatefulWidget {
   final String structuredJsonString; // Receive the structured JSON string
@@ -57,6 +61,11 @@ class _BillEditPageState extends State<BillEditPage> {
   bool _showDiscount = false;
   bool _showCurrency = false; // Currency starts hidden as per requirement
   bool _showItemDetails = false; // State for Qty/Unit Price visibility
+
+  // State for input types of tax, tip, discount
+  AmountType _taxInputType = AmountType.percentage;
+  AmountType _tipInputType = AmountType.percentage;
+  AmountType _discountInputType = AmountType.percentage;
 
   // State for calculated total comparison
   double?
@@ -268,22 +277,8 @@ class _BillEditPageState extends State<BillEditPage> {
         }
       }
 
-      final authState = context.read<AuthBloc>().state;
-      // Use localized default name
-      String currentUserName =
-          AppLocalizations.of(context)!.billEditPageDefaultParticipantName;
-      if (authState is AuthAuthenticated) {
-        currentUserName = authState.user.email?.split('@').first ??
-            AppLocalizations.of(context)!.billEditPageDefaultParticipantName;
-      }
-      // Initialize with the first participant and set their percentage to 100%
-      _participants = [
-        ParticipantEntity(
-          name: currentUserName,
-          percentage: 100.0, // Explicitly set percentage
-          isPercentageLocked: false, // Start unlocked
-        )
-      ];
+      // Initialize participants list as empty. User will add them manually.
+      _participants = [];
 
       setState(() {}); // Update UI after successful parsing
     } catch (e, s) {
@@ -328,46 +323,85 @@ class _BillEditPageState extends State<BillEditPage> {
     context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
   }
 
+  // Helper to get actual tax, tip, discount amounts
+  Map<String, double> _getActualAdditionalCosts() {
+    final itemsSubtotal =
+        _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+    final taxValue = _showTax ? (_parseNum(_taxController.text) ?? 0.0) : 0.0;
+    final tipValue = _showTip ? (_parseNum(_tipController.text) ?? 0.0) : 0.0;
+    final discountValue =
+        _showDiscount ? (_parseNum(_discountController.text) ?? 0.0) : 0.0;
+
+    final actualTaxAmount = _taxInputType == AmountType.percentage
+        ? itemsSubtotal * (taxValue / 100.0)
+        : taxValue;
+    final actualTipAmount = _tipInputType == AmountType.percentage
+        ? itemsSubtotal * (tipValue / 100.0)
+        : tipValue;
+    final actualDiscountAmount = _discountInputType == AmountType.percentage
+        ? itemsSubtotal * (discountValue / 100.0)
+        : discountValue;
+    return {
+      'tax': actualTaxAmount.toDouble(),
+      'tip': actualTipAmount.toDouble(),
+      'discount': actualDiscountAmount.toDouble(),
+    };
+  }
+
   void _saveBillInternal() {
-    final totalAmount = _parseNum(_totalAmountController.text); // Use helper
-    final taxAmount = _parseNum(_taxController.text) ?? 0.0;
-    final tipAmount = _parseNum(_tipController.text) ?? 0.0;
-    final discountAmount = _parseNum(_discountController.text) ?? 0.0;
+    final l10n = AppLocalizations.of(context)!; // For localization
+    final totalAmountFromController = _parseNum(_totalAmountController.text);
     final currencyCode = _currencyController.text.trim().toUpperCase();
 
     // Validate Total Amount
-    if (totalAmount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(AppLocalizations.of(context)!
-              .billEditPageValidationErrorTotalAmount)));
+    if (totalAmountFromController == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.billEditPageValidationErrorTotalAmount)));
       return;
     }
 
-    // --- Participant Percentage Handling ---
-    // If only one participant exists, ensure their percentage is 100% before validation
-    if (_participants.length == 1) {
-      // Use copyWith to create a new instance with updated percentage
+    // Validate if all items have at least one participant
+    final unassignedItems =
+        _items.where((item) => item.participantIds.isEmpty).toList();
+    if (unassignedItems.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.billEditPageErrorUnassignedItems(
+            unassignedItems.length, unassignedItems.first.description)),
+        // Example: "2 items are unassigned, starting with 'Pizza'."
+        // You might want a more generic message or list all unassigned items.
+      ));
+      return;
+    }
+
+    // Validate if there are any participants
+    if (_participants.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.billEditPageErrorNoParticipants),
+      ));
+      return;
+    }
+
+    // --- Participant Percentage Handling (for display/external JSON, not for owed amount calculation) ---
+    // This section related to percentages can be removed or simplified as percentages are no longer central.
+    // If _participants.first.percentage is still used anywhere for display in JSON, it might need adjustment.
+    // For now, let's comment it out as the core logic relies on item assignment.
+    /*
+    if (_participants.length == 1 && _participants.first.percentage == null) {
       _participants[0] = _participants[0].copyWith(
         percentage: 100.0,
-        isPercentageLocked: false, // Ensure it's not locked if it was somehow
-        setPercentageToNull: false, // Ensure percentage is not nullified
+        isPercentageLocked: false,
+        setPercentageToNull: false,
       );
-      print("Auto-set single participant percentage to 100%");
     }
-
-    // Validate Participant Percentages
     double totalPercentage =
         _participants.fold(0.0, (sum, p) => sum + (p.percentage ?? 0.0));
-    if ((totalPercentage - 100.0).abs() > 0.01) {
-      // Allow for small floating point inaccuracies
+    if ((totalPercentage - 100.0).abs() > 0.01 && _participants.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(AppLocalizations.of(context)!
-                  .billEditPageValidationErrorPercentages(
-                      totalPercentage.toStringAsFixed(
-                          2)))) // Add missing parenthesis for SnackBar
-          );
+          content: Text(l10n.billEditPageValidationErrorPercentages(
+              totalPercentage.toStringAsFixed(2)))));
       return;
     }
+    */
 
     // Validate and Parse Date
     DateTime? parsedBillDate;
@@ -375,7 +409,6 @@ class _BillEditPageState extends State<BillEditPage> {
       parsedBillDate = _displayDateFormat.parseStrict(_dateController.text);
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          // Remove const
           content: Text(
               AppLocalizations.of(context)!.billEditPageValidationErrorDate)));
       return;
@@ -384,9 +417,8 @@ class _BillEditPageState extends State<BillEditPage> {
     // Validate Currency
     if (!_dropdownCurrencies.contains(currencyCode)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          // Remove const
           content: Text(AppLocalizations.of(context)!
-              .billEditPageValidationErrorCurrency))); // Remove extra parenthesis
+              .billEditPageValidationErrorCurrency)));
       return;
     }
 
@@ -402,57 +434,81 @@ class _BillEditPageState extends State<BillEditPage> {
       return;
     }
 
-    // Create Bill Entity
-    final currentBillData = BillEntity(
-      id: '', // ID will be generated by backend/storage
-      totalAmount: totalAmount.toDouble(), // Convert num to double
+    // --- Calculate Owed Amounts ---
+    final additionalCosts = _getActualAdditionalCosts();
+    final billEntityForCalc = BillEntity(
+      id: '', // Not needed for calculation logic itself
+      totalAmount:
+          totalAmountFromController.toDouble(), // Main total from input
       date: parsedBillDate,
       description: _descriptionController.text.trim(),
-      payerUserId: currentUserId!, // We know it's not null here
+      payerUserId: currentUserId!,
+      currencyCode: currencyCode,
+      items: _items,
+      participants: _participants, // Current participants, will be updated
+    );
+
+    final calculateSplitBillUsecase = CalculateSplitBillUsecase();
+    final updatedParticipantsWithOwedAmount = calculateSplitBillUsecase.call(
+      bill: billEntityForCalc,
+      actualTaxAmount: additionalCosts['tax']!,
+      actualTipAmount: additionalCosts['tip']!,
+      actualDiscountAmount: additionalCosts['discount']!,
+    );
+
+    // Update participants in state with owed amounts
+    // This needs to happen before creating currentBillData for Firebase
+    // and before setState for UI update.
+    // Create a new list to ensure state update.
+    final List<ParticipantEntity> finalParticipantsForStateAndFirebase =
+        List.from(updatedParticipantsWithOwedAmount);
+
+    // Create Bill Entity for saving to Firebase (includes owed amounts)
+    final currentBillData = BillEntity(
+      id: '', // ID will be generated by backend/storage
+      totalAmount: totalAmountFromController.toDouble(),
+      date: parsedBillDate,
+      description: _descriptionController.text.trim(),
+      payerUserId: currentUserId!,
       currencyCode: currencyCode,
       items: _items,
       participants:
-          _participants, // Pass the participants list with percentages
-      // Note: Tax, Tip, Discount are not part of BillEntity currently
-      // They are handled separately in the JSON map below if needed
+          finalParticipantsForStateAndFirebase, // Use participants with owed amounts
     );
 
-    // Create JSON Map for DISPLAY and CHATBOT (excluding internal fields)
+    // Create JSON Map for DISPLAY and CHATBOT
     final billMapForExternalUse = {
-      'bill_date':
-          _isoDateFormat.format(currentBillData.date), // Save in ISO format
+      'bill_date': _isoDateFormat.format(currentBillData.date),
       'description': currentBillData.description,
       'currency_code': currentBillData.currencyCode,
       'total_amount': currentBillData.totalAmount,
-      'tax_amount': taxAmount, // Include tax if needed
-      'tip_amount': tipAmount, // Include tip if needed
-      'discount_amount': discountAmount, // Include discount if needed
-      // Omit 'payer_user_id' as it's internal to the app/backend
-
+      'tax_amount': additionalCosts['tax']!,
+      'tip_amount': additionalCosts['tip']!,
+      'discount_amount': additionalCosts['discount']!,
       'items':
           currentBillData.items?.map((item) => item.toJson()).toList() ?? [],
       'participants': currentBillData.participants?.map((p) {
-            // Create a map for participant data suitable for external use
             return {
               'name': p.name,
-              'percentage': p.percentage,
-              // Omit 'id', 'linked_profile_id', 'is_percentage_locked' as they are internal/app state
+              // 'percentage': p.percentage, // Percentage might be less relevant now
+              'amount_owed': p.amountOwed, // Include amount_owed
             };
           }).toList() ??
           [],
     };
     const jsonEncoder = JsonEncoder.withIndent('  ');
-    final generatedJson =
-        jsonEncoder.convert(billMapForExternalUse); // Use the filtered map
+    final generatedJson = jsonEncoder.convert(billMapForExternalUse);
 
     setState(() {
+      _participants =
+          finalParticipantsForStateAndFirebase; // Update UI with owed amounts
       _finalBillJsonString = generatedJson;
-      _isEditingMode = false; // Switch to review mode
-      _showSplitDetails = false; // Reset split details visibility
+      _isEditingMode = false;
+      _showSplitDetails = false;
     });
 
     print("Internal save complete. Dispatching save event...");
-    _dispatchSaveEvent(currentBillData); // Dispatch event with BillEntity
+    _dispatchSaveEvent(currentBillData);
   }
 
   void _toggleEditMode() {
@@ -478,21 +534,27 @@ class _BillEditPageState extends State<BillEditPage> {
         _items.fold(0.0, (sum, item) => sum + item.totalPrice);
 
     // Use _parseNum which handles null/empty/invalid safely, default to 0
-    final taxPercent = _showTax ? (_parseNum(_taxController.text) ?? 0.0) : 0.0;
-    final tipPercent = _showTip ? (_parseNum(_tipController.text) ?? 0.0) : 0.0;
-    // Discount is usually negative, but let's treat the input as positive %
-    final discountPercent =
+    final taxValue = _showTax ? (_parseNum(_taxController.text) ?? 0.0) : 0.0;
+    final tipValue = _showTip ? (_parseNum(_tipController.text) ?? 0.0) : 0.0;
+    final discountValue =
         _showDiscount ? (_parseNum(_discountController.text) ?? 0.0) : 0.0;
 
-    // Calculate amounts based on itemsSubtotal
-    final taxAmount = itemsSubtotal * (taxPercent / 100.0);
-    final tipAmount = itemsSubtotal * (tipPercent / 100.0);
-    final discountAmount = itemsSubtotal * (discountPercent / 100.0);
+    // Calculate actual amounts based on input type
+    final actualTaxAmount = _taxInputType == AmountType.percentage
+        ? itemsSubtotal * (taxValue / 100.0)
+        : taxValue;
+    final actualTipAmount = _tipInputType == AmountType.percentage
+        ? itemsSubtotal * (tipValue / 100.0)
+        : tipValue;
+    final actualDiscountAmount = _discountInputType == AmountType.percentage
+        ? itemsSubtotal * (discountValue / 100.0)
+        : discountValue;
 
-    final newCalculatedTotal =
-        itemsSubtotal + taxAmount + tipAmount - discountAmount;
-    // Update the state variable directly, as this method is now called
-    // at appropriate times (e.g., within addPostFrameCallback elsewhere or directly)
+    final newCalculatedTotal = itemsSubtotal +
+        actualTaxAmount +
+        actualTipAmount -
+        actualDiscountAmount;
+    // Update the state variable directly
     if (mounted) {
       setState(() {
         _calculatedTotalAmount = newCalculatedTotal;
@@ -665,17 +727,17 @@ class _BillEditPageState extends State<BillEditPage> {
     final String? newValue = await _showEditNumericDialog(
       title: AppLocalizations.of(context)!.dialogEditTaxTitle,
       initialValue: _taxController.text,
-      valueSuffix: '%',
-      allowNegative: false, // Tax percentage usually non-negative
+      valueSuffix: _taxInputType == AmountType.percentage
+          ? '%'
+          : _currencyController.text, // Dynamic suffix
+      allowNegative: false,
     );
     if (newValue != null && newValue != _taxController.text) {
-      // Delay setState until after the frame finishes
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
             _taxController.text = newValue;
           });
-          // Recalculate *after* state is set inside the callback
           _recalculateAndCompareTotal();
         }
       });
@@ -686,17 +748,17 @@ class _BillEditPageState extends State<BillEditPage> {
     final String? newValue = await _showEditNumericDialog(
       title: AppLocalizations.of(context)!.dialogEditTipTitle,
       initialValue: _tipController.text,
-      valueSuffix: '%',
-      allowNegative: false, // Tip percentage usually non-negative
+      valueSuffix: _tipInputType == AmountType.percentage
+          ? '%'
+          : _currencyController.text, // Dynamic suffix
+      allowNegative: false,
     );
     if (newValue != null && newValue != _tipController.text) {
-      // Delay setState until after the frame finishes
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
             _tipController.text = newValue;
           });
-          // Recalculate *after* state is set inside the callback
           _recalculateAndCompareTotal();
         }
       });
@@ -707,17 +769,17 @@ class _BillEditPageState extends State<BillEditPage> {
     final String? newValue = await _showEditNumericDialog(
       title: AppLocalizations.of(context)!.dialogEditDiscountTitle,
       initialValue: _discountController.text,
-      valueSuffix: '%',
-      allowNegative: false, // Discount percentage usually non-negative
+      valueSuffix: _discountInputType == AmountType.percentage
+          ? '%'
+          : _currencyController.text, // Dynamic suffix
+      allowNegative: false,
     );
     if (newValue != null && newValue != _discountController.text) {
-      // Delay setState until after the frame finishes
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
             _discountController.text = newValue;
           });
-          // Recalculate *after* state is set inside the callback
           _recalculateAndCompareTotal();
         }
       });
@@ -835,6 +897,34 @@ class _BillEditPageState extends State<BillEditPage> {
     });
   }
 
+  // --- Handlers to change input type ---
+  void _setTaxInputType(AmountType type) {
+    if (!_isEditingMode) return;
+    setState(() {
+      _taxInputType = type;
+      // Potentially clear or convert the value in _taxController if switching types,
+      // or let _recalculateAndCompareTotal handle the interpretation.
+      // For now, just recalculate.
+    });
+    _recalculateAndCompareTotal();
+  }
+
+  void _setTipInputType(AmountType type) {
+    if (!_isEditingMode) return;
+    setState(() {
+      _tipInputType = type;
+    });
+    _recalculateAndCompareTotal();
+  }
+
+  void _setDiscountInputType(AmountType type) {
+    if (!_isEditingMode) return;
+    setState(() {
+      _discountInputType = type;
+    });
+    _recalculateAndCompareTotal();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get the localization instance
@@ -942,19 +1032,34 @@ class _BillEditPageState extends State<BillEditPage> {
                   // Pass calculation results and update callback
                   calculatedTotalAmount: _calculatedTotalAmount,
                   onUpdateTotalAmount: _updateTotalAmountFromCalculation,
+                  // Pass input types and handlers
+                  taxInputType: _taxInputType,
+                  tipInputType: _tipInputType,
+                  discountInputType: _discountInputType,
+                  onTaxInputTypeChanged: _setTaxInputType,
+                  onTipInputTypeChanged: _setTipInputType,
+                  onDiscountInputTypeChanged: _setDiscountInputType,
                 ),
 
                 const Divider(), // Divider before Items section
 
                 // --- Items Section ---
+                // DEBUG PRINT STATEMENTS
+                Builder(builder: (context) {
+                  // Use Builder to ensure context is available for print
+                  print('BillEditPage _isEditingMode: $_isEditingMode');
+                  print(
+                      'BillEditPage _participants: ${_participants.map((p) => 'Name: ${p.name}, ID: ${p.id}, Owed: ${p.amountOwed}').toList()}');
+                  return const SizedBox.shrink(); // Does not render anything
+                }),
                 BillItemsSection(
                   key: ValueKey('items_${_items.hashCode}_$_isEditingMode'),
                   initialItems: _items,
                   enabled: _isEditingMode,
-                  // Use the dedicated handler
                   onItemsChanged: _handleItemsChanged,
                   showItemDetails:
                       _showItemDetails, // Pass the visibility state
+                  allParticipants: _participants, // Pass the participants list
                 ),
                 const SizedBox(height: 24),
                 const Divider(),
@@ -965,12 +1070,12 @@ class _BillEditPageState extends State<BillEditPage> {
                 const SizedBox(height: 8),
                 BillParticipantsSection(
                   key: ValueKey(
-                      'participants_${_participants.hashCode}_${_isEditingMode}_${_totalAmountController.text}_${_currencyController.text}'), // Add amounts to key to force rebuild on change
+                      'participants_${_participants.hashCode}_${_isEditingMode}_${_currencyController.text}_${_totalAmountController.text}'), // Key updated
                   initialParticipants: _participants,
                   enabled: _isEditingMode,
-                  totalAmount: _parseNum(_totalAmountController.text)
-                      ?.toDouble(), // Pass total amount
-                  currencyCode: _currencyController.text, // Pass currency code
+                  currencyCode: _currencyController.text,
+                  billTotalAmount: _parseNum(_totalAmountController.text)
+                      ?.toDouble(), // Pass bill total for warning
                   onParticipantsChanged: (updatedParticipants) {
                     // No need to check _isEditingMode here, the callback should only be called when enabled
                     setState(() {
@@ -978,68 +1083,9 @@ class _BillEditPageState extends State<BillEditPage> {
                     });
                   },
                 ),
-                // Add "Split Equally" button for review mode
-                if (!_isEditingMode && _participants.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.pie_chart_outline, size: 18),
-                      label: Text(l10n.billEditPageSplitEquallyButtonLabel(
-                          _participants.length)),
-                      style: TextButton.styleFrom(
-                        textStyle: const TextStyle(fontStyle: FontStyle.italic),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () {
-                        if (_participants.isEmpty) return;
-                        final double equalPercentage =
-                            100.0 / _participants.length;
-                        final List<ParticipantEntity> equallySplitParticipants =
-                            [];
-                        double assignedTotal = 0;
-
-                        for (int i = 0; i < _participants.length; i++) {
-                          double perc = (i == _participants.length - 1)
-                              ? (100.0 -
-                                  assignedTotal) // Assign remainder to last
-                              : equalPercentage;
-                          // Use toStringAsFixed for better control over rounding for display/comparison later
-                          perc = double.parse(perc.toStringAsFixed(2));
-                          assignedTotal += perc;
-
-                          equallySplitParticipants.add(
-                            _participants[i].copyWith(
-                              percentage: perc,
-                              isPercentageLocked: false, // Unlock all
-                              setPercentageToNull: false,
-                            ),
-                          );
-                        }
-
-                        // Final check for 100% total due to potential rounding errors
-                        double finalTotal = equallySplitParticipants.fold(
-                            0.0, (sum, p) => sum + (p.percentage ?? 0.0));
-                        if ((finalTotal - 100.0).abs() > 0.01 &&
-                            equallySplitParticipants.isNotEmpty) {
-                          double adjustment = 100.0 - finalTotal;
-                          double lastPerc =
-                              equallySplitParticipants.last.percentage ?? 0.0;
-                          // Adjust the last participant's percentage
-                          equallySplitParticipants[
-                              equallySplitParticipants.length -
-                                  1] = equallySplitParticipants.last.copyWith(
-                              percentage: double.parse(
-                                  (lastPerc + adjustment).toStringAsFixed(2)));
-                        }
-
-                        setState(() {
-                          _participants = equallySplitParticipants;
-                          // We don't need _showSplitDetails anymore as the display is handled within BillParticipantsSection
-                          // _showSplitDetails = false;
-                        });
-                      },
-                    ),
-                  ),
+                // const SizedBox(height: 24), // Adjusted spacing after removing split equally button
+                // const Divider(), // Adjusted divider placement
+                // "Split Equally" button removed as percentage logic is gone from BillParticipantsSection
                 const SizedBox(height: 24), // Keep this SizedBox
                 const Divider(), // Keep this Divider
 

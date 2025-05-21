@@ -8,6 +8,7 @@ class BillItemEntity extends Equatable {
   final double unitPrice; // Price per single unit
   final double
       totalPrice; // Total price for this line item (quantity * unitPrice)
+  final List<String> participantIds; // IDs of participants sharing this item
 
   const BillItemEntity({
     this.id,
@@ -15,10 +16,12 @@ class BillItemEntity extends Equatable {
     this.quantity = 1, // Default quantity to 1
     required this.unitPrice,
     required this.totalPrice,
+    this.participantIds = const [], // Default to an empty list
   });
 
   @override
-  List<Object?> get props => [id, description, quantity, unitPrice, totalPrice];
+  List<Object?> get props =>
+      [id, description, quantity, unitPrice, totalPrice, participantIds];
 
   // Helper for creating a copy with potential modifications
   BillItemEntity copyWith({
@@ -27,6 +30,7 @@ class BillItemEntity extends Equatable {
     int? quantity,
     double? unitPrice,
     double? totalPrice,
+    List<String>? participantIds,
   }) {
     return BillItemEntity(
       id: id ?? this.id,
@@ -34,6 +38,7 @@ class BillItemEntity extends Equatable {
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       totalPrice: totalPrice ?? this.totalPrice,
+      participantIds: participantIds ?? this.participantIds,
     );
   }
 
@@ -45,6 +50,7 @@ class BillItemEntity extends Equatable {
       'quantity': quantity,
       'unit_price': unitPrice,
       'total_price': totalPrice,
+      'participant_ids': participantIds,
     };
   }
 }

@@ -10,6 +10,7 @@ class ParticipantEntity extends Equatable {
       percentage; // Optional: Percentage of the bill this participant pays
   final bool
       isPercentageLocked; // Whether the user has manually set and locked this percentage
+  final double? amountOwed; // Amount this participant owes after calculation
 
   const ParticipantEntity({
     this.id,
@@ -17,11 +18,12 @@ class ParticipantEntity extends Equatable {
     this.linkedProfileId,
     this.percentage,
     this.isPercentageLocked = false, // Default to false
+    this.amountOwed, // Can be null initially
   });
 
   @override
   List<Object?> get props =>
-      [id, name, linkedProfileId, percentage, isPercentageLocked];
+      [id, name, linkedProfileId, percentage, isPercentageLocked, amountOwed];
 
   // Helper for creating a copy with potential modifications
   ParticipantEntity copyWith({
@@ -30,8 +32,10 @@ class ParticipantEntity extends Equatable {
     String? linkedProfileId,
     double? percentage,
     bool? isPercentageLocked,
+    double? amountOwed,
     bool setLinkedProfileIdToNull = false,
     bool setPercentageToNull = false, // Explicit flag to clear percentage
+    bool setAmountOwedToNull = false, // Explicit flag to clear amountOwed
   }) {
     return ParticipantEntity(
       id: id ?? this.id,
@@ -41,6 +45,7 @@ class ParticipantEntity extends Equatable {
           : (linkedProfileId ?? this.linkedProfileId),
       percentage: setPercentageToNull ? null : (percentage ?? this.percentage),
       isPercentageLocked: isPercentageLocked ?? this.isPercentageLocked,
+      amountOwed: setAmountOwedToNull ? null : (amountOwed ?? this.amountOwed),
     );
   }
 
@@ -52,6 +57,7 @@ class ParticipantEntity extends Equatable {
       'linked_profile_id': linkedProfileId,
       'percentage': percentage,
       'is_percentage_locked': isPercentageLocked,
+      'amount_owed': amountOwed,
     };
   }
 }

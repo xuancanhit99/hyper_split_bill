@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart';
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart'; // Import ParticipantEntity
 import 'package:flutter/services.dart'; // For input formatters
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_item_widget.dart';
 import 'dart:math'; // For random number generation
@@ -186,6 +187,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
       quantity: quantity,
       unitPrice: unitPrice,
       totalPrice: totalPrice,
+      // participantIds will be handled by the new dialog, keep existing if not changed by it
+      participantIds: widget.initialItem.participantIds,
     );
   }
 
@@ -324,12 +327,14 @@ class BillItemsSection extends StatefulWidget {
   final Function(List<BillItemEntity>)
       onItemsChanged; // Callback to notify parent
   final bool showItemDetails; // New: Control Qty/Unit Price visibility
+  final List<ParticipantEntity> allParticipants; // Add this
 
   const BillItemsSection({
     super.key,
     required this.initialItems,
     required this.onItemsChanged,
-    required this.showItemDetails, // Add to constructor
+    required this.showItemDetails,
+    required this.allParticipants, // Add to constructor
     this.enabled = true,
   });
 
@@ -410,6 +415,18 @@ class _BillItemsSectionState extends State<BillItemsSection> {
     });
   }
 
+  void _updateItemParticipants(
+      String itemId, List<String> selectedParticipantIds) {
+    final index = _items.indexWhere((item) => item.id == itemId);
+    if (index != -1) {
+      setState(() {
+        _items[index] =
+            _items[index].copyWith(participantIds: selectedParticipantIds);
+      });
+      widget.onItemsChanged(_items); // Notify parent about the change
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get the localization instance
@@ -483,12 +500,18 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                 ),
                 child: BillItemWidget(
                   item: item,
-                  // Pass the item to edit to the dialog function
+                  allParticipants: widget.allParticipants, // Pass down
+                  onParticipantsSelected: (selectedIds) {
+                    if (item.id != null) {
+                      _updateItemParticipants(item.id!, selectedIds);
+                    }
+                  },
                   onEdit: widget.enabled
                       ? () =>
                           _showItemDialog(l10n, itemToEdit: item) // Pass l10n
                       : () {},
                   showItemDetails: widget.showItemDetails, // Pass down
+                  isEditingEnabled: widget.enabled, // Pass down enabled state
                 ),
               );
             },
@@ -575,11 +598,13 @@ class _BillItemsSectionState extends State<BillItemsSection> {
     // Provide default values if adding
     final BillItemEntity initialItemData = itemToEdit ??
         BillItemEntity(
-            id: '',
-            description: '',
-            quantity: 1,
-            unitPrice: 0.0,
-            totalPrice: 0.0);
+          id: '',
+          description: '',
+          quantity: 1,
+          unitPrice: 0.0,
+          totalPrice: 0.0,
+          participantIds: [], // Default to empty list for new items
+        );
 
     // Key to access the state of the dialog content
     final GlobalKey<_ItemDialogContentState> contentKey =

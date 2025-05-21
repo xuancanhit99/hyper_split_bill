@@ -3,6 +3,9 @@ import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/ed
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/currency_dropdown_row.dart';
 import 'dart:math'; // For abs()
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
+// Import AmountType from BillEditPage (adjust path if necessary, or define locally if preferred)
+import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_edit_page.dart'
+    show AmountType;
 
 class EditBillInfoSection extends StatelessWidget {
   final bool isEditingMode;
@@ -26,14 +29,19 @@ class EditBillInfoSection extends StatelessWidget {
   final VoidCallback onEditDiscount;
   final ValueChanged<String?> onCurrencyChanged;
   final VoidCallback onAddOptionalFields;
-  final VoidCallback
-      onToggleItemDetails; // New: Callback to toggle item details
-  final bool showItemDetails; // New: State for item details visibility
-  final String Function(num?) formatCurrencyValue; // Pass formatting function
-  final double?
-      calculatedTotalAmount; // Newly added: Calculated total from parent
-  final VoidCallback?
-      onUpdateTotalAmount; // Newly added: Callback to update total
+  final VoidCallback onToggleItemDetails;
+  final bool showItemDetails;
+  final String Function(num?) formatCurrencyValue;
+  final double? calculatedTotalAmount;
+  final VoidCallback? onUpdateTotalAmount;
+
+  // New fields for input type handling
+  final AmountType taxInputType;
+  final AmountType tipInputType;
+  final AmountType discountInputType;
+  final ValueChanged<AmountType> onTaxInputTypeChanged;
+  final ValueChanged<AmountType> onTipInputTypeChanged;
+  final ValueChanged<AmountType> onDiscountInputTypeChanged;
 
   const EditBillInfoSection({
     super.key,
@@ -59,10 +67,16 @@ class EditBillInfoSection extends StatelessWidget {
     required this.onCurrencyChanged,
     required this.onAddOptionalFields,
     required this.formatCurrencyValue,
-    required this.onToggleItemDetails, // Add to constructor
-    required this.showItemDetails, // Add to constructor
-    this.calculatedTotalAmount, // Make optional for now
-    this.onUpdateTotalAmount, // Make optional for now
+    required this.onToggleItemDetails,
+    required this.showItemDetails,
+    this.calculatedTotalAmount,
+    this.onUpdateTotalAmount,
+    required this.taxInputType, // Add to constructor
+    required this.tipInputType, // Add to constructor
+    required this.discountInputType, // Add to constructor
+    required this.onTaxInputTypeChanged, // Add to constructor
+    required this.onTipInputTypeChanged, // Add to constructor
+    required this.onDiscountInputTypeChanged, // Add to constructor
   });
 
   // Helper to parse number from controller text safely
@@ -128,38 +142,104 @@ class EditBillInfoSection extends StatelessWidget {
 
         // --- Conditionally Display Optional Fields ---
         if (showTax) ...[
-          EditableRow(
-            isEditingMode: isEditingMode,
-            textPrefix:
-                "${l10n.editBillInfoSectionTaxLabel}:", // Localized + colon
-            label: l10n.editBillInfoSectionTaxLabel, // Localized
-            value: taxController.text, // Raw value from controller
-            valueSuffix: "%", // Add suffix
-            onTap: onEditTax,
+          Row(
+            children: [
+              Expanded(
+                child: EditableRow(
+                  isEditingMode: isEditingMode,
+                  textPrefix: "${l10n.editBillInfoSectionTaxLabel}:",
+                  label: l10n.editBillInfoSectionTaxLabel,
+                  value: taxController.text,
+                  valueSuffix: taxInputType == AmountType.percentage
+                      ? "%"
+                      : currencyController.text,
+                  onTap: onEditTax,
+                ),
+              ),
+              if (isEditingMode)
+                ToggleButtons(
+                  isSelected: [
+                    taxInputType == AmountType.percentage,
+                    taxInputType == AmountType.fixed
+                  ],
+                  onPressed: (index) {
+                    onTaxInputTypeChanged(
+                        index == 0 ? AmountType.percentage : AmountType.fixed);
+                  },
+                  constraints:
+                      const BoxConstraints(minHeight: 32.0, minWidth: 40.0),
+                  children: const <Widget>[
+                    Text('%'),
+                    Icon(Icons.attach_money)
+                  ], // Consider localizing currency icon/text
+                ),
+            ],
           ),
           const Divider(height: 1),
         ],
         if (showTip) ...[
-          EditableRow(
-            isEditingMode: isEditingMode,
-            textPrefix:
-                "${l10n.editBillInfoSectionTipLabel}:", // Localized + colon
-            label: l10n.editBillInfoSectionTipLabel, // Localized
-            value: tipController.text, // Raw value from controller
-            valueSuffix: "%", // Add suffix
-            onTap: onEditTip,
+          Row(
+            children: [
+              Expanded(
+                child: EditableRow(
+                  isEditingMode: isEditingMode,
+                  textPrefix: "${l10n.editBillInfoSectionTipLabel}:",
+                  label: l10n.editBillInfoSectionTipLabel,
+                  value: tipController.text,
+                  valueSuffix: tipInputType == AmountType.percentage
+                      ? "%"
+                      : currencyController.text,
+                  onTap: onEditTip,
+                ),
+              ),
+              if (isEditingMode)
+                ToggleButtons(
+                  isSelected: [
+                    tipInputType == AmountType.percentage,
+                    tipInputType == AmountType.fixed
+                  ],
+                  onPressed: (index) {
+                    onTipInputTypeChanged(
+                        index == 0 ? AmountType.percentage : AmountType.fixed);
+                  },
+                  constraints:
+                      const BoxConstraints(minHeight: 32.0, minWidth: 40.0),
+                  children: const <Widget>[Text('%'), Icon(Icons.attach_money)],
+                ),
+            ],
           ),
           const Divider(height: 1),
         ],
         if (showDiscount) ...[
-          EditableRow(
-            isEditingMode: isEditingMode,
-            textPrefix:
-                "${l10n.editBillInfoSectionDiscountLabel}:", // Localized + colon
-            label: l10n.editBillInfoSectionDiscountLabel, // Localized
-            value: discountController.text, // Raw value from controller
-            valueSuffix: "%", // Add suffix
-            onTap: onEditDiscount,
+          Row(
+            children: [
+              Expanded(
+                child: EditableRow(
+                  isEditingMode: isEditingMode,
+                  textPrefix: "${l10n.editBillInfoSectionDiscountLabel}:",
+                  label: l10n.editBillInfoSectionDiscountLabel,
+                  value: discountController.text,
+                  valueSuffix: discountInputType == AmountType.percentage
+                      ? "%"
+                      : currencyController.text,
+                  onTap: onEditDiscount,
+                ),
+              ),
+              if (isEditingMode)
+                ToggleButtons(
+                  isSelected: [
+                    discountInputType == AmountType.percentage,
+                    discountInputType == AmountType.fixed
+                  ],
+                  onPressed: (index) {
+                    onDiscountInputTypeChanged(
+                        index == 0 ? AmountType.percentage : AmountType.fixed);
+                  },
+                  constraints:
+                      const BoxConstraints(minHeight: 32.0, minWidth: 40.0),
+                  children: const <Widget>[Text('%'), Icon(Icons.attach_money)],
+                ),
+            ],
           ),
           const Divider(height: 1),
         ],

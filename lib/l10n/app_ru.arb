@@ -75,6 +75,33 @@
       }
     }
   },
+  "billEditPageErrorUnassignedItems": "{count,plural, =1{1 позиция ('{firstItemName}') не назначена ни одному участнику. Пожалуйста, назначьте все позиции.} other{{count} позиций не назначены ни одному участнику, начиная с '{firstItemName}'. Пожалуйста, назначьте все позиции.}}",
+  "@billEditPageErrorUnassignedItems": {
+    "description": "Сообщение об ошибке, когда позиции не назначены.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "firstItemName": {
+        "type": "String",
+        "example": "Пицца"
+      }
+    }
+  },
+  "billEditPageErrorNoParticipants": "Пожалуйста, добавьте хотя бы одного участника к счету.",
+  "billEditPageWarningUnallocatedCost": "Внимание: Некоторые расходы могли быть не распределены между участниками. Общая сумма к оплате: {totalOwed}, Общая сумма счета: {billTotal}.",
+  "@billEditPageWarningUnallocatedCost": {
+    "description": "Предупреждение, когда общая сумма к оплате не совпадает с общей суммой счета.",
+    "placeholders": {
+      "totalOwed": {
+        "type": "String"
+      },
+      "billTotal": {
+        "type": "String"
+      }
+    }
+  },
   "dialogEditDescriptionTitle": "Редактировать описание",
   "dialogEditTotalAmountTitle": "Редактировать общую сумму",
   "dialogEditTaxTitle": "Редактировать налог",

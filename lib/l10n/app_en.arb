@@ -75,6 +75,33 @@
       }
     }
   },
+  "billEditPageErrorUnassignedItems": "{count,plural, =1{1 item ('{firstItemName}') is not assigned to any participant. Please assign all items.} other{{count} items are not assigned to any participant, starting with '{firstItemName}'. Please assign all items.}}",
+  "@billEditPageErrorUnassignedItems": {
+    "description": "Error message when items are unassigned.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "firstItemName": {
+        "type": "String",
+        "example": "Pizza"
+      }
+    }
+  },
+  "billEditPageErrorNoParticipants": "Please add at least one participant to the bill.",
+  "billEditPageWarningUnallocatedCost": "Warning: Some costs may not have been allocated. Total owed: {totalOwed}, Bill total: {billTotal}.",
+  "@billEditPageWarningUnallocatedCost": {
+    "description": "Warning message when total owed doesn't match bill total.",
+    "placeholders": {
+      "totalOwed": {
+        "type": "String"
+      },
+      "billTotal": {
+        "type": "String"
+      }
+    }
+  },
   "dialogEditDescriptionTitle": "Edit Description",
   "dialogEditTotalAmountTitle": "Edit Total Amount",
   "dialogEditTaxTitle": "Edit Tax",

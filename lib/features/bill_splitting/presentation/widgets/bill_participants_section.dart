@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart';
 import 'package:intl/intl.dart'; // For number formatting
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
+import 'dart:math'; // Import for Random
 
 // Helper to format currency
 String _formatCurrencyValue(num? value) {
@@ -15,16 +16,18 @@ class BillParticipantsSection extends StatefulWidget {
   final List<ParticipantEntity> initialParticipants;
   final bool enabled; // Controls edit vs review mode
   final Function(List<ParticipantEntity>) onParticipantsChanged;
-  final double? totalAmount; // Needed for review mode calculation
-  final String? currencyCode; // Needed for review mode display
+  final String?
+      currencyCode; // Still needed for review mode display of amountOwed
+  final double?
+      billTotalAmount; // For review mode, to check if all costs are allocated
 
   const BillParticipantsSection({
     super.key,
     required this.initialParticipants,
     required this.onParticipantsChanged,
     this.enabled = true,
-    this.totalAmount, // Make optional
-    this.currencyCode, // Make optional
+    this.currencyCode,
+    this.billTotalAmount, // Added for warning display
   });
 
   @override
@@ -34,10 +37,9 @@ class BillParticipantsSection extends StatefulWidget {
 
 class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   late List<ParticipantEntity> _participants;
-  // Map to hold controllers, using participant name as key for simplicity here
-  // In a real app, using a unique ID (even temporary) would be more robust
-  late Map<String, TextEditingController> _percentageControllers;
-  bool _isDistributing = false; // Flag to prevent recursive updates
+  // late Map<String, TextEditingController> _percentageControllers; // Removed
+  // bool _isDistributing = false; // Removed
+  final Random _random = Random(); // For generating unique IDs
 
   @override
   void initState() {
@@ -48,216 +50,26 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   @override
   void didUpdateWidget(covariant BillParticipantsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-initialize if the initial list or enabled status changes significantly
     if (widget.initialParticipants != oldWidget.initialParticipants ||
         widget.enabled != oldWidget.enabled) {
-      // Dispose old controllers before creating new ones
-      _disposeControllers();
       _initializeState(widget.initialParticipants);
-    } else {
-      // If only totalAmount or currencyCode changes (e.g., parent updates), just rebuild
-      // No need to re-initialize controllers or participants list
     }
   }
 
   void _initializeState(List<ParticipantEntity> initialParticipants) {
-    _participants = List.from(initialParticipants);
-    _percentageControllers = {};
-    for (var p in _participants) {
-      _percentageControllers[p.name] = TextEditingController();
-    }
-    // Set initial percentages (distribute equally or use existing)
-    _distributePercentages(
-        notifyParent: false); // Don't notify on initial setup
-    _updateControllerTexts(); // Set initial text based on distributed percentages
+    _participants = initialParticipants.map((p) {
+      return p.id == null || p.id!.isEmpty
+          ? p.copyWith(id: _generateUniqueParticipantId())
+          : p;
+    }).toList();
+    // No percentage logic needed here anymore
   }
 
-  void _updateControllerTexts() {
-    for (var p in _participants) {
-      final controller = _percentageControllers[p.name];
-      final percentageString =
-          _formatCurrencyValue(p.percentage); // Use formatter
-      if (controller != null && controller.text != percentageString) {
-        controller.text = percentageString;
-      }
-    }
-  }
+  // Removed _updateControllerTexts, _distributePercentages, _listEquals,
+  // _handlePercentageChange, _handleLockChange
 
-  // Distributes 100% among participants, respecting locked percentages
-  void _distributePercentages({bool notifyParent = true}) {
-    if (_isDistributing || _participants.isEmpty)
-      return; // Prevent recursion and handle empty list
-    _isDistributing = true;
-
-    double totalLockedPercentage = 0;
-    int unlockedCount = 0;
-    List<ParticipantEntity> updatedParticipants =
-        List.from(_participants); // Work on a copy
-
-    // Calculate total locked percentage and count unlocked participants
-    for (var p in updatedParticipants) {
-      if (p.isPercentageLocked) {
-        totalLockedPercentage += p.percentage ?? 0;
-      } else {
-        unlockedCount++;
-      }
-    }
-
-    // Ensure locked percentage doesn't exceed 100
-    totalLockedPercentage = totalLockedPercentage.clamp(0.0, 100.0);
-
-    double remainingPercentage = 100.0 - totalLockedPercentage;
-    double percentagePerUnlocked =
-        unlockedCount > 0 ? (remainingPercentage / unlockedCount) : 0;
-    // Ensure non-negative percentage
-    percentagePerUnlocked =
-        percentagePerUnlocked < 0 ? 0 : percentagePerUnlocked;
-
-    // Assign percentages
-    double assignedTotal =
-        0; // Track assigned percentage to handle rounding errors
-    for (int i = 0; i < updatedParticipants.length; i++) {
-      ParticipantEntity p = updatedParticipants[i];
-      if (!p.isPercentageLocked) {
-        // Assign calculated percentage, handle potential rounding on the last one
-        double assigned =
-            (i == updatedParticipants.length - 1 && unlockedCount > 0)
-                ? (100.0 -
-                    assignedTotal -
-                    totalLockedPercentage) // Assign remaining to last unlocked
-                : percentagePerUnlocked;
-        assigned = assigned.clamp(0.0, 100.0); // Clamp individual assignment
-
-        updatedParticipants[i] = p.copyWith(percentage: assigned);
-        assignedTotal += assigned; // Add the actually assigned value
-      } else {
-        // Keep locked percentage, ensure it's part of the tracked total
-        assignedTotal += p.percentage ?? 0;
-      }
-    }
-
-    // Final check due to potential floating point inaccuracies
-    double finalTotal =
-        updatedParticipants.fold(0.0, (sum, p) => sum + (p.percentage ?? 0.0));
-    if ((finalTotal - 100.0).abs() > 0.01 && updatedParticipants.isNotEmpty) {
-      // If there's a noticeable discrepancy, adjust the last participant (or first if last is locked)
-      int adjustIndex =
-          updatedParticipants.lastIndexWhere((p) => !p.isPercentageLocked);
-      if (adjustIndex == -1)
-        adjustIndex = 0; // Adjust first if all are locked (edge case)
-
-      double adjustment = 100.0 - finalTotal;
-      double currentPerc = updatedParticipants[adjustIndex].percentage ?? 0.0;
-      updatedParticipants[adjustIndex] = updatedParticipants[adjustIndex]
-          .copyWith(
-              percentage: (currentPerc + adjustment)
-                  .clamp(0.0, 100.0) // Clamp adjustment
-              );
-      print(
-          "Percentage adjustment applied: $adjustment to participant at index $adjustIndex");
-    }
-
-    // Update state and notify parent if changes occurred
-    bool changed = !_listEquals(_participants, updatedParticipants);
-    if (changed) {
-      setState(() {
-        _participants = updatedParticipants;
-        _updateControllerTexts(); // Update text fields after calculation
-      });
-      if (notifyParent) {
-        widget.onParticipantsChanged(List.from(_participants));
-      }
-    }
-    _isDistributing = false;
-  }
-
-  // Helper to compare lists of participants
-  bool _listEquals(List<ParticipantEntity> a, List<ParticipantEntity> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  void _handlePercentageChange(ParticipantEntity participant, String value) {
-    if (_isDistributing) return; // Prevent updates during distribution
-
-    final controller = _percentageControllers[participant.name];
-    if (controller == null) return;
-
-    double? newPercentage = double.tryParse(value);
-    // Basic validation: allow empty string or valid number up to 100
-    if (value.isEmpty ||
-        (newPercentage != null && newPercentage >= 0 && newPercentage <= 100)) {
-      // Update the participant entity immediately if the value is valid and locked
-      // The actual distribution happens on lock/unlock or add/remove
-      // If not locked, just update the controller text, distribution handles the rest
-      // controller.text = value; // Keep controller in sync, even if not locked yet
-    } else {
-      // Revert to the last valid percentage if input is invalid
-      final currentPercentageString =
-          _formatCurrencyValue(participant.percentage);
-      controller.text = currentPercentageString;
-      controller.selection = TextSelection.fromPosition(
-          TextPosition(offset: controller.text.length)); // Move cursor to end
-    }
-  }
-
-  void _handleLockChange(ParticipantEntity participant, bool isLocked) {
-    if (_isDistributing) return;
-
-    final controller = _percentageControllers[participant.name];
-    if (controller == null) return;
-
-    double? currentPercentage = double.tryParse(controller.text);
-
-    // If locking, ensure the value is valid before locking
-    if (isLocked &&
-        (currentPercentage == null ||
-            currentPercentage < 0 ||
-            currentPercentage > 100)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            // Remove const
-            content: Text(AppLocalizations.of(context)!
-                .participantSectionInvalidPercentageLock)),
-      );
-      // Don't proceed with locking if value is invalid
-      // We need to trigger a rebuild to uncheck the checkbox visually
-      setState(() {});
-      return;
-    }
-
-    // Find the index and update the participant in the list
-    int index = _participants.indexWhere((p) => p.name == participant.name);
-    if (index != -1) {
-      final updatedParticipant = _participants[index].copyWith(
-          isPercentageLocked: isLocked,
-          // If locking, use the validated percentage from the controller
-          // If unlocking, percentage will be recalculated by _distributePercentages
-          percentage:
-              isLocked ? currentPercentage : _participants[index].percentage,
-          setPercentageToNull:
-              !isLocked // Allow distribution to overwrite if unlocking
-          );
-
-      // Create a new list with the updated participant
-      List<ParticipantEntity> tempList = List.from(_participants);
-      tempList[index] = updatedParticipant;
-
-      // Update the state immediately for visual feedback
-      setState(() {
-        _participants = tempList;
-        // If locking, ensure controller reflects the locked value accurately
-        if (isLocked) {
-          controller.text = _formatCurrencyValue(currentPercentage);
-        }
-      });
-
-      // Recalculate and distribute percentages for everyone
-      _distributePercentages();
-    }
+  String _generateUniqueParticipantId() {
+    return 'p_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
   }
 
   Future<void> _addParticipantDialog() async {
@@ -289,15 +101,16 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                 if (name.isNotEmpty) {
                   if (!_participants
                       .any((p) => p.name.toLowerCase() == name.toLowerCase())) {
+                    final newParticipantId = _generateUniqueParticipantId();
                     final newParticipant = ParticipantEntity(
-                        name: name); // Percentage will be set by distribution
-                    // Add controller for the new participant
-                    _percentageControllers[name] = TextEditingController();
-                    // Add to list and redistribute
+                      id: newParticipantId,
+                      name: name,
+                      // No percentage, isPercentageLocked needed
+                    );
                     setState(() {
                       _participants.add(newParticipant);
                     });
-                    _distributePercentages(); // This will handle percentage and notify parent
+                    widget.onParticipantsChanged(List.from(_participants));
                     Navigator.of(dialogContext).pop();
                   } else {
                     Navigator.of(dialogContext).pop(); // Close dialog first
@@ -320,32 +133,26 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
     if (_participants.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            // Remove const
             content: Text(AppLocalizations.of(context)!
                 .participantSectionCannotRemoveLastSnackbar)),
       );
       return;
     }
-    // Remove controller and participant, then redistribute
-    final controller = _percentageControllers.remove(participant.name);
-    controller?.dispose(); // Dispose the controller
+    if (participant.id == null) return;
 
     setState(() {
-      _participants.removeWhere((p) => p.name == participant.name);
+      _participants.removeWhere((p) => p.id == participant.id);
     });
-    _distributePercentages(); // Redistribute percentages and notify parent
+    widget.onParticipantsChanged(List.from(_participants));
   }
 
   @override
   void dispose() {
-    _disposeControllers();
+    // No controllers to dispose anymore
     super.dispose();
   }
 
-  void _disposeControllers() {
-    _percentageControllers.values.forEach((controller) => controller.dispose());
-    _percentageControllers.clear();
-  }
+  // Removed _disposeControllers
 
   @override
   Widget build(BuildContext context) {
@@ -355,32 +162,30 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header Row (Review Mode Only)
+        // Header Row (Only for Review Mode, if participants exist)
         if (_participants.isNotEmpty && !widget.enabled)
           Padding(
             padding: const EdgeInsets.only(
-                bottom: 4.0,
-                left: 40.0, // Align with checkbox space
-                right: 40.0), // Align with remove button space
+                bottom: 4.0, right: 40.0), // Align with remove button space
             child: Row(
               children: [
                 Expanded(
-                    flex: 2, // Name takes 2 parts
+                    flex: 3,
                     child: Text(l10n.participantSectionHeaderName,
                         style: Theme.of(context).textTheme.labelSmall)),
                 Expanded(
-                    flex: 1, // Percent takes 1 part
-                    child: Text(l10n.participantSectionHeaderPercent,
-                        textAlign: TextAlign.right,
-                        style: Theme.of(context).textTheme.labelSmall)),
-                Expanded(
-                    flex: 1, // Amount takes 1 part
+                    flex: 2,
                     child: Text(l10n.participantSectionHeaderAmount,
                         textAlign: TextAlign.right,
                         style: Theme.of(context).textTheme.labelSmall)),
               ],
             ),
           ),
+        // Warning for unallocated costs in review mode
+        if (!widget.enabled &&
+            widget.billTotalAmount != null &&
+            _participants.isNotEmpty)
+          _buildUnallocatedCostWarning(l10n),
         if (_participants.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -399,51 +204,34 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             itemCount: _participants.length,
             itemBuilder: (context, index) {
               final participant = _participants[index];
-              // Call the appropriate row builder based on mode
               return widget.enabled
-                  ? _buildEditModeRow(l10n, participant) // Pass l10n instance
+                  ? _buildEditModeRow(l10n, participant)
                   : _buildReviewModeRow(participant);
             },
           ),
         const SizedBox(height: 8),
         if (widget.enabled)
-          TextButton.icon(
-            icon: const Icon(Icons.add_circle_outline),
-            label: Text(l10n.participantSectionAddButtonLabel),
-            onPressed: _addParticipantDialog,
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.add_circle_outline),
+              label: Text(l10n.participantSectionAddButtonLabel),
+              onPressed: _addParticipantDialog,
+            ),
           ),
       ],
     );
   }
 
-  // Builds a row for Edit Mode
+  // Builds a row for Edit Mode (Simplified)
   Widget _buildEditModeRow(
       AppLocalizations l10n, ParticipantEntity participant) {
-    // Add l10n parameter
-    final percentageController = _percentageControllers[participant.name];
-    final bool isLocked = participant.isPercentageLocked;
     final bool canRemove = _participants.length > 1;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          // Checkbox (Lock)
-          SizedBox(
-            width: 40,
-            child: Checkbox(
-              value: isLocked,
-              onChanged: (bool? value) {
-                if (value != null) {
-                  _handleLockChange(participant, value);
-                }
-              },
-              visualDensity: VisualDensity.compact,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-
-          // Name
           Expanded(
             child: Text(
               participant.name,
@@ -451,50 +239,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             ),
           ),
           const SizedBox(width: 8),
-
-          // Percentage Input
           SizedBox(
-            width: 70, // Increased width
-            child: IntrinsicWidth(
-              child: TextField(
-                controller: percentageController,
-                enabled: !isLocked,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                ],
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  hintText: '...',
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                  suffixText: '%',
-                  border: isLocked
-                      ? InputBorder.none
-                      : const UnderlineInputBorder(),
-                  enabledBorder: isLocked
-                      ? InputBorder.none
-                      : const UnderlineInputBorder(),
-                  focusedBorder: isLocked
-                      ? InputBorder.none
-                      : const UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.blue)),
-                ),
-                onChanged: (value) =>
-                    _handlePercentageChange(participant, value),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Placeholder for Amount column alignment
-          const SizedBox(width: 90),
-
-          // Remove Button
-          SizedBox(
-            width: 40,
+            width: 40, // Keep consistent width for alignment
             child: canRemove
                 ? IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 20),
@@ -505,74 +251,71 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   )
-                : const SizedBox(width: 40), // Keep space if cannot remove
+                : const SizedBox(width: 40),
           ),
         ],
       ),
     );
   }
 
-  // Builds a row for Review Mode
+  // Builds a row for Review Mode (Simplified - amountOwed is primary)
   Widget _buildReviewModeRow(ParticipantEntity participant) {
-    final bool isLocked =
-        participant.isPercentageLocked; // To show bold if it was locked
-
-    // Calculate amount
     String displayAmount = '';
-    if (widget.totalAmount != null &&
-        widget.totalAmount! > 0 &&
-        participant.percentage != null) {
-      final amount = widget.totalAmount! * (participant.percentage! / 100.0);
+    if (participant.amountOwed != null) {
       displayAmount =
-          '${_formatCurrencyValue(amount)} ${widget.currencyCode ?? ''}';
+          '${_formatCurrencyValue(participant.amountOwed)} ${widget.currencyCode ?? ''}';
     }
+    // Removed fallback to percentage calculation as it's no longer part of this widget's direct responsibility
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          vertical: 4.0), // Add some vertical padding
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          // Placeholder for Checkbox alignment
-          const SizedBox(width: 40),
-
-          // Name (Flex 2)
+          // No placeholder needed for checkbox if it's removed from review header
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text(
               participant.name,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // const SizedBox(width: 8), // No extra space needed with Expanded
-
-          // Percentage Text (Flex 1)
           Expanded(
-            flex: 1,
-            child: Text(
-              '${_formatCurrencyValue(participant.percentage)}%',
-              textAlign: TextAlign.right,
-              // Removed conditional bold style:
-              // style: TextStyle(
-              //   fontWeight: isLocked ? FontWeight.bold : FontWeight.normal,
-              // ),
-            ),
-          ),
-          // const SizedBox(width: 8), // No extra space needed with Expanded
-
-          // Calculated Amount (Flex 1)
-          Expanded(
-            flex: 1,
+            flex: 2,
             child: Text(
               displayAmount,
               textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-
-          // Placeholder for Remove button alignment
+          // Placeholder for remove button alignment (if header has one, or for consistency)
           const SizedBox(width: 40),
         ],
       ),
     );
+  }
+
+  Widget _buildUnallocatedCostWarning(AppLocalizations l10n) {
+    final double totalOwedByParticipants =
+        _participants.fold(0.0, (sum, p) => sum + (p.amountOwed ?? 0.0));
+    final double billTotal = widget.billTotalAmount ?? 0.0;
+
+    // Using a small epsilon for floating point comparison
+    if ((billTotal - totalOwedByParticipants).abs() > 0.01 && billTotal > 0) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+        child: Text(
+          l10n.billEditPageWarningUnallocatedCost(
+            _formatCurrencyValue(totalOwedByParticipants),
+            _formatCurrencyValue(billTotal),
+          ),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+    return const SizedBox.shrink(); // No warning needed
   }
 }

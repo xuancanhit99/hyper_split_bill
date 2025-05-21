@@ -76,6 +76,33 @@
       }
     }
   },
+  "billEditPageErrorUnassignedItems": "{count,plural, =1{1 mục ('{firstItemName}') chưa được gán cho người tham gia nào. Vui lòng gán tất cả các mục.} other{{count} mục chưa được gán cho người tham gia nào, bắt đầu với '{firstItemName}'. Vui lòng gán tất cả các mục.}}",
+  "@billEditPageErrorUnassignedItems": {
+    "description": "Thông báo lỗi khi các mục chưa được gán.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      },
+      "firstItemName": {
+        "type": "String",
+        "example": "Pizza"
+      }
+    }
+  },
+  "billEditPageErrorNoParticipants": "Vui lòng thêm ít nhất một người tham gia vào hóa đơn.",
+  "billEditPageWarningUnallocatedCost": "Cảnh báo: Một số chi phí có thể chưa được phân bổ cho người tham gia. Tổng nợ: {totalOwed}, Tổng hóa đơn: {billTotal}.",
+  "@billEditPageWarningUnallocatedCost": {
+    "description": "Thông báo cảnh báo khi tổng nợ không khớp với tổng hóa đơn.",
+    "placeholders": {
+      "totalOwed": {
+        "type": "String"
+      },
+      "billTotal": {
+        "type": "String"
+      }
+    }
+  },
   "dialogEditDescriptionTitle": "Chỉnh sửa mô tả",
   "dialogEditTotalAmountTitle": "Chỉnh sửa tổng số tiền",
   "dialogEditTaxTitle": "Chỉnh sửa thuế",
