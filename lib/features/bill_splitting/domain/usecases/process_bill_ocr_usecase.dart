@@ -84,7 +84,12 @@ Extract the items listed on the bill. For each item, determine its description, 
           if (decodedJson.containsKey('is_receipt')) {
             print(
                 "Found 'is_receipt' in top-level JSON. Returning structured JSON.");
-            return Right(receivedString); // Return the original JSON string
+            final decodedJson = json.decode(receivedString);
+            final encoder =
+                JsonEncoder.withIndent('  '); // Use 2 spaces for indentation
+            final formattedJson = encoder.convert(decodedJson);
+            print("Returning formatted JSON string (top-level).");
+            return Right(formattedJson); // Return the formatted JSON string
           }
 
           // 3. Check if 'extracted_text' contains JSON with 'is_receipt'
@@ -101,7 +106,13 @@ Extract the items listed on the bill. For each item, determine its description, 
                 print(
                     "Successfully parsed JSON with 'is_receipt' from 'extracted_text'.");
                 // Return the INNER JSON string, as this is the actual structured data
-                return Right(extractedText);
+                final innerJson = json.decode(extractedText);
+                final encoder = JsonEncoder.withIndent(
+                    '  '); // Use 2 spaces for indentation
+                final formattedInnerJson = encoder.convert(innerJson);
+                print("Returning formatted JSON string (from extracted_text).");
+                return Right(
+                    formattedInnerJson); // Return the formatted INNER JSON string
               } else {
                 print(
                     "Warning: Content of 'extracted_text' is JSON but lacks 'is_receipt' field.");
