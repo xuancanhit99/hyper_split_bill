@@ -12,11 +12,25 @@ class CalculateSplitBillUsecase {
     required double actualDiscountAmount,
   }) {
     final Map<String, double> participantItemSubtotals = {};
-    double grandItemSubtotal = 0.0;
-
-    // 1. Calculate item subtotals for each participant and the grand item subtotal
+    double grandItemSubtotal = 0.0;    // 1. Calculate item subtotals for each participant and the grand item subtotal
     for (final item in bill.items ?? <BillItemEntity>[]) {
-      if (item.participantIds.isNotEmpty) {
+      // Check if we have weighted participants
+      if (item.participants.isNotEmpty) {
+        // Use weighted participants
+        grandItemSubtotal += item.totalPrice;
+        final int totalWeight = item.totalWeight;
+        
+        if (totalWeight > 0) {
+          for (final participant in item.participants) {
+            // Calculate share based on weight proportion
+            final double weightedShare = item.totalPrice * participant.weight / totalWeight;
+            participantItemSubtotals[participant.participantId] =
+                (participantItemSubtotals[participant.participantId] ?? 0) + weightedShare;
+          }
+        }
+      }
+      // Fall back to old participantIds for backward compatibility
+      else if (item.participantIds.isNotEmpty) {
         final double sharePerParticipantForItem =
             item.totalPrice / item.participantIds.length;
         grandItemSubtotal += item.totalPrice;

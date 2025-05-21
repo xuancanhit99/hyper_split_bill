@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart'; // Import ParticipantEntity
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_participant.dart'; // Import BillItemParticipant
 import 'package:flutter/services.dart'; // For input formatters
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/bill_item_widget.dart';
 import 'dart:math'; // For random number generation
@@ -145,9 +146,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
         (isTotalPriceConfirmed ? 1 : 0);
 
     // --- Start Validation ---
-    if (description.isEmpty) {
-      _showValidationError(
-          AppLocalizations.of(context)!.itemDialogValidationDescriptionEmpty);
+    if (description.isEmpty) {      _showValidationError(
+          AppLocalizations.of(context).itemDialogValidationDescriptionEmpty);
       return null;
     }
     if (quantity == null || quantity < 0) {
@@ -177,9 +177,7 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
           AppLocalizations.of(context)!.itemDialogValidationInconsistent);
       return null;
     }
-    // --- End Validation ---
-
-    // If all validations pass, return the entity
+    // --- End Validation ---    // If all validations pass, return the entity
     return BillItemEntity(
       // Use initial ID if editing, generate if adding (will be handled outside)
       id: widget.initialItem.id,
@@ -189,6 +187,8 @@ class _ItemDialogContentState extends State<_ItemDialogContent> {
       totalPrice: totalPrice,
       // participantIds will be handled by the new dialog, keep existing if not changed by it
       participantIds: widget.initialItem.participantIds,
+      // Keep the original participants with weights
+      participants: widget.initialItem.participants,
     );
   }
 
@@ -414,14 +414,23 @@ class _BillItemsSectionState extends State<BillItemsSection> {
       }
     });
   }
-
   void _updateItemParticipants(
-      String itemId, List<String> selectedParticipantIds) {
+      String itemId, List<String> selectedParticipantIds, [List<BillItemParticipant>? participants]) {
     final index = _items.indexWhere((item) => item.id == itemId);
     if (index != -1) {
       setState(() {
-        _items[index] =
-            _items[index].copyWith(participantIds: selectedParticipantIds);
+        if (participants != null && participants.isNotEmpty) {
+          // Update both participantIds and participants with weights
+          _items[index] = _items[index].copyWith(
+            participantIds: selectedParticipantIds,
+            participants: participants,
+          );
+        } else {
+          // Fall back to just updating participantIds for backward compatibility
+          _items[index] = _items[index].copyWith(
+            participantIds: selectedParticipantIds,
+          );
+        }
       });
       widget.onItemsChanged(_items); // Notify parent about the change
     }
@@ -491,8 +500,7 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                 onDismissed: (direction) {
                   // Use ID to remove, safer if list order changes unexpectedly
                   _removeItemById(item.id!);
-                },
-                background: Container(
+                },                background: Container(
                   color: Colors.red,
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -501,9 +509,9 @@ class _BillItemsSectionState extends State<BillItemsSection> {
                 child: BillItemWidget(
                   item: item,
                   allParticipants: widget.allParticipants, // Pass down
-                  onParticipantsSelected: (selectedIds) {
+                  onParticipantsSelected: (selectedIds, participants) {
                     if (item.id != null) {
-                      _updateItemParticipants(item.id!, selectedIds);
+                      _updateItemParticipants(item.id!, selectedIds, participants);
                     }
                   },
                   onEdit: widget.enabled
