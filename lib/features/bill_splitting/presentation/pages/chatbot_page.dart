@@ -81,7 +81,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
     final result = await _sendChatMessageUseCase(
       newMessage: "", // Empty message for initialization
       history: [], // No history initially
-      billContextJson: widget.billJson,
+      billContextJson: widget
+          .billJson, // Use the original JSON (already filtered in BillEditPage)
     );
 
     setState(() {
@@ -137,7 +138,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
     final result = await _sendChatMessageUseCase(
       newMessage: messageText,
       history: historyToSend,
-      billContextJson: widget.billJson, // Pass the bill context every time
+      billContextJson: widget
+          .billJson, // Pass the original bill context (already filtered in BillEditPage)
     );
 
     setState(() {

@@ -417,8 +417,8 @@ class _BillEditPageState extends State<BillEditPage> {
       // They are handled separately in the JSON map below if needed
     );
 
-    // Create JSON Map for potential saving/display
-    final billMapForJson = {
+    // Create JSON Map for DISPLAY and CHATBOT (excluding internal fields)
+    final billMapForExternalUse = {
       'bill_date':
           _isoDateFormat.format(currentBillData.date), // Save in ISO format
       'description': currentBillData.description,
@@ -427,14 +427,23 @@ class _BillEditPageState extends State<BillEditPage> {
       'tax_amount': taxAmount, // Include tax if needed
       'tip_amount': tipAmount, // Include tip if needed
       'discount_amount': discountAmount, // Include discount if needed
-      'payer_user_id': currentBillData.payerUserId,
+      // Omit 'payer_user_id' as it's internal to the app/backend
+
       'items':
           currentBillData.items?.map((item) => item.toJson()).toList() ?? [],
-      'participants':
-          currentBillData.participants?.map((p) => p.toJson()).toList() ?? [],
+      'participants': currentBillData.participants?.map((p) {
+            // Create a map for participant data suitable for external use
+            return {
+              'name': p.name,
+              'percentage': p.percentage,
+              // Omit 'id', 'linked_profile_id', 'is_percentage_locked' as they are internal/app state
+            };
+          }).toList() ??
+          [],
     };
     const jsonEncoder = JsonEncoder.withIndent('  ');
-    final generatedJson = jsonEncoder.convert(billMapForJson);
+    final generatedJson =
+        jsonEncoder.convert(billMapForExternalUse); // Use the filtered map
 
     setState(() {
       _finalBillJsonString = generatedJson;

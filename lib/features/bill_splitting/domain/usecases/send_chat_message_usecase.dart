@@ -4,6 +4,7 @@ import 'package:hyper_split_bill/core/error/failures.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/datasources/chat_data_source.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/chat_message_entity.dart'; // Import message entity
 import 'package:injectable/injectable.dart';
+import 'package:hyper_split_bill/core/prompts/chat_prompts.dart'; // Import chat prompts
 
 // Define a simple structure for the chat response
 class ChatResponse {
@@ -36,26 +37,10 @@ class SendChatMessageUseCase {
 
       // Combine initial context, history, and new message
       // Adjust the prompt structure as needed for your specific Chat API
-      final fullPrompt = """
-You are a helpful assistant for splitting bills. Always respond in Russian. Here is the bill data in JSON format:
-```json
-$billContextJson
-```
-
-Here is the conversation history so far:
-```
-$historyString
-```
-
-User: $newMessage
-
-Based on the bill data and conversation history, provide a helpful response and suggest the next logical actions (around 4-5 relevant suggestions). Return ONLY a valid JSON object with the following structure:
-{
-  "response": "Your helpful answer here...",
-  "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3", "Suggestion 4"]
-}
-Do not include any other text or markdown formatting outside the JSON object.
-""";
+      final fullPrompt = chatPrompt
+          .replaceFirst(billContextPlaceholder, billContextJson)
+          .replaceFirst(historyStringPlaceholder, historyString)
+          .replaceFirst(newMessagePlaceholder, newMessage);
 
       print("--- Sending Prompt to Chat API ---");
       print(fullPrompt);
