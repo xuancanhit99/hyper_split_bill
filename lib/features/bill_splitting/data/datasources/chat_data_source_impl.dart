@@ -36,8 +36,8 @@ class ChatDataSourceImpl implements ChatDataSource {
     final body = json.encode({
       'message': message,
       if (history != null) 'history': history,
-      'model_name':
-          modelName ?? 'grok-2-1212', // Sử dụng model mặc định từ tài liệu API
+      'model_name': modelName ??
+          appConfig.grokChatModel, // Sử dụng model mặc định từ AppConfig
     });
 
     try {

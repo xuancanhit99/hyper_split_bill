@@ -16,11 +16,15 @@ class AppConfig {
   final String grokChatPath;
   final String? googleApiKey; // Optional API Key from env
   final String? xaiApiKey; // Optional API Key from env
+  final String grokChatModel; // Grok Chat Model Name
+  final String grokOcrModel; // Grok OCR Model Name
 
   // Regular constructor (not private)
   AppConfig({
     required this.supabaseUrl,
     required this.supabaseAnonKey,
+    required this.grokChatModel,
+    required this.grokOcrModel, // Add grokOcrModel
     required this.geminiOcrBaseUrl,
     required this.grokOcrBaseUrl,
     required this.geminiOcrPath,
@@ -42,6 +46,8 @@ class AppConfig {
     final geminiChatPath = dotenv.env['GEMINI_CHAT_PATH'];
     final grokOcrPath = dotenv.env['GROK_OCR_PATH'];
     final grokChatPath = dotenv.env['GROK_CHAT_PATH'];
+    final grokOcrModel = dotenv.env['GROK_OCR_MODEL']; // Read Grok OCR Model
+    final grokChatModel = dotenv.env['GROK_CHAT_MODEL']; // Read Grok Chat Model
     final googleKey = dotenv.env['GOOGLE_API_KEY']; // Optional
     final xaiKey = dotenv.env['XAI_API_KEY']; // Optional
 
@@ -69,6 +75,13 @@ class AppConfig {
     if (grokChatPath == null || grokChatPath.isEmpty) {
       throw Exception('GROK_CHAT_PATH not found in .env file');
     }
+    if (grokChatModel == null || grokChatModel.isEmpty) {
+      throw Exception('GROK_CHAT_MODEL not found in .env file');
+    }
+    if (grokOcrModel == null || grokOcrModel.isEmpty) {
+      // Add check for GROK_OCR_MODEL
+      throw Exception('GROK_OCR_MODEL not found in .env file');
+    }
 
     return AppConfig(
       supabaseUrl: url,
@@ -79,6 +92,8 @@ class AppConfig {
       geminiChatPath: geminiChatPath,
       grokOcrPath: grokOcrPath,
       grokChatPath: grokChatPath,
+      grokOcrModel: grokOcrModel, // Pass Grok OCR Model
+      grokChatModel: grokChatModel, // Pass Grok Chat Model
       googleApiKey: googleKey, // Can be null
       xaiApiKey: xaiKey, // Can be null
     );

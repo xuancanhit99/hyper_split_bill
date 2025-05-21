@@ -33,9 +33,9 @@ class OcrDataSourceImpl implements OcrDataSource {
     if (prompt != null && prompt.isNotEmpty) {
       queryParameters['prompt'] = prompt;
     }
-    // Luôn gửi model_name mặc định hoặc model được chỉ định (nếu có)
+    // Luôn gửi model_name mặc định từ AppConfig
     queryParameters['model_name'] =
-        'grok-2-vision-1212'; // Sử dụng model mặc định
+        appConfig.grokOcrModel; // Sử dụng model mặc định từ AppConfig
 
     final uri = Uri.parse('$_ocrBaseUrl$endpoint').replace(
       queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
