@@ -37,32 +37,125 @@ class BillParticipantsSection extends StatefulWidget {
 
 class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   late List<ParticipantEntity> _participants;
-  // late Map<String, TextEditingController> _percentageControllers; // Removed
-  // bool _isDistributing = false; // Removed
   final Random _random = Random(); // For generating unique IDs
+
+  // Define a list of colors for participants
+  final List<Color> _availableColors = [
+    Colors.blue.shade300,
+    Colors.green.shade300,
+    Colors.orange.shade300,
+    Colors.purple.shade300,
+    Colors.red.shade300,
+    Colors.teal.shade300,
+    Colors.pink.shade300,
+    Colors.amber.shade300,
+    Colors.indigo.shade300,
+    Colors.cyan.shade300,
+    Colors.lime.shade300,
+    Colors.brown.shade300,
+  ];
+  int _nextColorIndex = 0;
+
+  Color _getNextColor() {
+    print('[BPS] _getNextColor: current _nextColorIndex = $_nextColorIndex');
+    final color = _availableColors[_nextColorIndex % _availableColors.length];
+    _nextColorIndex++;
+    print(
+        '[BPS] _getNextColor: assigned color $color, new _nextColorIndex = $_nextColorIndex');
+    return color;
+  }
 
   @override
   void initState() {
     super.initState();
-    _initializeState(widget.initialParticipants);
+    print('[BPS] initState: initial _nextColorIndex = $_nextColorIndex');
+    _initializeState(widget.initialParticipants, isInitialCall: true);
+    print(
+        '[BPS] initState: _participants after init: ${_participants.map((p) => '${p.name}:${p.color}').toList()}');
   }
 
   @override
   void didUpdateWidget(covariant BillParticipantsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
+    print('[BPS] didUpdateWidget called.');
+    print(
+        '[BPS] didUpdateWidget: oldParticipants: ${oldWidget.initialParticipants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
+    print(
+        '[BPS] didUpdateWidget: newParticipants from widget: ${widget.initialParticipants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
+    print(
+        '[BPS] didUpdateWidget: current _participants state before potential init: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
+
     if (widget.initialParticipants != oldWidget.initialParticipants ||
-        widget.enabled != oldWidget.enabled) {
-      _initializeState(widget.initialParticipants);
+        widget.enabled != oldWidget.enabled ||
+        widget.billTotalAmount != oldWidget.billTotalAmount ||
+        widget.currencyCode != oldWidget.currencyCode) {
+      print('[BPS] didUpdateWidget: Conditions met, calling _initializeState.');
+      _initializeState(widget.initialParticipants, isInitialCall: false);
+      print(
+          '[BPS] didUpdateWidget: _participants after init: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
+    } else {
+      print(
+          '[BPS] didUpdateWidget: Conditions NOT met, _initializeState not called.');
     }
   }
 
-  void _initializeState(List<ParticipantEntity> initialParticipants) {
-    _participants = initialParticipants.map((p) {
-      return p.id == null || p.id!.isEmpty
-          ? p.copyWith(id: _generateUniqueParticipantId())
-          : p;
+  void _initializeState(List<ParticipantEntity> initialParticipantsFromWidget,
+      {bool isInitialCall = false}) {
+    print('[BPS] _initializeState: Called with isInitialCall = $isInitialCall');
+    print(
+        '[BPS] _initializeState: _nextColorIndex at start = $_nextColorIndex');
+    print(
+        '[BPS] _initializeState: Received initialParticipantsFromWidget: ${initialParticipantsFromWidget.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
+
+    if (isInitialCall) {
+      _nextColorIndex = 0;
+      print(
+          '[BPS] _initializeState: Reset _nextColorIndex to 0 due to isInitialCall=true');
+    }
+
+    Map<String, Color> existingColorsMap = {};
+    // Only try to preserve if not the initial call AND _participants is already initialized and not empty.
+    if (!isInitialCall && mounted && _participants.isNotEmpty) {
+      for (var p_old in _participants) {
+        if (p_old.id != null && p_old.color != null) {
+          existingColorsMap[p_old.id!] = p_old.color!;
+        }
+      }
+      print(
+          '[BPS] _initializeState: Populated existingColorsMap: $existingColorsMap');
+    } else {
+      print(
+          '[BPS] _initializeState: Not populating existingColorsMap (isInitialCall=$isInitialCall or _participants was empty/not mounted)');
+    }
+
+    _participants = initialParticipantsFromWidget.map((p_new) {
+      print(
+          '[BPS] _initializeState mapping: Processing p_new = ${p_new.name}:${p_new.id}:${p_new.color}');
+      final participantId = (p_new.id == null || p_new.id!.isEmpty)
+          ? _generateUniqueParticipantId()
+          : p_new
+              .id!; // Assert non-null as it's either generated or from p_new.id
+
+      Color? determinedColor;
+      if (p_new.color != null) {
+        determinedColor = p_new.color;
+        print(
+            '[BPS] _initializeState mapping: Using p_new.color for ${p_new.name}: $determinedColor');
+      } else if (existingColorsMap.containsKey(participantId)) {
+        determinedColor = existingColorsMap[participantId];
+        print(
+            '[BPS] _initializeState mapping: Using existingColor for ${p_new.name} (ID: $participantId): $determinedColor');
+      } else {
+        determinedColor = _getNextColor();
+        print(
+            '[BPS] _initializeState mapping: Called _getNextColor for ${p_new.name}: $determinedColor');
+      }
+
+      return p_new.copyWith(id: participantId, color: determinedColor);
     }).toList();
-    // No percentage logic needed here anymore
+    print(
+        '[BPS] _initializeState: Final _participants: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
+    print('[BPS] _initializeState: _nextColorIndex at end = $_nextColorIndex');
   }
 
   // Removed _updateControllerTexts, _distributePercentages, _listEquals,
@@ -102,15 +195,22 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                   if (!_participants
                       .any((p) => p.name.toLowerCase() == name.toLowerCase())) {
                     final newParticipantId = _generateUniqueParticipantId();
+                    // _getNextColor() will use and increment the persistent _nextColorIndex
+                    final newParticipantColor = _getNextColor();
+                    print(
+                        '[BPS] _addParticipantDialog: Adding ${name} with ID $newParticipantId and color $newParticipantColor. Current _nextColorIndex: $_nextColorIndex');
                     final newParticipant = ParticipantEntity(
                       id: newParticipantId,
                       name: name,
-                      // No percentage, isPercentageLocked needed
+                      color: newParticipantColor,
                     );
                     setState(() {
                       _participants.add(newParticipant);
                     });
-                    widget.onParticipantsChanged(List.from(_participants));
+                    widget.onParticipantsChanged(List.from(
+                        _participants)); // Inform parent about the change
+                    print(
+                        '[BPS] _addParticipantDialog: _participants after adding: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
                     Navigator.of(dialogContext).pop();
                   } else {
                     Navigator.of(dialogContext).pop(); // Close dialog first
@@ -226,16 +326,22 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   // Builds a row for Edit Mode (Simplified)
   Widget _buildEditModeRow(
       AppLocalizations l10n, ParticipantEntity participant) {
-    final bool canRemove = _participants.length > 1;
+    final bool canRemove = _participants.length >
+        0; // Allow removing even if it's the last one, BillEditPage will validate on save.
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              participant.name,
-              overflow: TextOverflow.ellipsis,
+            child: Chip(
+              label: Text(participant.name,
+                  style: const TextStyle(color: Colors.black87)),
+              backgroundColor: participant.color ?? Colors.grey.shade300,
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
+              labelPadding: const EdgeInsets.only(
+                  left: 4.0, right: 4.0), // Adjust padding for text within chip
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
           const SizedBox(width: 8),
@@ -243,15 +349,17 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             width: 40, // Keep consistent width for alignment
             child: canRemove
                 ? IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                    color: Colors.red[300],
+                    icon: const Icon(Icons.remove_circle_outline, size: 22),
+                    color: Colors.red[400],
                     tooltip:
                         l10n.participantSectionRemoveTooltip(participant.name),
                     onPressed: () => _removeParticipant(participant),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   )
-                : const SizedBox(width: 40),
+                : const SizedBox(
+                    width:
+                        40), // Placeholder if not removable (though now always removable from UI here)
           ),
         ],
       ),
@@ -265,20 +373,23 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       displayAmount =
           '${_formatCurrencyValue(participant.amountOwed)} ${widget.currencyCode ?? ''}';
     }
-    // Removed fallback to percentage calculation as it's no longer part of this widget's direct responsibility
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         children: [
-          // No placeholder needed for checkbox if it's removed from review header
           Expanded(
             flex: 3,
-            child: Text(
-              participant.name,
-              overflow: TextOverflow.ellipsis,
+            child: Chip(
+              label: Text(participant.name,
+                  style: const TextStyle(color: Colors.black87)),
+              backgroundColor: participant.color ?? Colors.grey.shade300,
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
+              labelPadding: const EdgeInsets.only(left: 4.0, right: 4.0),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
+          const SizedBox(width: 8), // Spacer
           Expanded(
             flex: 2,
             child: Text(

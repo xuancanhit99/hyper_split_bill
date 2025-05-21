@@ -1069,8 +1069,10 @@ class _BillEditPageState extends State<BillEditPage> {
                     style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 BillParticipantsSection(
-                  key: ValueKey(
-                      'participants_${_participants.hashCode}_${_isEditingMode}_${_currencyController.text}_${_totalAmountController.text}'), // Key updated
+                  // Use a ValueKey that primarily depends on whether the section is in editing mode.
+                  // This prevents unnecessary state recreation when only the participant list content changes.
+                  // The BillParticipantsSection itself will handle updates to its list via didUpdateWidget.
+                  key: ValueKey('bill_participants_section_${_isEditingMode}'),
                   initialParticipants: _participants,
                   enabled: _isEditingMode,
                   currencyCode: _currencyController.text,

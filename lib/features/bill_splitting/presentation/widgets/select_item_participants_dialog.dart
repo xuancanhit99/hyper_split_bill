@@ -61,7 +61,20 @@ class _SelectItemParticipantsDialogState
             final bool isSelected =
                 _selectedParticipantIds.contains(participantId);
             return CheckboxListTile(
-              title: Text(participant.name),
+              title: Row(
+                children: [
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: participant.color ?? Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                    margin: const EdgeInsets.only(right: 10),
+                  ),
+                  Expanded(child: Text(participant.name)),
+                ],
+              ),
               value: isSelected,
               onChanged: (bool? value) {
                 if (value != null) {

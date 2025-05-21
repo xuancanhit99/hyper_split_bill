@@ -38,12 +38,53 @@ class BillItemWidget extends StatelessWidget {
     // Formatter for quantity display
     final quantityFormat = NumberFormat.decimalPattern();
 
-    String getParticipantNames(List<String> ids) {
-      if (ids.isEmpty) return 'Chưa chọn';
-      return allParticipants
-          .where((p) => ids.contains(p.id))
-          .map((p) => p.name)
-          .join(', ');
+    // String getParticipantNames(List<String> ids) {
+    //   if (ids.isEmpty) return 'Chưa chọn';
+    //   return allParticipants
+    //       .where((p) => ids.contains(p.id))
+    //       .map((p) => p.name)
+    //       .join(', ');
+    // }
+
+    // New method to build participant chips
+    Widget _buildParticipantChips(List<String> participantIds) {
+      if (participantIds.isEmpty) {
+        return Text(
+          'Chưa chọn người tham gia', // TODO: Localize this
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Colors.grey[600]),
+        );
+      }
+
+      List<Widget> chips = participantIds.map((id) {
+        final participant =
+            allParticipants.firstWhere((p) => p.id == id, orElse: () {
+          // This should ideally not happen if data is consistent
+          print("Error: Participant with ID $id not found in allParticipants.");
+          return ParticipantEntity(
+              id: id, name: 'Unknown', color: Colors.grey.shade400);
+        });
+        return Padding(
+          padding: const EdgeInsets.only(right: 4.0, top: 2.0, bottom: 2.0),
+          child: Chip(
+            label: Text(participant.name,
+                style: const TextStyle(fontSize: 11, color: Colors.black87)),
+            backgroundColor: participant.color ?? Colors.grey.shade300,
+            padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 0),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            labelPadding: const EdgeInsets.only(left: 2.0, right: 2.0),
+            visualDensity: VisualDensity.compact,
+          ),
+        );
+      }).toList();
+
+      return Wrap(
+        spacing: 0.0, // Horizontal spacing between chips
+        runSpacing: 0.0, // Vertical spacing between lines of chips
+        children: chips,
+      );
     }
 
     return InkWell(
@@ -136,16 +177,7 @@ class BillItemWidget extends StatelessWidget {
                 const Icon(Icons.people_alt_outlined,
                     size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    getParticipantNames(item.participantIds),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey[600]),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                Expanded(child: _buildParticipantChips(item.participantIds)),
                 // Optional: Add a small edit icon here too for participants if needed
                 // IconButton(
                 //   icon: const Icon(Icons.edit_outlined, size: 16),
