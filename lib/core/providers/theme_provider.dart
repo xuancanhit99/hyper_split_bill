@@ -1,50 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const String _themeModePrefKey = 'theme_mode'; // Reuse key
+
 class ThemeProvider with ChangeNotifier {
-  static const String _themePreferenceKey = 'themeMode';
-  ThemeMode _themeMode = ThemeMode.system;
+  final SharedPreferences sharedPreferences;
+  ThemeMode _themeMode = ThemeMode.system; // Default
 
-  ThemeMode get themeMode => _themeMode;
-
-  ThemeProvider() {
+  ThemeProvider(this.sharedPreferences) {
     _loadThemeMode();
   }
 
-  Future<void> _loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeString = prefs.getString(_themePreferenceKey);
-    if (themeString != null) {
-      _themeMode = ThemeMode.values.firstWhere(
-        (e) => e.toString() == themeString,
-        orElse: () => ThemeMode.system,
-      );
-    }
-    notifyListeners();
+  ThemeMode get themeMode => _themeMode;
+
+  void _loadThemeMode() {
+    final String savedThemeMode =
+        sharedPreferences.getString(_themeModePrefKey) ?? ThemeMode.system.name;
+    _themeMode = ThemeMode.values.firstWhere(
+      (e) => e.name == savedThemeMode,
+      orElse: () => ThemeMode.system,
+    );
+    // No need to notify listeners here as it's called during initialization
   }
 
-  Future<void> _saveThemeMode(ThemeMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themePreferenceKey, mode.toString());
-  }
+  Future<void> setThemeMode(ThemeMode themeMode) async {
+    if (_themeMode == themeMode) return; // No change
 
-  void toggleTheme() {
-    ThemeMode newMode;
-    if (_themeMode == ThemeMode.system) {
-      newMode = ThemeMode.light;
-    } else if (_themeMode == ThemeMode.light) {
-      newMode = ThemeMode.dark;
-    } else {
-      newMode = ThemeMode.system;
-    }
-    setThemeMode(newMode);
-  }
-
-  void setThemeMode(ThemeMode mode) {
-    if (_themeMode != mode) {
-      _themeMode = mode;
-      _saveThemeMode(mode);
-      notifyListeners();
+    _themeMode = themeMode;
+    try {
+      await sharedPreferences.setString(_themeModePrefKey, themeMode.name);
+      notifyListeners(); // Notify listeners about the change
+    } catch (e) {
+      // Handle potential error saving preference
+      debugPrint("Error saving theme mode preference: $e");
+      // Optionally revert _themeMode or handle error differently
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:io'; // Will be needed for File type
 import 'dart:convert'; // Import for jsonDecode
+import 'package:hyper_split_bill/core/constants/app_colors.dart'; // Import AppColors
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Will be needed for Bloc
 import 'package:image_picker/image_picker.dart'; // For picking images
@@ -268,17 +269,13 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
                           // Add the Retry OCR button conditionally first
                           if (_selectedImage != null) ...[
-                            ElevatedButton.icon(
+                            OutlinedButton.icon(
                               icon: const Icon(Icons.refresh),
                               label: Text(l10n
                                   .billUploadPageRetryOcrButtonLabel), // Use l10n
                               onPressed: isLoading ? null : _retryOcr,
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 15),
-                                backgroundColor:
-                                    Colors.orangeAccent, // Optional styling
-                              ),
+                              // style property can be removed to use the default OutlinedButtonTheme
+                              // or customized if needed, e.g., OutlinedButton.styleFrom(...)
                             ),
                             const SizedBox(height: 16),
                           ],

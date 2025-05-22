@@ -1156,11 +1156,10 @@ class _BillEditPageState extends State<BillEditPage> {
                     height: 24), // Add spacing after participants section
                 // Add the new "Chia đều" button here
                 if (_isEditingMode) // Only show button in editing mode
-                  ElevatedButton(
+                  OutlinedButton(
                     onPressed: _splitEqually, // Call the split equally function
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
+                    // style property can be removed to use the default OutlinedButtonTheme
+                    // or customized if needed, e.g., OutlinedButton.styleFrom(...)
                     child: Text(l10n.billEditPageSplitEquallyButtonLabel(
                         _participants
                             .length)), // Localized text for "Chia đều" with participant count

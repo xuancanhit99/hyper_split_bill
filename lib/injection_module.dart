@@ -31,7 +31,8 @@ abstract class RegisterModule {
 
   // Provides the ThemeProvider instance
   @lazySingleton
-  ThemeProvider themeProvider() => ThemeProvider();
+  ThemeProvider themeProvider(SharedPreferences sharedPreferences) =>
+      ThemeProvider(sharedPreferences);
 
   // Provides the SettingsService instance
   @lazySingleton

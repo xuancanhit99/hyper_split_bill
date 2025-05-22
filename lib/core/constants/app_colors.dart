@@ -12,7 +12,8 @@ class AppColors {
   // --- Neutral Colors ---
   static const Color lightBackground =
       Color(0xFFFFFFFF); // Or Color(0xFFF0F2F5) for light gray
-  static const Color darkBackground = Color(0xFF1C1E21); // Example dark bg
+  // static const Color darkBackground = Color(0xFF1C1E21); // Example dark bg
+  static const Color darkBackground = Color(0xFF000000); // Example dark bg
   static const Color darkSurface = Color(0xFF242526); // Example dark surface
 
   // --- Text Colors ---
@@ -26,5 +27,18 @@ class AppColors {
       Color(0xFFB0B3B8); // Gray text on dark bg
 
   // Add other colors as needed (e.g., error, success, warning)
-  static const Color error = Colors.red; // Example
+  static const Color error = Colors.red;
+
+  // static const cPrimaryColor = Color(0xFFFFE400);
+  static const cPrimaryColor = Color(0xFF3cc88b);
+  static const cSecondaryColor = Color(0xFF272727);
+  static const cAccentColor = Color(0xFF001BFF);
+  static const cBlueColor = Color(0xFF1575ee);
+  static const cSkyBlue = Color(0xFF83c8e4);
+  static const cCardBgColor = Color(0xFFF7F6F1);
+  static const cCardDarkColor = Color(0xFF171717);
+  static const cWhiteColor = Color(0xFFFFFFFF);
+  static const cDarkColor = Color(0xFF000000);
+  static const cDarkIconBg = Color(0xFF294675);
+  static const cLightIconBg = Color(0xFFd5e0fd);
 }
