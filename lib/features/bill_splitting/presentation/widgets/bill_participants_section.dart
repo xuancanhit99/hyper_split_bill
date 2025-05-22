@@ -266,18 +266,25 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
         if (_participants.isNotEmpty && !widget.enabled)
           Padding(
             padding: const EdgeInsets.only(
-                bottom: 4.0, right: 40.0), // Align with remove button space
+                left: 8.0,
+                bottom: 4.0,
+                right:
+                    48.0), // Added left 8.0, right is 8.0 (for padding) + 40.0 (for alignment)
             child: Row(
               children: [
                 Expanded(
                     flex: 3,
                     child: Text(l10n.participantSectionHeaderName,
-                        style: Theme.of(context).textTheme.labelSmall)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall)), // Increased font size
                 Expanded(
                     flex: 2,
                     child: Text(l10n.participantSectionHeaderAmount,
                         textAlign: TextAlign.right,
-                        style: Theme.of(context).textTheme.labelSmall)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall)), // Increased font size
               ],
             ),
           ),
@@ -297,17 +304,22 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             ),
           )
         else
-          ListView.builder(
-            shrinkWrap: true, // Important for Column/ListView nesting
-            physics:
-                const NeverScrollableScrollPhysics(), // Disable scrolling within the list
-            itemCount: _participants.length,
-            itemBuilder: (context, index) {
-              final participant = _participants[index];
-              return widget.enabled
-                  ? _buildEditModeRow(l10n, participant)
-                  : _buildReviewModeRow(participant);
-            },
+          Padding(
+            // Added Padding widget
+            padding: const EdgeInsets.symmetric(
+                horizontal: 8.0), // Added horizontal padding
+            child: ListView.builder(
+              shrinkWrap: true, // Important for Column/ListView nesting
+              physics:
+                  const NeverScrollableScrollPhysics(), // Disable scrolling within the list
+              itemCount: _participants.length,
+              itemBuilder: (context, index) {
+                final participant = _participants[index];
+                return widget.enabled
+                    ? _buildEditModeRow(l10n, participant)
+                    : _buildReviewModeRow(participant);
+              },
+            ),
           ),
         const SizedBox(height: 8),
         if (widget.enabled)
@@ -337,8 +349,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             child: Row(
               children: [
                 Container(
-                  width: 12,
-                  height: 12,
+                  width: 22, // Increased size
+                  height: 22, // Increased size
                   decoration: BoxDecoration(
                     color: participant.color ?? Colors.grey.shade300,
                     shape: BoxShape.circle,
@@ -348,7 +360,9 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                 Expanded(
                   child: Text(
                     participant.name,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontSize: 16), // Use theme color
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -394,8 +408,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             child: Row(
               children: [
                 Container(
-                  width: 12,
-                  height: 12,
+                  width: 16, // Increased size
+                  height: 16, // Increased size
                   decoration: BoxDecoration(
                     color: participant.color ?? Colors.grey.shade300,
                     shape: BoxShape.circle,
@@ -405,7 +419,9 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                 Expanded(
                   child: Text(
                     participant.name,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontSize: 16), // Use theme color
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -88,8 +88,10 @@ class BillItemWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(participant.name,
-                    style:
-                        const TextStyle(fontSize: 11, color: Colors.black87)),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors
+                            .white)), // Increased font size and changed color
                 if (weight > 1) ...[
                   const SizedBox(width: 2),
                   Container(
@@ -171,7 +173,9 @@ class BillItemWidget extends StatelessWidget {
                   flex: 4,
                   child: Text(
                     item.description,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall, // Reduced font size
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
