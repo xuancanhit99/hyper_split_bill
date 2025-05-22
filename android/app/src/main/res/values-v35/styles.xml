@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Ucrop.CropTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">#FFFFFF</item> <!-- Hoặc một màu nền bạn muốn -->
+        <item name="android:paddingTop">6dp</item>
+    </style>
+</resources>

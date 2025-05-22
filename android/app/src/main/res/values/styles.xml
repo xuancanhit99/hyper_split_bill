@@ -19,4 +19,10 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- Theme for UCropActivity -->
+    <style name="Ucrop.CropTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Bạn có thể thêm các thuộc tính chung ở đây nếu cần -->
+        <!-- Ví dụ: <item name="colorPrimary">@color/your_primary_color</item> -->
+    </style>
 </resources>
