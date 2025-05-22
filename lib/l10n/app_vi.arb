@@ -157,8 +157,7 @@
   "participantSectionHeaderAmount": "Số tiền",
   "participantSectionEmptyListEdit": "Chưa có người tham gia nào được thêm.",
   "participantSectionEmptyListReview": "Không có người tham gia.",
-  "participantSectionAddButtonLabel": "Thêm người tham gia",
-  "participantSectionRemoveTooltip": "Xóa {name}",
+  "participantSectionAddButtonLabel": "Thêm người tham gia",  "participantSectionRemoveTooltip": "Xóa {name}",
   "@participantSectionRemoveTooltip": {
     "description": "Tooltip cho nút xóa người tham gia",
     "placeholders": {
@@ -167,6 +166,20 @@
         "example": "Bob"
       }
     }
+  },
+  "participantSectionEditTooltip": "Sửa {name}",
+  "@participantSectionEditTooltip": {
+    "description": "Tooltip cho nút chỉnh sửa người tham gia",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bob"
+      }
+    }
+  },
+  "dialogEditParticipantTitle": "Chỉnh sửa người tham gia",
+  "@dialogEditParticipantTitle": {
+    "description": "Tiêu đề hộp thoại để chỉnh sửa tên người tham gia"
   },
   "currencyDisplayFormat": "{code} - {name}",
   "@currencyDisplayFormat": {

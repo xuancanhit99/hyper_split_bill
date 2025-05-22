@@ -277,6 +277,65 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       },
     );
   }
+  // Method to edit participant name
+  Future<void> _editParticipantDialog(ParticipantEntity participant) async {
+    if (participant.id == null) return;
+    
+    final nameController = TextEditingController(text: participant.name);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+              AppLocalizations.of(context)!.dialogEditParticipantTitle),
+          content: TextField(
+            controller: nameController,
+            autofocus: true,
+            decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!
+                    .participantSectionAddDialogHint),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(AppLocalizations.of(context)!.buttonCancel),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: Text(AppLocalizations.of(context)!.buttonSave),
+              onPressed: () {
+                final name = nameController.text.trim();
+                if (name.isNotEmpty) {
+                  // Check if another participant already has this name (excluding current participant)
+                  if (!_participants
+                      .any((p) => p.id != participant.id && p.name.toLowerCase() == name.toLowerCase())) {
+                    
+                    setState(() {
+                      // Find index of participant to update
+                      final index = _participants.indexWhere((p) => p.id == participant.id);
+                      if (index != -1) {
+                        // Create a new participant with updated name but keep other properties
+                        _participants[index] = _participants[index].copyWith(name: name);
+                      }
+                    });
+                    widget.onParticipantsChanged(List.from(_participants));
+                    Navigator.of(dialogContext).pop();
+                  } else {
+                    Navigator.of(dialogContext).pop(); // Close dialog first
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(AppLocalizations.of(context)!
+                              .participantSectionExistsSnackbar(name))),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _removeParticipant(ParticipantEntity participant) {
     if (_participants.length <= 1) {
@@ -383,7 +442,6 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       ],
     );
   }
-
   // Builds a row for Edit Mode (Simplified)
   Widget _buildEditModeRow(
       AppLocalizations l10n, ParticipantEntity participant) {
@@ -419,6 +477,16 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
             ),
           ),
           const SizedBox(width: 8),
+          // Edit Icon
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            color: Colors.blue[400],
+            tooltip: l10n.participantSectionEditTooltip(participant.name),
+            onPressed: () => _editParticipantDialog(participant),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          // Delete Icon
           SizedBox(
             width: 40, // Keep consistent width for alignment
             child: canRemove

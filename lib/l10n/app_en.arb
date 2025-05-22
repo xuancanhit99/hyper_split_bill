@@ -156,8 +156,7 @@
   "participantSectionHeaderAmount": "Amount",
   "participantSectionEmptyListEdit": "No participants added yet.",
   "participantSectionEmptyListReview": "No participants.",
-  "participantSectionAddButtonLabel": "Add Participant",
-  "participantSectionRemoveTooltip": "Remove {name}",
+  "participantSectionAddButtonLabel": "Add Participant",  "participantSectionRemoveTooltip": "Remove {name}",
   "@participantSectionRemoveTooltip": {
     "description": "Tooltip for the remove participant button",
     "placeholders": {
@@ -166,6 +165,20 @@
         "example": "Bob"
       }
     }
+  },
+  "participantSectionEditTooltip": "Edit {name}",
+  "@participantSectionEditTooltip": {
+    "description": "Tooltip for the edit participant button",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bob"
+      }
+    }
+  },
+  "dialogEditParticipantTitle": "Edit Participant",
+  "@dialogEditParticipantTitle": {
+    "description": "Title for dialog to edit a participant's name"
   },
   "currencyDisplayFormat": "{code} - {name}",
   "@currencyDisplayFormat": {

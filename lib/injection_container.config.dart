@@ -69,10 +69,10 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i828.AppConfig>(() => _i828.AppConfig.fromEnv());
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i519.Client>(() => registerModule.httpClient);
-    gh.lazySingleton<_i622.ThemeProvider>(
-        () => registerModule.themeProvider(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i766.LocaleProvider>(
         () => registerModule.localeProvider(gh<_i460.SharedPreferences>()));
+    gh.lazySingleton<_i622.ThemeProvider>(
+        () => registerModule.themeProvider(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i12.SettingsService>(
         () => registerModule.settingsService(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i232.ChatDataSource>(() => _i103.ChatDataSourceImpl(

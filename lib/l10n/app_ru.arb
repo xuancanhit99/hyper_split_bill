@@ -156,8 +156,7 @@
   "participantSectionHeaderAmount": "Сумма",
   "participantSectionEmptyListEdit": "Участники еще не добавлены.",
   "participantSectionEmptyListReview": "Нет участников.",
-  "participantSectionAddButtonLabel": "Добавить участника",
-  "participantSectionRemoveTooltip": "Удалить {name}",
+  "participantSectionAddButtonLabel": "Добавить участника",  "participantSectionRemoveTooltip": "Удалить {name}",
   "@participantSectionRemoveTooltip": {
     "description": "Подсказка для кнопки удаления участника",
     "placeholders": {
@@ -166,6 +165,20 @@
         "example": "Боб"
       }
     }
+  },
+  "participantSectionEditTooltip": "Изменить {name}",
+  "@participantSectionEditTooltip": {
+    "description": "Подсказка для кнопки редактирования участника",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Боб"
+      }
+    }
+  },
+  "dialogEditParticipantTitle": "Изменить участника",
+  "@dialogEditParticipantTitle": {
+    "description": "Заголовок диалога для редактирования имени участника"
   },
   "currencyDisplayFormat": "{code} - {name}",
   "@currencyDisplayFormat": {
