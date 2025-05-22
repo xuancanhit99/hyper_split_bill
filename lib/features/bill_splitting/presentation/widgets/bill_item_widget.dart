@@ -3,6 +3,7 @@ import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_it
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart'; // Import ParticipantEntity
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_participant.dart'; // Import BillItemParticipant
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/select_item_participants_dialog.dart'; // Import dialog
+import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/split_by_percentage_dialog.dart'; // Import new dialog
 import 'package:intl/intl.dart'; // For number formatting
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
@@ -208,18 +209,45 @@ class BillItemWidget extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  iconSize: 20.0,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: AppLocalizations.of(context)!
-                      .billItemWidgetOptionsTooltip,
-                  onPressed:
-                      onEdit, // This can open a menu for "Edit Details", "Delete", etc.
-                  // Or, we can remove this if the main tap is for selecting participants
-                  // and editing is done via another way. For now, let's keep it.
-                ),
+                if (isEditingEnabled) // Only show menu if editing is enabled
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    iconSize: 20.0,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: AppLocalizations.of(context)!
+                        .billItemWidgetOptionsTooltip,
+                    onSelected: (String value) {
+                      if (value == 'edit_details') {
+                        onEdit();
+                      } else if (value == 'split_by_percentage') {
+                        _showSplitByPercentageDialog(context);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                      PopupMenuItem<String>(
+                        value: 'edit_details',
+                        child: Text(AppLocalizations.of(context)!
+                            .billItemWidgetEditDetails),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'split_by_percentage',
+                        child: Text(AppLocalizations.of(context)!
+                            .billItemWidgetSplitByPercentage),
+                      ),
+                      // TODO: Add "Delete" option if needed, handling its logic
+                    ],
+                  )
+                else // Show a disabled or placeholder icon if not editing
+                  IconButton(
+                    icon: const Icon(Icons.more_vert,
+                        color: Colors.transparent), // Invisible
+                    iconSize: 20.0,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: null, // Disabled
+                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -242,6 +270,56 @@ class BillItemWidget extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSplitByPercentageDialog(BuildContext context) {
+    // First, ensure we have a list of ParticipantEntity to pass to the dialog.
+    // The `allParticipants` list is already available in this widget.
+    // We need to map the current item's participant IDs or detailed participants
+    // to actual ParticipantEntity objects if the dialog expects full entities.
+    // For now, let's assume the dialog can work with `allParticipants` and
+    // will return a map of `ParticipantEntity` to `double` (percentage).
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return SplitByPercentageDialog(
+          participants: allParticipants, // Pass all available participants
+          onSplit: (Map<ParticipantEntity, double> percentages) {
+            // Convert the percentages map to List<BillItemParticipant>
+            // The weight will represent the percentage.
+            final List<BillItemParticipant> newParticipantsWithPercentage = [];
+            final List<String> newParticipantIds = [];
+
+            percentages.forEach((participant, percentage) {
+              if (percentage > 0 && participant.id != null) {
+                // Only include if percentage is assigned and id is not null
+                newParticipantsWithPercentage.add(BillItemParticipant(
+                  participantId: participant.id!, // Use null-aware operator
+                  weight: percentage
+                      .round(), // Store percentage as an integer weight
+                ));
+                newParticipantIds
+                    .add(participant.id!); // Use null-aware operator
+              }
+            });
+
+            // Call the existing callback to update the item's participants
+            // This will propagate the change up to the BLoC or state management
+            onParticipantsSelected(
+                newParticipantIds, newParticipantsWithPercentage);
+
+            // Optionally, show a confirmation
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!
+                    .billItemWidgetAppliedPercentageSplit),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

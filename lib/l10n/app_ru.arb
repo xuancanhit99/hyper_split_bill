@@ -374,5 +374,28 @@
   "dialogParticipantsHeaderName": "Участник",
   "dialogParticipantsHeaderWeight": "Соотношение",
   "billItemWidgetOptionsTooltip": "Опции позиции",
+  "billItemWidgetEditDetails": "Редактировать детали",
+  "billItemWidgetSplitByPercentage": "Разделить по процентам",
+  "billItemWidgetAppliedPercentageSplit": "Разделение по процентам применено.",
+  "splitByPercentageDialogErrorNegativePercentage": "Процент для {participantName} не может быть отрицательным.",
+  "@splitByPercentageDialogErrorNegativePercentage": {
+    "description": "Сообщение об ошибке при вводе отрицательного процента для участника.",
+    "placeholders": {
+      "participantName": {
+        "type": "String",
+        "example": "Алиса"
+      }
+    }
+  },
+  "splitByPercentageDialogErrorTotalNot100": "Общая сумма процентов должна быть 100%. Текущая сумма: {currentTotal}%.",
+  "@splitByPercentageDialogErrorTotalNot100": {
+    "description": "Сообщение об ошибке, когда общая сумма процентов не равна 100%.",
+    "placeholders": {
+      "currentTotal": {
+        "type": "String",
+        "example": "99.50"
+      }
+    }
+  },
   "symbolPercentage": "%"
 }

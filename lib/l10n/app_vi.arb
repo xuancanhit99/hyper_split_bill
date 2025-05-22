@@ -375,5 +375,28 @@
   "dialogParticipantsHeaderName": "Người tham gia",
   "dialogParticipantsHeaderWeight": "Tỉ lệ",
   "billItemWidgetOptionsTooltip": "Tùy chọn món",
+  "billItemWidgetEditDetails": "Sửa chi tiết",
+  "billItemWidgetSplitByPercentage": "Chia theo phần trăm",
+  "billItemWidgetAppliedPercentageSplit": "Đã áp dụng chia theo phần trăm.",
+  "splitByPercentageDialogErrorNegativePercentage": "Phần trăm của {participantName} không thể âm.",
+  "@splitByPercentageDialogErrorNegativePercentage": {
+    "description": "Thông báo lỗi khi nhập phần trăm âm cho người tham gia.",
+    "placeholders": {
+      "participantName": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "splitByPercentageDialogErrorTotalNot100": "Tổng phần trăm phải là 100%. Tổng hiện tại: {currentTotal}%.",
+  "@splitByPercentageDialogErrorTotalNot100": {
+    "description": "Thông báo lỗi khi tổng phần trăm không phải là 100%.",
+    "placeholders": {
+      "currentTotal": {
+        "type": "String",
+        "example": "99.50"
+      }
+    }
+  },
   "symbolPercentage": "%"
 }

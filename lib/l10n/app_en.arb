@@ -374,5 +374,28 @@
   "dialogParticipantsHeaderName": "Participant",
   "dialogParticipantsHeaderWeight": "Ratio",
   "billItemWidgetOptionsTooltip": "Item options",
+  "billItemWidgetEditDetails": "Edit Details",
+  "billItemWidgetSplitByPercentage": "Split by Percentage",
+  "billItemWidgetAppliedPercentageSplit": "Percentage split applied.",
+  "splitByPercentageDialogErrorNegativePercentage": "Percentage for {participantName} cannot be negative.",
+  "@splitByPercentageDialogErrorNegativePercentage": {
+    "description": "Error message when a negative percentage is entered for a participant.",
+    "placeholders": {
+      "participantName": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "splitByPercentageDialogErrorTotalNot100": "Total percentage must be 100%. Current total: {currentTotal}%.",
+  "@splitByPercentageDialogErrorTotalNot100": {
+    "description": "Error message when the total percentage is not 100%.",
+    "placeholders": {
+      "currentTotal": {
+        "type": "String",
+        "example": "99.50"
+      }
+    }
+  },
   "symbolPercentage": "%"
 }
