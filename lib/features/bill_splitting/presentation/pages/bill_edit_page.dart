@@ -19,6 +19,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generate
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_dialog_content.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_bill_info_section.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/json_expansion_tile.dart';
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_participant.dart'; // Import BillItemParticipant
 
 // Enum for input type
 enum AmountType { percentage, fixed }
@@ -509,6 +510,50 @@ class _BillEditPageState extends State<BillEditPage> {
 
     print("Internal save complete. Dispatching save event...");
     _dispatchSaveEvent(currentBillData);
+  }
+
+  // --- Split Equally Logic ---
+  void _splitEqually() {
+    if (_participants.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(AppLocalizations.of(context)!.billEditPageErrorNoParticipants),
+      ));
+      return;
+    }
+
+    // Filter participants to include only those with non-null IDs
+    final validParticipants = _participants.where((p) => p.id != null).toList();
+
+    if (validParticipants.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppLocalizations.of(context)!
+            .billEditPageErrorNoParticipants), // Re-use the no participants message
+      ));
+      return;
+    }
+
+    // Create updated items with all valid participants assigned with weight 1
+    final updatedItems = _items.map((item) {
+      final itemParticipants = validParticipants
+          .map((p) => BillItemParticipant(
+              participantId: p.id!, weight: 1)) // Use non-null id!
+          .toList();
+      final participantIds =
+          validParticipants.map((p) => p.id!).toList(); // Use non-null id!
+
+      return item.copyWith(
+        participants: itemParticipants,
+        participantIds: participantIds,
+      );
+    }).toList();
+
+    setState(() {
+      _items = updatedItems;
+    });
+
+    // Immediately trigger save to calculate and show result
+    _saveBillInternal();
   }
 
   void _toggleEditMode() {
@@ -1109,6 +1154,18 @@ class _BillEditPageState extends State<BillEditPage> {
                 ),
                 const SizedBox(
                     height: 24), // Add spacing after participants section
+                // Add the new "Chia đều" button here
+                if (_isEditingMode) // Only show button in editing mode
+                  ElevatedButton(
+                    onPressed: _splitEqually, // Call the split equally function
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: Text(l10n.billEditPageSplitEquallyButtonLabel(
+                        _participants
+                            .length)), // Localized text for "Chia đều" with participant count
+                  ),
+                const SizedBox(height: 16), // Add spacing between buttons
                 // Add the new "Kết quả" button here
                 if (_isEditingMode) // Only show button in editing mode
                   ElevatedButton(
