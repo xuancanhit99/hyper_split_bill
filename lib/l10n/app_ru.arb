@@ -7,6 +7,10 @@
   "billEditPageSaveTooltip": "Сохранить данные счета",
   "billEditPageEditTooltip": "Редактировать данные счета",
   "billEditPageResultButtonLabel": "Результат",
+  "billEditPageEditButtonLabel": "Редактировать счет",
+  "@billEditPageEditButtonLabel": {
+    "description": "Надпись на кнопке для возврата к редактированию счета из режима просмотра"
+  },
   "billEditPageParticipantsSectionTitle": "Участники:",
   "billEditPageSplitEquallyButtonLabel": "Разделить поровну между {count}",
   "@billEditPageSplitEquallyButtonLabel": {
@@ -345,9 +349,9 @@
   "authPageUnexpectedError": "Произошла непредвиденная ошибка.",
   "authPageTermsLink": "Условия",
   "authPagePrivacyLink": "Конфиденциальность",
+"editBillInfoSectionTotalAmountPrefix": "Общая сумма",
+"editBillInfoSectionTotalAmountLabel": "Общая сумма",
 
-  "editBillInfoSectionTotalAmountPrefix": "Общая сумма:",
-  "editBillInfoSectionTotalAmountLabel": "Общая сумма",
 
   "editBillInfoSectionDescriptionLabel": "Описание / Магазин",
   "editBillInfoSectionDateLabel": "Дата",

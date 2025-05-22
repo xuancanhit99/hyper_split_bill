@@ -128,17 +128,52 @@ class EditBillInfoSection extends StatelessWidget {
           onTap: onSelectDate,
         ),
         const Divider(height: 1),
-        EditableRow(
-          isEditingMode: isEditingMode,
-          textPrefix: l10n.editBillInfoSectionTotalAmountPrefix, // Localized
-          label: l10n.editBillInfoSectionTotalAmountLabel, // Localized
-          // Format the parsed value for display
-          value: formatCurrencyValue(
-              _parseNumFromController(totalAmountController)),
-          isBold: true,
-          onTap: onEditTotalAmount,
+        // Custom Row for Total Amount to align value with BillItemWidget Total Price column
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 0),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 7, // Align label with Description + Qty + Unit Price
+                child: Text(
+                  l10n.editBillInfoSectionTotalAmountPrefix, // Localized label
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold, // Keep it bold
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary, // Style prefix like icon/label
+                      ),
+                ),
+              ),
+              Expanded(
+                flex: 2, // Align value with Total Price column
+                child: InkWell(
+                  // Make the value area tappable
+                  onTap: isEditingMode ? onEditTotalAmount : null,
+                  child: Align(
+                    alignment:
+                        Alignment.centerRight, // Align value to the right
+                    child: Text(
+                      formatCurrencyValue(_parseNumFromController(
+                          totalAmountController)), // Formatted value
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold, // Keep it bold
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+              // Add placeholder for the popup menu button alignment
+              const SizedBox(
+                  width:
+                      40), // Approximate width of the PopupMenuButton + padding
+            ],
+          ),
         ),
-        const Divider(height: 1),
+        // Only show this divider if in editing mode OR if any optional fields below it are shown
+        if (isEditingMode || showTax || showTip || showDiscount || showCurrency)
+          const Divider(height: 1),
 
         // --- Conditionally Display Optional Fields ---
         if (showTax) ...[

@@ -7,6 +7,10 @@
   "billEditPageSaveTooltip": "Save Bill Data",
   "billEditPageEditTooltip": "Edit Bill Data",
   "billEditPageResultButtonLabel": "Result",
+  "billEditPageEditButtonLabel": "Edit Bill",
+  "@billEditPageEditButtonLabel": {
+    "description": "Label for the button to go back to editing the bill from review mode"
+  },
   "billEditPageParticipantsSectionTitle": "Participants:",
   "billEditPageSplitEquallyButtonLabel": "Split Equally Among {count}",
   "@billEditPageSplitEquallyButtonLabel": {
@@ -345,9 +349,9 @@
   "authPageUnexpectedError": "An unexpected error occurred.",
   "authPageTermsLink": "Terms",
   "authPagePrivacyLink": "Privacy",
+"editBillInfoSectionTotalAmountPrefix": "Total Amount",
+"editBillInfoSectionTotalAmountLabel": "Total Amount",
 
-  "editBillInfoSectionTotalAmountPrefix": "Total Amount:",
-  "editBillInfoSectionTotalAmountLabel": "Total Amount",
 
   "editBillInfoSectionDescriptionLabel": "Description / Store",
   "editBillInfoSectionDateLabel": "Date",

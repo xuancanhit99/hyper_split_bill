@@ -8,6 +8,10 @@
   "billEditPageSaveTooltip": "Lưu dữ liệu hóa đơn",
   "billEditPageEditTooltip": "Chỉnh sửa dữ liệu hóa đơn",
   "billEditPageResultButtonLabel": "Kết quả",
+  "billEditPageEditButtonLabel": "Sửa hoá đơn",
+  "@billEditPageEditButtonLabel": {
+    "description": "Nhãn cho nút để quay lại chỉnh sửa hoá đơn từ chế độ xem lại"
+  },
   "billEditPageParticipantsSectionTitle": "Người tham gia:",
   "billEditPageSplitEquallyButtonLabel": "Chia đều cho {count}",
   "@billEditPageSplitEquallyButtonLabel": {
@@ -346,9 +350,9 @@
   "authPageUnexpectedError": "Đã xảy ra lỗi không mong đợi.",
   "authPageTermsLink": "Điều khoản",
   "authPagePrivacyLink": "Bảo mật",
+"editBillInfoSectionTotalAmountPrefix": "Tổng số tiền",
+"editBillInfoSectionTotalAmountLabel": "Tổng số tiền",
 
-  "editBillInfoSectionTotalAmountPrefix": "Tổng số tiền:",
-  "editBillInfoSectionTotalAmountLabel": "Tổng số tiền",
 
   "editBillInfoSectionDescriptionLabel": "Mô tả / Cửa hàng",
   "editBillInfoSectionDateLabel": "Ngày",

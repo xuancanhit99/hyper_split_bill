@@ -1154,31 +1154,36 @@ class _BillEditPageState extends State<BillEditPage> {
                 ),
                 const SizedBox(
                     height: 24), // Add spacing after participants section
-                // Add the new "Chia đều" button here
-                if (_isEditingMode) // Only show button in editing mode
+                // Action Buttons Section
+                if (_isEditingMode) ...[
                   OutlinedButton(
-                    onPressed: _splitEqually, // Call the split equally function
-                    // style property can be removed to use the default OutlinedButtonTheme
-                    // or customized if needed, e.g., OutlinedButton.styleFrom(...)
+                    onPressed: _splitEqually,
                     child: Text(l10n.billEditPageSplitEquallyButtonLabel(
-                        _participants
-                            .length)), // Localized text for "Chia đều" with participant count
+                        _participants.length)),
                   ),
-                const SizedBox(height: 16), // Add spacing between buttons
-                // Add the new "Kết quả" button here
-                if (_isEditingMode) // Only show button in editing mode
+                  const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: _saveBillInternal, // Call the save function
+                    onPressed: _saveBillInternal,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: Text(l10n.billEditPageResultButtonLabel),
+                  ),
+                ] else ...[
+                  // Show Edit button when in review mode
+                  ElevatedButton(
+                    onPressed: _toggleEditMode, // Call toggle edit mode
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                     child: Text(l10n
-                        .billEditPageResultButtonLabel), // Localized text for "Kết quả"
+                        .billEditPageEditButtonLabel), // Use a new localization string or existing one
                   ),
-                const SizedBox(height: 24), // Keep this SizedBox
-                const Divider(), // Keep this Divider
+                ],
+                const SizedBox(height: 24),
+                const Divider(),
 
-                // --- Final Bill JSON Data (Show only when not editing) ---
+                // --- Final Bill JSON Data (Show only when not editing and JSON exists) ---
                 if (!_isEditingMode && _finalBillJsonString != null) ...[
                   JsonExpansionTile(
                     title: l10n.billEditPageFinalJsonTileTitle,

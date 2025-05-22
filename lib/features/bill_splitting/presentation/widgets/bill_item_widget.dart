@@ -176,7 +176,9 @@ class BillItemWidget extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall, // Reduced font size
-                    overflow: TextOverflow.ellipsis,
+                    overflow:
+                        TextOverflow.ellipsis, // Keep ellipsis for > 2 lines
+                    maxLines: 2, // Allow up to 2 lines
                   ),
                 ),
                 // Conditionally show Qty
