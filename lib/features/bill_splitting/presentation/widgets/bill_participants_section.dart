@@ -503,15 +503,38 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
 
     // Using a small epsilon for floating point comparison
     if ((billTotal - totalOwedByParticipants).abs() > 0.01 && billTotal > 0) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-        child: Text(
-          l10n.billEditPageWarningUnallocatedCost(
-            _formatCurrencyValue(totalOwedByParticipants),
-            _formatCurrencyValue(billTotal),
+      return Card(
+        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+        elevation: 0, // Tùy chọn: loại bỏ bóng đổ nếu muốn giao diện phẳng hơn
+        margin: const EdgeInsets.only(
+            bottom: 8.0, top: 4.0, left: 8.0, right: 8.0), // Thêm margin
+        child: Padding(
+          padding: const EdgeInsets.all(12.0), // Thêm padding bên trong card
+          child: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Theme.of(context).colorScheme.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.billEditPageWarningUnallocatedCost(
+                    _formatCurrencyValue(totalOwedByParticipants),
+                    _formatCurrencyValue(billTotal),
+                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        // Văn bản hơi lớn hơn
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onErrorContainer, // Đảm bảo văn bản hiển thị rõ trên nền errorContainer
+                      ),
+                  textAlign: TextAlign.left, // Căn trái văn bản
+                ),
+              ),
+            ],
           ),
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
-          textAlign: TextAlign.center,
         ),
       );
     }

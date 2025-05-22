@@ -361,19 +361,46 @@ class EditBillInfoSection extends StatelessWidget {
               ),
               // Warning message for total mismatch
               if (isUpdateButtonEnabled) // Show warning if button is enabled (meaning mismatch exists)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    l10n.totalMismatchWarning(
-                      formatCurrencyValue(calculatedTotalAmount),
-                      formatCurrencyValue(
-                          _parseNumFromController(totalAmountController)),
-                    ), // Use localized string for warning
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .error, // Use error color for warning
+                Card(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .errorContainer
+                      .withOpacity(0.3),
+                  elevation:
+                      0, // Optional: remove shadow if you prefer a flatter look
+                  margin: const EdgeInsets.only(
+                      top: 8.0, bottom: 4.0), // Add some margin
+                  child: Padding(
+                    padding: const EdgeInsets.all(
+                        12.0), // Add padding inside the card
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Theme.of(context).colorScheme.error,
+                          size: 20,
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.totalMismatchWarning(
+                              formatCurrencyValue(calculatedTotalAmount),
+                              formatCurrencyValue(_parseNumFromController(
+                                  totalAmountController)),
+                            ), // Use localized string for warning
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  // Slightly larger text
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer, // Ensure text is visible on errorContainer
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
             ],
