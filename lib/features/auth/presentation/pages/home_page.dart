@@ -5,6 +5,8 @@ import 'package:hyper_split_bill/core/router/app_router.dart'; // Added import f
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:hyper_split_bill/features/settings/presentation/pages/settings_page.dart'; // Import SettingsPage
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
+import 'package:provider/provider.dart'; // Import Provider
+import 'package:hyper_split_bill/core/providers/theme_provider.dart'; // Import ThemeProvider
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -14,6 +16,8 @@ class HomePage extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!; // Get localizations instance
     // Get user info from AuthBloc state safely
     final authState = context.watch<AuthBloc>().state;
+    // Get ThemeProvider instance
+    final themeProvider = Provider.of<ThemeProvider>(context);
     // Use the default "Welcome!" text from l10n
     final String welcomeText = l10n.homePageWelcomeDefault;
     String? userEmail; // Make email nullable
@@ -23,6 +27,14 @@ class HomePage extends StatelessWidget {
       userEmail = authState.user.email; // Get email, might be null
     } else {
       userEmail = null; // No email if not authenticated
+    }
+
+    // Determine the correct icon based on the current theme mode
+    IconData themeIcon = Icons.brightness_auto; // Default to system
+    if (themeProvider.themeMode == ThemeMode.light) {
+      themeIcon = Icons.wb_sunny_outlined; // Sun icon for light mode
+    } else if (themeProvider.themeMode == ThemeMode.dark) {
+      themeIcon = Icons.nightlight_round; // Moon icon for dark mode
     }
 
     return Scaffold(
@@ -35,6 +47,15 @@ class HomePage extends StatelessWidget {
             tooltip: l10n.homePageSettingsTooltip,
             onPressed: () {
               context.push(SettingsPage.routeName);
+            },
+          ),
+          // Theme Toggle Icon (placed between Settings and Logout)
+          IconButton(
+            icon: Icon(themeIcon),
+            tooltip:
+                l10n.homePageToggleThemeTooltip, // Add localization for tooltip
+            onPressed: () {
+              themeProvider.toggleTheme(); // Toggle the theme
             },
           ),
           // Only show logout if authenticated

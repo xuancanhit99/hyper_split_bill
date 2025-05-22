@@ -310,6 +310,7 @@
   "homePageTitle": "Главная страница",
   "homePageSettingsTooltip": "Настройки",
   "homePageSignOutTooltip": "Выйти",
+  "homePageToggleThemeTooltip": "Переключить тему",
   "homePageSignOutDialogTitle": "Подтвердите выход",
   "homePageSignOutDialogContent": "Вы уверены, что хотите выйти?",
   "homePageSignOutDialogConfirmButton": "Выйти",

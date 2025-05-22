@@ -18,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as _i454;
 import 'core/config/app_config.dart' as _i828;
 import 'core/config/settings_service.dart' as _i12;
 import 'core/providers/locale_provider.dart' as _i766;
+import 'core/providers/theme_provider.dart' as _i622;
 import 'features/auth/data/datasources/auth_remote_data_source.dart' as _i767;
 import 'features/auth/data/repositories/auth_repository_impl.dart' as _i111;
 import 'features/auth/domain/repositories/auth_repository.dart' as _i1015;
@@ -68,6 +69,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i828.AppConfig>(() => _i828.AppConfig.fromEnv());
     gh.lazySingleton<_i454.SupabaseClient>(() => registerModule.supabaseClient);
     gh.lazySingleton<_i519.Client>(() => registerModule.httpClient);
+    gh.lazySingleton<_i622.ThemeProvider>(() => registerModule.themeProvider());
     gh.lazySingleton<_i766.LocaleProvider>(
         () => registerModule.localeProvider(gh<_i460.SharedPreferences>()));
     gh.lazySingleton<_i12.SettingsService>(

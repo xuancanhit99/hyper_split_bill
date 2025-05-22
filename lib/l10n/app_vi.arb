@@ -311,6 +311,7 @@
   "homePageTitle": "Trang chủ",
   "homePageSettingsTooltip": "Cài đặt",
   "homePageSignOutTooltip": "Đăng xuất",
+  "homePageToggleThemeTooltip": "Chuyển đổi giao diện",
   "homePageSignOutDialogTitle": "Xác nhận đăng xuất",
   "homePageSignOutDialogContent": "Bạn có chắc chắn muốn đăng xuất không?",
   "homePageSignOutDialogConfirmButton": "Đăng xuất",

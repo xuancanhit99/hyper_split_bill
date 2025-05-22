@@ -310,6 +310,7 @@
   "homePageTitle": "Home Page",
   "homePageSettingsTooltip": "Settings",
   "homePageSignOutTooltip": "Sign Out",
+  "homePageToggleThemeTooltip": "Toggle Theme",
   "homePageSignOutDialogTitle": "Confirm Sign Out",
   "homePageSignOutDialogContent": "Are you sure you want to sign out?",
   "homePageSignOutDialogConfirmButton": "Sign Out",
