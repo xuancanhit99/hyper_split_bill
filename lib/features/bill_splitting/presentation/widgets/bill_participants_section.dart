@@ -56,15 +56,6 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
   ];
   int _nextColorIndex = 0;
 
-  Color _getNextColor() {
-    print('[BPS] _getNextColor: current _nextColorIndex = $_nextColorIndex');
-    final color = _availableColors[_nextColorIndex % _availableColors.length];
-    _nextColorIndex++;
-    print(
-        '[BPS] _getNextColor: assigned color $color, new _nextColorIndex = $_nextColorIndex');
-    return color;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -103,59 +94,94 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       {bool isInitialCall = false}) {
     print('[BPS] _initializeState: Called with isInitialCall = $isInitialCall');
     print(
-        '[BPS] _initializeState: _nextColorIndex at start = $_nextColorIndex');
-    print(
         '[BPS] _initializeState: Received initialParticipantsFromWidget: ${initialParticipantsFromWidget.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
 
-    if (isInitialCall) {
-      _nextColorIndex = 0;
-      print(
-          '[BPS] _initializeState: Reset _nextColorIndex to 0 due to isInitialCall=true');
-    }
+    Set<Color> colorsCurrentlyInUse = initialParticipantsFromWidget
+        .where((p) => p.color != null)
+        .map((p) => p.color!)
+        .toSet();
 
-    Map<String, Color> existingColorsMap = {};
-    // Only try to preserve if not the initial call AND _participants is already initialized and not empty.
+    int localNextColorAssignIndex = 0;
+    if (colorsCurrentlyInUse.isNotEmpty) {
+      int highestUsedIndexInAvailableColors = -1;
+      for (int i = 0; i < _availableColors.length; i++) {
+        if (colorsCurrentlyInUse.contains(_availableColors[i])) {
+          if (i > highestUsedIndexInAvailableColors) {
+            highestUsedIndexInAvailableColors = i;
+          }
+        }
+      }
+      localNextColorAssignIndex = (highestUsedIndexInAvailableColors + 1);
+    }
+    print(
+        '[BPS] _initializeState: Initial localNextColorAssignIndex set to $localNextColorAssignIndex.');
+
+    Map<String, Color> existingColorsMapFromOldState = {};
     if (!isInitialCall && mounted && _participants.isNotEmpty) {
       for (var p_old in _participants) {
         if (p_old.id != null && p_old.color != null) {
-          existingColorsMap[p_old.id!] = p_old.color!;
+          bool newHasColorForThisId = initialParticipantsFromWidget
+              .any((p_new) => p_new.id == p_old.id && p_new.color != null);
+          if (!newHasColorForThisId) {
+            existingColorsMapFromOldState[p_old.id!] = p_old.color!;
+          }
         }
       }
       print(
-          '[BPS] _initializeState: Populated existingColorsMap: $existingColorsMap');
-    } else {
-      print(
-          '[BPS] _initializeState: Not populating existingColorsMap (isInitialCall=$isInitialCall or _participants was empty/not mounted)');
+          '[BPS] _initializeState: Populated existingColorsMapFromOldState: $existingColorsMapFromOldState');
     }
 
-    _participants = initialParticipantsFromWidget.map((p_new) {
-      print(
-          '[BPS] _initializeState mapping: Processing p_new = ${p_new.name}:${p_new.id}:${p_new.color}');
+    List<ParticipantEntity> newParticipantList = [];
+    Set<Color> colorsAssignedOrKeptInThisRun =
+        Set<Color>.from(colorsCurrentlyInUse);
+
+    for (var p_new in initialParticipantsFromWidget) {
       final participantId = (p_new.id == null || p_new.id!.isEmpty)
           ? _generateUniqueParticipantId()
-          : p_new
-              .id!; // Assert non-null as it's either generated or from p_new.id
+          : p_new.id!;
 
       Color? determinedColor;
       if (p_new.color != null) {
         determinedColor = p_new.color;
         print(
-            '[BPS] _initializeState mapping: Using p_new.color for ${p_new.name}: $determinedColor');
-      } else if (existingColorsMap.containsKey(participantId)) {
-        determinedColor = existingColorsMap[participantId];
+            '[BPS] _initializeState mapping: Kept p_new.color for ${p_new.name} (ID: $participantId): $determinedColor');
+      } else if (existingColorsMapFromOldState.containsKey(participantId)) {
+        determinedColor = existingColorsMapFromOldState[participantId];
+        colorsAssignedOrKeptInThisRun.add(determinedColor!);
         print(
-            '[BPS] _initializeState mapping: Using existingColor for ${p_new.name} (ID: $participantId): $determinedColor');
+            '[BPS] _initializeState mapping: Used existingColorFromOldState for ${p_new.name} (ID: $participantId): $determinedColor');
       } else {
-        determinedColor = _getNextColor();
-        print(
-            '[BPS] _initializeState mapping: Called _getNextColor for ${p_new.name}: $determinedColor');
-      }
+        int attempts = 0;
+        Color candidateColor;
+        do {
+          candidateColor = _availableColors[
+              localNextColorAssignIndex % _availableColors.length];
+          localNextColorAssignIndex++;
+          attempts++;
+        } while (colorsAssignedOrKeptInThisRun.contains(candidateColor) &&
+            attempts < _availableColors.length);
 
-      return p_new.copyWith(id: participantId, color: determinedColor);
-    }).toList();
+        if (colorsAssignedOrKeptInThisRun.contains(candidateColor) &&
+            attempts >= _availableColors.length) {
+          print(
+              "[BPS] Warning: Could not find a unique color for ${p_new.name} after $attempts attempts. Assigning potentially duplicate color $candidateColor.");
+        }
+        determinedColor = candidateColor;
+        colorsAssignedOrKeptInThisRun.add(determinedColor);
+        print(
+            '[BPS] _initializeState mapping: Assigned new color for ${p_new.name} (ID: $participantId): $determinedColor. localNextColorAssignIndex advanced.');
+      }
+      newParticipantList
+          .add(p_new.copyWith(id: participantId, color: determinedColor));
+    }
+    _participants = newParticipantList;
+    _nextColorIndex =
+        localNextColorAssignIndex; // Update global _nextColorIndex
+
     print(
         '[BPS] _initializeState: Final _participants: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
-    print('[BPS] _initializeState: _nextColorIndex at end = $_nextColorIndex');
+    print(
+        '[BPS] _initializeState: Global _nextColorIndex updated to $_nextColorIndex at end.');
   }
 
   // Removed _updateControllerTexts, _distributePercentages, _listEquals,
@@ -195,10 +221,33 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                   if (!_participants
                       .any((p) => p.name.toLowerCase() == name.toLowerCase())) {
                     final newParticipantId = _generateUniqueParticipantId();
-                    // _getNextColor() will use and increment the persistent _nextColorIndex
-                    final newParticipantColor = _getNextColor();
+
+                    Set<Color> currentlyUsedColorsByParticipants = _participants
+                        .where((p) => p.color != null)
+                        .map((p) => p.color!)
+                        .toSet();
+
+                    Color newParticipantColor;
+                    int attempts = 0;
+                    do {
+                      newParticipantColor = _availableColors[
+                          _nextColorIndex % _availableColors.length];
+                      _nextColorIndex++;
+                      attempts++;
+                    } while (currentlyUsedColorsByParticipants
+                            .contains(newParticipantColor) &&
+                        attempts < _availableColors.length);
+
+                    if (currentlyUsedColorsByParticipants
+                            .contains(newParticipantColor) &&
+                        attempts >= _availableColors.length) {
+                      print(
+                          "[BPS] _addParticipantDialog: Warning! Could not find a unique color. Assigning potentially duplicate color $newParticipantColor.");
+                    }
+
                     print(
-                        '[BPS] _addParticipantDialog: Adding ${name} with ID $newParticipantId and color $newParticipantColor. Current _nextColorIndex: $_nextColorIndex');
+                        '[BPS] _addParticipantDialog: Adding ${name} with ID $newParticipantId and color $newParticipantColor. Global _nextColorIndex is now $_nextColorIndex');
+
                     final newParticipant = ParticipantEntity(
                       id: newParticipantId,
                       name: name,
