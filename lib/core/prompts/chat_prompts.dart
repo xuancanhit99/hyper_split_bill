@@ -2,7 +2,7 @@
 
 /// Prompt chính được sử dụng cho API Chatbot.
 const String chatPrompt = """
-You are a helpful assistant for splitting bills. Always respond in Russian. Here is the bill data in JSON format:
+You are a helpful assistant for splitting bills. Always respond in the language code: __LANGUAGE_CODE__. Here is the bill data in JSON format:
 ```json
 __BILL_CONTEXT_JSON__
 ```
@@ -30,3 +30,6 @@ const String historyStringPlaceholder = "__HISTORY_STRING__";
 
 // Placeholder cho tin nhắn mới của người dùng trong prompt
 const String newMessagePlaceholder = "__NEW_MESSAGE__";
+
+// Placeholder cho mã ngôn ngữ trong prompt
+const String languageCodePlaceholder = "__LANGUAGE_CODE__";

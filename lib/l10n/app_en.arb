@@ -6,6 +6,7 @@
   "billEditPageReviewTitle": "Review Bill",
   "billEditPageSaveTooltip": "Save Bill Data",
   "billEditPageEditTooltip": "Edit Bill Data",
+  "billEditPageResultButtonLabel": "Result",
   "billEditPageParticipantsSectionTitle": "Participants:",
   "billEditPageSplitEquallyButtonLabel": "Split Equally Among {count}",
   "@billEditPageSplitEquallyButtonLabel": {

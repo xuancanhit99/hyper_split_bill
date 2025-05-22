@@ -77,12 +77,15 @@ extension GetItInjectableX on _i174.GetIt {
           appConfig: gh<_i828.AppConfig>(),
           settingsService: gh<_i12.SettingsService>(),
         ));
-    gh.lazySingleton<_i646.SendChatMessageUseCase>(
-        () => _i646.SendChatMessageUseCase(gh<_i232.ChatDataSource>()));
     gh.lazySingleton<_i767.AuthRemoteDataSource>(
         () => _i767.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()));
     gh.lazySingleton<_i747.BillRemoteDataSource>(
         () => _i1073.BillRemoteDataSourceImpl(gh<_i454.SupabaseClient>()));
+    gh.lazySingleton<_i646.SendChatMessageUseCase>(
+        () => _i646.SendChatMessageUseCase(
+              gh<_i232.ChatDataSource>(),
+              gh<_i766.LocaleProvider>(),
+            ));
     gh.lazySingleton<_i765.BillRepository>(() => _i29.BillRepositoryImpl(
         remoteDataSource: gh<_i747.BillRemoteDataSource>()));
     gh.lazySingleton<_i1015.AuthRepository>(() => _i111.AuthRepositoryImpl(

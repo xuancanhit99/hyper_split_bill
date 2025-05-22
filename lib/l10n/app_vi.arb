@@ -7,6 +7,7 @@
   "billEditPageReviewTitle": "Xem lại hóa đơn",
   "billEditPageSaveTooltip": "Lưu dữ liệu hóa đơn",
   "billEditPageEditTooltip": "Chỉnh sửa dữ liệu hóa đơn",
+  "billEditPageResultButtonLabel": "Kết quả",
   "billEditPageParticipantsSectionTitle": "Người tham gia:",
   "billEditPageSplitEquallyButtonLabel": "Chia đều cho {count}",
   "@billEditPageSplitEquallyButtonLabel": {

@@ -1082,12 +1082,43 @@ class _BillEditPageState extends State<BillEditPage> {
                     // No need to check _isEditingMode here, the callback should only be called when enabled
                     setState(() {
                       _participants = updatedParticipants;
+
+                      // After participants are updated, filter out removed participants from items
+                      final updatedItems = _items.map((item) {
+                        final validParticipants = item.participants
+                            .where((itemParticipant) => updatedParticipants.any(
+                                (p) => p.id == itemParticipant.participantId))
+                            .toList();
+                        final validParticipantIds = validParticipants
+                            .map((p) => p.participantId)
+                            .toList();
+
+                        // Create a new BillItemEntity with updated participants and IDs
+                        return item.copyWith(
+                          participants: validParticipants,
+                          participantIds: validParticipantIds,
+                        );
+                      }).toList();
+
+                      _items = updatedItems;
+
+                      // Recalculate total after items potentially change
+                      _recalculateAndCompareTotal();
                     });
                   },
                 ),
-                // const SizedBox(height: 24), // Adjusted spacing after removing split equally button
-                // const Divider(), // Adjusted divider placement
-                // "Split Equally" button removed as percentage logic is gone from BillParticipantsSection
+                const SizedBox(
+                    height: 24), // Add spacing after participants section
+                // Add the new "Kết quả" button here
+                if (_isEditingMode) // Only show button in editing mode
+                  ElevatedButton(
+                    onPressed: _saveBillInternal, // Call the save function
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    child: Text(l10n
+                        .billEditPageResultButtonLabel), // Localized text for "Kết quả"
+                  ),
                 const SizedBox(height: 24), // Keep this SizedBox
                 const Divider(), // Keep this Divider
 

@@ -5,6 +5,7 @@ import 'package:hyper_split_bill/features/bill_splitting/data/datasources/chat_d
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/chat_message_entity.dart'; // Import message entity
 import 'package:injectable/injectable.dart';
 import 'package:hyper_split_bill/core/prompts/chat_prompts.dart'; // Import chat prompts
+import 'package:hyper_split_bill/core/providers/locale_provider.dart'; // Import LocaleProvider
 
 // Define a simple structure for the chat response
 class ChatResponse {
@@ -17,8 +18,10 @@ class ChatResponse {
 @lazySingleton
 class SendChatMessageUseCase {
   final ChatDataSource chatDataSource;
+  final LocaleProvider localeProvider; // Add LocaleProvider dependency
 
-  SendChatMessageUseCase(this.chatDataSource);
+  SendChatMessageUseCase(
+      this.chatDataSource, this.localeProvider); // Inject LocaleProvider
 
   // Takes the new message, the history, and the initial bill context.
   // Returns the bot's response or a Failure.
@@ -37,7 +40,14 @@ class SendChatMessageUseCase {
 
       // Combine initial context, history, and new message
       // Adjust the prompt structure as needed for your specific Chat API
+      // Get current locale code
+      final currentLanguageCode = localeProvider.locale.languageCode;
+
+      // Combine initial context, history, and new message
+      // Adjust the prompt structure as needed for your specific Chat API
       final fullPrompt = chatPrompt
+          .replaceFirst(languageCodePlaceholder,
+              currentLanguageCode) // Replace language placeholder
           .replaceFirst(billContextPlaceholder, billContextJson)
           .replaceFirst(historyStringPlaceholder, historyString)
           .replaceFirst(newMessagePlaceholder, newMessage);

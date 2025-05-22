@@ -60,14 +60,12 @@ class BillItemWidget extends StatelessWidget {
               ?.copyWith(color: Colors.grey[600]),
         );
       }
-      List<Widget> chips = participantIds.map((id) {
-        final participant =
-            allParticipants.firstWhere((p) => p.id == id, orElse: () {
-          // This should ideally not happen if data is consistent
-          print("Error: Participant with ID $id not found in allParticipants.");
-          return ParticipantEntity(
-              id: id, name: 'Unknown', color: Colors.grey.shade400);
-        });
+      List<Widget> chips = participantIds
+          .where((id) => allParticipants.any((p) =>
+              p.id == id)) // Filter out participants not in allParticipants
+          .map((id) {
+        final participant = allParticipants
+            .firstWhere((p) => p.id == id); // Now participant must exist
 
         // Get participant weight if available
         int weight = 1;

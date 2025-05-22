@@ -6,6 +6,7 @@
   "billEditPageReviewTitle": "Просмотр счета",
   "billEditPageSaveTooltip": "Сохранить данные счета",
   "billEditPageEditTooltip": "Редактировать данные счета",
+  "billEditPageResultButtonLabel": "Результат",
   "billEditPageParticipantsSectionTitle": "Участники:",
   "billEditPageSplitEquallyButtonLabel": "Разделить поровну между {count}",
   "@billEditPageSplitEquallyButtonLabel": {
