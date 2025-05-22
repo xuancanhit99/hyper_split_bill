@@ -108,6 +108,20 @@
       }
     }
   },
+"totalMismatchWarning": "Warning: The sum of item totals ({itemsTotal}) does not match the bill's subtotal ({subtotal}). Please review item prices or the subtotal.",
+  "@totalMismatchWarning": {
+    "description": "Warning message when the sum of all item totals does not match the bill's subtotal (total amount minus tax, tip, and discount).",
+    "placeholders": {
+      "itemsTotal": {
+        "type": "String",
+        "example": "95.00"
+      },
+      "subtotal": {
+        "type": "String",
+        "example": "100.00"
+      }
+    }
+  },
   "dialogEditDescriptionTitle": "Edit Description",
   "dialogEditTotalAmountTitle": "Edit Total Amount",
   "dialogEditTaxTitle": "Edit Tax",
@@ -296,6 +310,7 @@
   "billUploadPageLogCroppingCancelled": "Cropping cancelled or failed.",
   "billUploadPageLogNoImageTaken": "No image taken.",
   "billUploadPageLogRetryNoImage": "Retry OCR called but no image is selected.",
+  "billUploadPageCropCancelledSnackbar": "Cropping cancelled or failed.",
 
   "settingsPageTitle": "Settings",
   "settingsPageLanguageLabel": "Language",

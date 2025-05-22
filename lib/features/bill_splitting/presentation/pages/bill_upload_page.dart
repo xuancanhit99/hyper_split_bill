@@ -111,20 +111,45 @@ class _BillUploadViewState extends State<_BillUploadView> {
   // Removed _navigateToNextStep as logic is now handled by dispatching events to Bloc
 
   // Function to retry OCR with the existing selected image
-  void _retryOcr() {
+  // Function to retry OCR, now navigating to crop page first
+  Future<void> _retryOcr() async {
     if (_selectedImage != null) {
-      // Dispatch the OCR event with the existing cropped file
-      context.read<BillSplittingBloc>().add(
-            ProcessOcrEvent(imageFile: _selectedImage!),
-          );
+      print("Retrying OCR: Navigating to crop page for existing image.");
+      // Navigate to crop page with the existing selected image
+      final croppedFile = await GoRouter.of(context).push<File?>(
+        AppRoutes.cropImage,
+        extra: _selectedImage!.path,
+      );
+
+      // If a cropped file is returned, update the UI and dispatch the OCR event
+      if (croppedFile != null && mounted) {
+        print("Cropped file received after retry: ${croppedFile.path}");
+        // Update the displayed image to the cropped one
+        setState(() {
+          _selectedImage = croppedFile;
+        });
+        // Dispatch the OCR event with the cropped file
+        context.read<BillSplittingBloc>().add(
+              ProcessOcrEvent(imageFile: croppedFile),
+            );
+      } else {
+        print("Cropping cancelled or failed during retry.");
+        // Optionally show a message indicating cropping was cancelled
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .billUploadPageCropCancelledSnackbar), // Add localization key
+          ),
+        );
+      }
     } else {
       print("Retry OCR called but no image is selected.");
-      // Optionally show a message to the user
+      // Show a message to the user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            // Remove const
-            content: Text(AppLocalizations.of(context)!
-                .billUploadPageNoImageToRetrySnackbar)),
+          content: Text(AppLocalizations.of(context)!
+              .billUploadPageNoImageToRetrySnackbar), // Use localization key
+        ),
       );
     }
   }

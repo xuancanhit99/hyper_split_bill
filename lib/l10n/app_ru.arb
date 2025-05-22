@@ -108,6 +108,20 @@
       }
     }
   },
+"totalMismatchWarning": "Внимание: Сумма итогов по позициям ({itemsTotal}) не совпадает с промежуточным итогом счета ({subtotal}). Пожалуйста, проверьте цены позиций или промежуточный итог.",
+  "@totalMismatchWarning": {
+    "description": "Предупреждение о том, что сумма всех позиций не совпадает с промежуточным итогом счета (общая сумма минус налоги, чаевые и скидки).",
+    "placeholders": {
+      "itemsTotal": {
+        "type": "String",
+        "example": "95.00"
+      },
+      "subtotal": {
+        "type": "String",
+        "example": "100.00"
+      }
+    }
+  },
   "dialogEditDescriptionTitle": "Редактировать описание",
   "dialogEditTotalAmountTitle": "Редактировать общую сумму",
   "dialogEditTaxTitle": "Редактировать налог",
@@ -296,6 +310,7 @@
   "billUploadPageLogCroppingCancelled": "Кадрирование отменено или не удалось.",
   "billUploadPageLogNoImageTaken": "Изображение не сделано.",
   "billUploadPageLogRetryNoImage": "Повторный OCR вызван, но изображение не выбрано.",
+  "billUploadPageCropCancelledSnackbar": "Кадрирование отменено или не удалось.",
 
   "settingsPageTitle": "Настройки",
   "settingsPageLanguageLabel": "Язык",

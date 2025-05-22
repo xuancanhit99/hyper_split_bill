@@ -109,6 +109,20 @@
       }
     }
   },
+"totalMismatchWarning": "Cảnh báo: Tổng tiền các mục ({itemsTotal}) không khớp với tổng phụ của hóa đơn ({subtotal}). Vui lòng xem lại giá các mục hoặc tổng phụ.",
+  "@totalMismatchWarning": {
+    "description": "Thông báo cảnh báo khi tổng của tất cả các mục không khớp với tổng phụ của hóa đơn (tổng số tiền trừ thuế, tiền boa và giảm giá).",
+    "placeholders": {
+      "itemsTotal": {
+        "type": "String",
+        "example": "95.00"
+      },
+      "subtotal": {
+        "type": "String",
+        "example": "100.00"
+      }
+    }
+  },
   "dialogEditDescriptionTitle": "Chỉnh sửa mô tả",
   "dialogEditTotalAmountTitle": "Chỉnh sửa tổng số tiền",
   "dialogEditTaxTitle": "Chỉnh sửa thuế",
@@ -297,6 +311,7 @@
   "billUploadPageLogCroppingCancelled": "Hủy hoặc cắt ảnh thất bại.",
   "billUploadPageLogNoImageTaken": "Chưa chụp hình ảnh.",
   "billUploadPageLogRetryNoImage": "Gọi thử lại OCR nhưng chưa chọn hình ảnh.",
+  "billUploadPageCropCancelledSnackbar": "Đã hủy hoặc cắt ảnh thất bại.",
 
   "settingsPageTitle": "Cài đặt",
   "settingsPageLanguageLabel": "Ngôn ngữ",

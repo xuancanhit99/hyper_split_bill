@@ -288,71 +288,95 @@ class EditBillInfoSection extends StatelessWidget {
           const Divider(height: 1),
         ],
 
-        // --- Action Buttons Row ---
+        // --- Action Buttons and Warning ---
         if (isEditingMode)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween, // Align buttons
-              children: [
-                // Update Total Button (conditionally shown and enabled)
-                if (showUpdateButton)
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: Text(l10n
-                        .editBillInfoSectionUpdateTotalButtonLabel), // Use localized string
-                    onPressed: isUpdateButtonEnabled
-                        ? onUpdateTotalAmount
-                        : null, // Enable/disable based on comparison
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: isUpdateButtonEnabled
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey,
-                      side: BorderSide(
-                          color: isUpdateButtonEnabled
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      textStyle: const TextStyle(fontSize: 13),
-                    ),
-                  )
-                else
-                  const SizedBox(), // Placeholder to maintain alignment if button not shown
-
-                // Group the action buttons
-                Row(
-                  mainAxisSize: MainAxisSize.min, // Take minimum space
+          Column(
+            // Use Column to stack the buttons row and the warning message
+            crossAxisAlignment:
+                CrossAxisAlignment.start, // Align children to the start
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment
+                      .spaceBetween, // Align buttons horizontally
                   children: [
-                    // Toggle Item Details Button
-                    IconButton(
-                      icon: Icon(showItemDetails
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined),
-                      tooltip: showItemDetails
-                          ? l10n
-                              .editBillInfoSectionToggleDetailsHideTooltip // Localized
-                          : l10n
-                              .editBillInfoSectionToggleDetailsShowTooltip, // Localized
-                      onPressed: onToggleItemDetails,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .secondary, // Use secondary color
-                    ),
-                    const SizedBox(width: 8), // Space between buttons
-                    // Add Optional Fields Button
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      tooltip: l10n
-                          .editBillInfoSectionAddOptionalTooltip, // Localized
-                      onPressed: onAddOptionalFields,
-                      color: Theme.of(context).colorScheme.primary,
+                    // Update Total Button (conditionally shown and enabled)
+                    if (showUpdateButton)
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: Text(l10n
+                            .editBillInfoSectionUpdateTotalButtonLabel), // Use localized string
+                        onPressed: isUpdateButtonEnabled
+                            ? onUpdateTotalAmount
+                            : null, // Enable/disable based on comparison
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: isUpdateButtonEnabled
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
+                          side: BorderSide(
+                              color: isUpdateButtonEnabled
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          textStyle: const TextStyle(fontSize: 13),
+                        ),
+                      )
+                    else
+                      const SizedBox(), // Placeholder to maintain alignment if button not shown
+
+                    // Group the action buttons
+                    Row(
+                      mainAxisSize: MainAxisSize.min, // Take minimum space
+                      children: [
+                        // Toggle Item Details Button
+                        IconButton(
+                          icon: Icon(showItemDetails
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined),
+                          tooltip: showItemDetails
+                              ? l10n
+                                  .editBillInfoSectionToggleDetailsHideTooltip // Localized
+                              : l10n
+                                  .editBillInfoSectionToggleDetailsShowTooltip, // Localized
+                          onPressed: onToggleItemDetails,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .secondary, // Use secondary color
+                        ),
+                        const SizedBox(width: 8), // Space between buttons
+                        // Add Optional Fields Button
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: l10n
+                              .editBillInfoSectionAddOptionalTooltip, // Localized
+                          onPressed: onAddOptionalFields,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              // Warning message for total mismatch
+              if (isUpdateButtonEnabled) // Show warning if button is enabled (meaning mismatch exists)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    l10n.totalMismatchWarning(
+                      formatCurrencyValue(calculatedTotalAmount),
+                      formatCurrencyValue(
+                          _parseNumFromController(totalAmountController)),
+                    ), // Use localized string for warning
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .error, // Use error color for warning
+                        ),
+                  ),
+                ),
+            ],
           ),
 
         // Add space before the main divider if optional fields are shown or button is present
