@@ -30,11 +30,27 @@ class HomePage extends StatelessWidget {
     }
 
     // Determine the correct icon based on the current theme mode
-    IconData themeIcon = Icons.brightness_auto; // Default to system
+    IconData themeIcon;
     if (themeProvider.themeMode == ThemeMode.light) {
-      themeIcon = Icons.wb_sunny_outlined; // Sun icon for light mode
+      themeIcon = Icons.dark_mode_outlined; // Show moon to switch to Dark
     } else if (themeProvider.themeMode == ThemeMode.dark) {
-      themeIcon = Icons.nightlight_round; // Moon icon for dark mode
+      themeIcon = Icons.light_mode_outlined; // Show sun to switch to Light
+    } else {
+      // System mode
+      // In system mode, the icon should reflect the *current* system brightness,
+      // and the action will toggle to the *opposite* explicit mode.
+      // However, the user wants the icon to show what it will switch TO.
+      // So, if system is light, show moon (to switch to dark).
+      // If system is dark, show sun (to switch to light).
+      final Brightness currentSystemBrightness =
+          MediaQuery.of(context).platformBrightness;
+      if (currentSystemBrightness == Brightness.dark) {
+        themeIcon = Icons
+            .light_mode_outlined; // System is Dark, icon to switch to Light
+      } else {
+        themeIcon =
+            Icons.dark_mode_outlined; // System is Light, icon to switch to Dark
+      }
     }
 
     return Scaffold(
@@ -55,41 +71,24 @@ class HomePage extends StatelessWidget {
             tooltip:
                 l10n.homePageToggleThemeTooltip, // Add localization for tooltip
             onPressed: () {
-              themeProvider.toggleTheme(); // Toggle the theme
+              if (themeProvider.themeMode == ThemeMode.light) {
+                themeProvider.setThemeMode(ThemeMode.dark);
+              } else if (themeProvider.themeMode == ThemeMode.dark) {
+                themeProvider.setThemeMode(ThemeMode.light);
+              } else {
+                // ThemeMode.system
+                final Brightness currentSystemBrightness =
+                    MediaQuery.of(context).platformBrightness;
+                if (currentSystemBrightness == Brightness.dark) {
+                  // System is Dark, button action is to switch to Light
+                  themeProvider.setThemeMode(ThemeMode.light);
+                } else {
+                  // System is Light, button action is to switch to Dark
+                  themeProvider.setThemeMode(ThemeMode.dark);
+                }
+              }
             },
           ),
-          // Only show logout if authenticated
-          if (authState is AuthAuthenticated)
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: l10n.homePageSignOutTooltip,
-              onPressed: () {
-                // Show confirmation dialog before signing out
-                showDialog(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: Text(l10n.homePageSignOutDialogTitle),
-                    content: Text(l10n.homePageSignOutDialogContent),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        child: Text(l10n.buttonCancel), // Reusing existing key
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(dialogContext).pop();
-                          // Dispatch sign out event
-                          context.read<AuthBloc>().add(
-                                AuthSignOutRequested(),
-                              );
-                        },
-                        child: Text(l10n.homePageSignOutDialogConfirmButton),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
         ],
       ),
       body: SafeArea(

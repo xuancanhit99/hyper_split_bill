@@ -399,5 +399,12 @@
       }
     }
   },
-  "symbolPercentage": "%"
+  "symbolPercentage": "%",
+  "settingsPageSignOutButton": "Đăng xuất",
+
+  "settingsPageThemeLabel": "Giao diện",
+  "settingsPageThemeLight": "Sáng",
+  "settingsPageThemeDark": "Tối",
+  "settingsPageThemeSystem": "Hệ thống",
+  "settingsPageThemeTooltip": "Chuyển đổi giao diện"
 }

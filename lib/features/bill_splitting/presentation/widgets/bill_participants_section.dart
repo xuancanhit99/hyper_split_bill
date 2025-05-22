@@ -334,14 +334,25 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       child: Row(
         children: [
           Expanded(
-            child: Chip(
-              label: Text(participant.name,
-                  style: const TextStyle(color: Colors.black87)),
-              backgroundColor: participant.color ?? Colors.grey.shade300,
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
-              labelPadding: const EdgeInsets.only(
-                  left: 4.0, right: 4.0), // Adjust padding for text within chip
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: participant.color ?? Colors.grey.shade300,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    participant.name,
+                    style: const TextStyle(color: Colors.black87),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 8),
@@ -380,13 +391,25 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
         children: [
           Expanded(
             flex: 3,
-            child: Chip(
-              label: Text(participant.name,
-                  style: const TextStyle(color: Colors.black87)),
-              backgroundColor: participant.color ?? Colors.grey.shade300,
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
-              labelPadding: const EdgeInsets.only(left: 4.0, right: 4.0),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: participant.color ?? Colors.grey.shade300,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    participant.name,
+                    style: const TextStyle(color: Colors.black87),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 8), // Spacer

@@ -398,5 +398,12 @@
       }
     }
   },
-  "symbolPercentage": "%"
+  "symbolPercentage": "%",
+  "settingsPageSignOutButton": "Sign Out",
+
+  "settingsPageThemeLabel": "Theme",
+  "settingsPageThemeLight": "Light",
+  "settingsPageThemeDark": "Dark",
+  "settingsPageThemeSystem": "System",
+  "settingsPageThemeTooltip": "Toggle theme"
 }
