@@ -1,5 +1,6 @@
 {
   "@@locale": "vi",
+  "appName": "Hyper Split Bill",
   "appTitle": "Hyper Split Bill",
 
   "billEditPageEditTitle": "Chỉnh sửa hóa đơn",
@@ -163,8 +164,22 @@
     }
   },
   "itemDialogValidationDescriptionEmpty": "Mô tả không được để trống.",
+  "billItemWidgetNoParticipantSelected": "Chưa chọn người tham gia",
   "itemDialogValidationQuantityNegative": "Số lượng phải là số không âm.",
+  "editDialogContentEnterDescriptionHint": "Nhập mô tả hoặc tên cửa hàng",
+  "editDialogContentEnterValueHint": "Nhập giá trị",
+  "editDialogContentInvalidNumberError": "Vui lòng nhập số hợp lệ",
   "itemDialogValidationPriceNegative": "Giá không được âm.",
+  "editableRowTapToEdit": "Nhấn để chỉnh sửa {label}",
+  "@editableRowTapToEdit": {
+    "description": "Văn bản gợi ý khi giá trị trống, nhắc người dùng nhấn để chỉnh sửa trường.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Mô tả"
+      }
+    }
+  },
   "itemDialogValidationConfirmTwo": "Vui lòng xác nhận chính xác hai giá trị (Số lượng, Đơn giá hoặc Tổng giá) bằng cách sử dụng hộp kiểm.",
   "itemDialogValidationInconsistent": "Lỗi: Các giá trị cuối cùng không nhất quán (Số lượng * Đơn giá != Tổng giá). Vui lòng xác nhận lại.",
   "itemDialogDescriptionLabel": "Mô tả",
@@ -273,18 +288,24 @@
   "billUploadPageCameraButtonLabel": "Chụp ảnh",
   "billUploadPageLoadingStructuring": "Đang cấu trúc dữ liệu...",
   "billUploadPageLoadingProcessing": "Đang xử lý hình ảnh...",
+  "billUploadPageLogNoImageSelected": "Chưa chọn hình ảnh.",
+  "billUploadPageLogCroppingCancelled": "Hủy hoặc cắt ảnh thất bại.",
+  "billUploadPageLogNoImageTaken": "Chưa chụp hình ảnh.",
+  "billUploadPageLogRetryNoImage": "Gọi thử lại OCR nhưng chưa chọn hình ảnh.",
 
   "settingsPageTitle": "Cài đặt",
   "settingsPageLanguageLabel": "Ngôn ngữ",
   "settingsPageCurrentLanguage": "Ngôn ngữ hiện tại",
   "settingsPageSelectLanguageTitle": "Chọn ngôn ngữ",
+  "languageEnglish": "Tiếng Anh",
+  "languageRussian": "Tiếng Nga",
+  "languageVietnamese": "Tiếng Việt",
 
   "settingsPageOcrServiceLabel": "Dịch vụ OCR",
   "settingsPageChatServiceLabel": "Dịch vụ Chat",
   "aiServiceGemini": "Gemini",
   "aiServiceGrok": "Grok",
   "aiServiceGigaChat": "GigaChat",
-
 
   "homePageTitle": "Trang chủ",
   "homePageSettingsTooltip": "Cài đặt",
@@ -334,5 +355,24 @@
   "editBillInfoSectionDiscountLabel": "Giảm giá",
   "editBillInfoSectionToggleDetailsHideTooltip": "Ẩn Số lượng & Đơn giá",
   "editBillInfoSectionToggleDetailsShowTooltip": "Hiển thị Số lượng & Đơn giá",
-  "editBillInfoSectionAddOptionalTooltip": "Thêm Thuế, Tiền boa, Giảm giá, Tiền tệ"
+  "editBillInfoSectionAddOptionalTooltip": "Thêm Thuế, Tiền boa, Giảm giá, Tiền tệ",
+
+  "dialogEditWeightTitle": "Chỉnh tỉ lệ trọng số",
+  "dialogEditWeightInputLabel": "Nhập giá trị trọng số (tối thiểu là 1):",
+  "dialogEditWeightInputHint": "Nhập giá trị từ 1 trở lên",
+  "dialogEditWeightValidationError": "Vui lòng nhập một số nguyên từ 1 trở lên",
+  "dialogParticipantsTitle": "Chọn người chia sẻ cho \"{itemName}\"",
+  "@dialogParticipantsTitle": {
+    "description": "Tiêu đề hộp thoại chọn người tham gia cho một mục cụ thể",
+    "placeholders": {
+      "itemName": {
+        "type": "String",
+        "example": "Pizza"
+      }
+    }
+  },
+  "dialogParticipantsHeaderName": "Người tham gia",
+  "dialogParticipantsHeaderWeight": "Tỉ lệ",
+  "billItemWidgetOptionsTooltip": "Tùy chọn món",
+  "symbolPercentage": "%"
 }

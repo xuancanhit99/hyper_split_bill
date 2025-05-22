@@ -151,7 +151,7 @@ class EditBillInfoSection extends StatelessWidget {
                   label: l10n.editBillInfoSectionTaxLabel,
                   value: taxController.text,
                   valueSuffix: taxInputType == AmountType.percentage
-                      ? "%"
+                      ? '%'
                       : currencyController.text,
                   onTap: onEditTax,
                 ),
@@ -187,7 +187,7 @@ class EditBillInfoSection extends StatelessWidget {
                   label: l10n.editBillInfoSectionTipLabel,
                   value: tipController.text,
                   valueSuffix: tipInputType == AmountType.percentage
-                      ? "%"
+                      ? '%'
                       : currencyController.text,
                   onTap: onEditTip,
                 ),
@@ -220,7 +220,7 @@ class EditBillInfoSection extends StatelessWidget {
                   label: l10n.editBillInfoSectionDiscountLabel,
                   value: discountController.text,
                   valueSuffix: discountInputType == AmountType.percentage
-                      ? "%"
+                      ? '%'
                       : currencyController.text,
                   onTap: onEditDiscount,
                 ),

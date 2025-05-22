@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 // --- Stateful Widget for Description Dialog Content ---
 class DescriptionDialogContent extends StatefulWidget {
@@ -35,8 +36,10 @@ class DescriptionDialogContentState extends State<DescriptionDialogContent> {
     return TextField(
       controller: controller,
       autofocus: true,
-      decoration:
-          const InputDecoration(hintText: 'Enter description or store name'),
+      decoration: InputDecoration(
+        hintText:
+            AppLocalizations.of(context)!.editDialogContentEnterDescriptionHint,
+      ),
       textCapitalization: TextCapitalization.sentences,
     );
   }
@@ -95,7 +98,8 @@ class NumericDialogContentState extends State<NumericDialogContent> {
         keyboardType: TextInputType.numberWithOptions(
             decimal: true, signed: widget.allowNegative),
         decoration: InputDecoration(
-          hintText: widget.hintText ?? 'Enter value',
+          hintText: widget.hintText ??
+              AppLocalizations.of(context)!.editDialogContentEnterValueHint,
           suffixText: widget.valueSuffix,
         ),
         validator: (value) {
@@ -105,7 +109,8 @@ class NumericDialogContentState extends State<NumericDialogContent> {
           final number =
               widget.parseNumFunc(value, allowNegative: widget.allowNegative);
           if (number == null) {
-            return 'Please enter a valid number';
+            return AppLocalizations.of(context)!
+                .editDialogContentInvalidNumberError;
           }
           return null; // Valid
         },

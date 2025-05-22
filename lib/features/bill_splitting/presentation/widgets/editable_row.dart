@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class EditableRow extends StatelessWidget {
   final IconData? icon;
@@ -29,9 +30,12 @@ class EditableRow extends StatelessWidget {
           fontSize: isBold ? 18 : 16,
         );
 
-    final displayValue =
-        value.isEmpty ? 'Tap to edit $label' : '$value${valueSuffix ?? ''}';
+    // Get the localization instance
+    final l10n = AppLocalizations.of(context)!;
 
+    final displayValue = value.isEmpty
+        ? l10n.editableRowTapToEdit(label)
+        : '$value${valueSuffix ?? ''}';
     return InkWell(
       onTap: isEditingMode ? onTap : null, // Only allow tap in edit mode
       child: Padding(

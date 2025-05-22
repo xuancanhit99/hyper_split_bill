@@ -54,14 +54,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // Helper to get language name from locale
     String getLanguageName(Locale locale) {
-      // Use language code directly or create a map if more names are needed
+      final localizations = AppLocalizations.of(context)!;
       switch (locale.languageCode) {
         case 'en':
-          return 'English'; // Hardcoded for now
+          return localizations.languageEnglish;
         case 'ru':
-          return 'Русский'; // Hardcoded for now
+          return localizations.languageRussian;
         case 'vi':
-          return 'Tiếng Việt'; // Add Vietnamese
+          return localizations.languageVietnamese;
         default:
           return locale.languageCode.toUpperCase();
       }
@@ -161,13 +161,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Helper function to get user-friendly service name
   String getServiceTypeName(AiServiceType serviceType) {
+    final localizations = AppLocalizations.of(context)!;
     switch (serviceType) {
       case AiServiceType.gemini:
-        return 'Gemini'; // TODO: Localize this
+        return localizations.aiServiceGemini;
       case AiServiceType.grok:
-        return 'Grok'; // TODO: Localize this
+        return localizations.aiServiceGrok;
       case AiServiceType.gigachat:
-        return 'GigaChat'; // TODO: Localize this
+        return localizations.aiServiceGigaChat;
       default:
         return serviceType.toString().split('.').last;
     }

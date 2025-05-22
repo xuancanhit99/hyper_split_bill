@@ -1,5 +1,6 @@
 {
   "@@locale": "ru",
+  "appName": "Hyper Split Bill",
   "appTitle": "Гипер Сплит Билл",
   "billEditPageEditTitle": "Редактировать счет",
   "billEditPageReviewTitle": "Просмотр счета",
@@ -162,8 +163,22 @@
     }
   },
   "itemDialogValidationDescriptionEmpty": "Описание не может быть пустым.",
+  "billItemWidgetNoParticipantSelected": "Участник не выбран",
   "itemDialogValidationQuantityNegative": "Количество должно быть неотрицательным числом.",
+  "editDialogContentEnterDescriptionHint": "Введите описание или название магазина",
+  "editDialogContentEnterValueHint": "Введите значение",
+  "editDialogContentInvalidNumberError": "Пожалуйста, введите действительное число",
   "itemDialogValidationPriceNegative": "Цены не могут быть отрицательными.",
+  "editableRowTapToEdit": "Нажмите для редактирования {label}",
+  "@editableRowTapToEdit": {
+    "description": "Подсказка, когда значение пусто, предлагая пользователю нажать для редактирования поля.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Описание"
+      }
+    }
+  },
   "itemDialogValidationConfirmTwo": "Пожалуйста, подтвердите ровно два значения (Количество, Цена за единицу или Общая цена) с помощью флажков.",
   "itemDialogValidationInconsistent": "Ошибка: Итоговые значения несовместимы (Кол-во * Цена за ед. != Общая цена). Пожалуйста, подтвердите заново.",
   "itemDialogDescriptionLabel": "Описание",
@@ -272,11 +287,18 @@
   "billUploadPageCameraButtonLabel": "Сделать фото",
   "billUploadPageLoadingStructuring": "Структурирование данных...",
   "billUploadPageLoadingProcessing": "Обработка изображения...",
+  "billUploadPageLogNoImageSelected": "Изображение не выбрано.",
+  "billUploadPageLogCroppingCancelled": "Кадрирование отменено или не удалось.",
+  "billUploadPageLogNoImageTaken": "Изображение не сделано.",
+  "billUploadPageLogRetryNoImage": "Повторный OCR вызван, но изображение не выбрано.",
 
   "settingsPageTitle": "Настройки",
   "settingsPageLanguageLabel": "Язык",
   "settingsPageCurrentLanguage": "Текущий язык",
   "settingsPageSelectLanguageTitle": "Выберите язык",
+  "languageEnglish": "Английский",
+  "languageRussian": "Русский",
+  "languageVietnamese": "Вьетнамский",
 
   "settingsPageOcrServiceLabel": "Сервис OCR",
   "settingsPageChatServiceLabel": "Сервис чата",
@@ -332,5 +354,24 @@
   "editBillInfoSectionDiscountLabel": "Скидка",
   "editBillInfoSectionToggleDetailsHideTooltip": "Скрыть кол-во и цену за ед.",
   "editBillInfoSectionToggleDetailsShowTooltip": "Показать кол-во и цену за ед.",
-  "editBillInfoSectionAddOptionalTooltip": "Добавить налог, чаевые, скидку, валюту"
+  "editBillInfoSectionAddOptionalTooltip": "Добавить налог, чаевые, скидку, валюту",
+
+  "dialogEditWeightTitle": "Редактировать весовое соотношение",
+  "dialogEditWeightInputLabel": "Введите значение весового соотношения (минимум 1):",
+  "dialogEditWeightInputHint": "Введите значение 1 или выше",
+  "dialogEditWeightValidationError": "Пожалуйста, введите целое число 1 или выше",
+  "dialogParticipantsTitle": "Выберите участников для \"{itemName}\"",
+  "@dialogParticipantsTitle": {
+    "description": "Заголовок диалогового окна выбора участников для конкретной позиции",
+    "placeholders": {
+      "itemName": {
+        "type": "String",
+        "example": "Пицца"
+      }
+    }
+  },
+  "dialogParticipantsHeaderName": "Участник",
+  "dialogParticipantsHeaderWeight": "Соотношение",
+  "billItemWidgetOptionsTooltip": "Опции позиции",
+  "symbolPercentage": "%"
 }

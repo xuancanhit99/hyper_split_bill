@@ -86,8 +86,8 @@ class BillSplittingBloc extends Bloc<BillSplittingEvent, BillSplittingState> {
     final failureOrSavedBill = await _createBillUseCase(event.bill);
 
     failureOrSavedBill.fold(
-        (failure) =>
-            emit(BillSplittingError('Failed to save bill: ${failure.message}')),
+        (failure) => emit(
+            BillSplittingError(failure.message)), // Pass the raw error message
         (savedBill) {
       // TODO: Maybe update state with the saved bill (which now has an ID)
       // or navigate back/show success message.

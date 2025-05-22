@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added import for AppLocalizations
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/participant_entity.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart'; // Added import for BillItemEntity
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_participant.dart'; // Added import for BillItemParticipant
@@ -29,23 +30,23 @@ class _SelectItemParticipantsDialogState
     super.initState();
     _selectedParticipantIds =
         Set<String>.from(widget.initiallySelectedParticipantIds);
-    
+
     // Initialize participant weights
     _participantWeights = {};
-    
+
     // First, try to get weights from the item.participants list
     if (widget.item.participants.isNotEmpty) {
       for (final participant in widget.item.participants) {
         _participantWeights[participant.participantId] = participant.weight;
       }
-    } 
+    }
     // If participants list is empty but we have participantIds, create default weights
     else if (widget.initiallySelectedParticipantIds.isNotEmpty) {
       for (final id in widget.initiallySelectedParticipantIds) {
         _participantWeights[id] = 1;
       }
     }
-    
+
     // For any selected participants that don't have a weight yet, set default weight of 1
     for (final id in _selectedParticipantIds) {
       _participantWeights.putIfAbsent(id, () => 1);
@@ -65,7 +66,7 @@ class _SelectItemParticipantsDialogState
       }
     });
   }
-  
+
   // Update participant weight
   void _updateWeight(String participantId, int newWeight) {
     if (newWeight >= 1) {
@@ -88,62 +89,73 @@ class _SelectItemParticipantsDialogState
       _updateWeight(participantId, currentWeight - 1);
     }
   }
-  
+
   // Method to show weight editing dialog
-  void _showEditWeightDialog(BuildContext context, String participantId, int currentWeight) async {
-    final TextEditingController controller = TextEditingController(text: currentWeight.toString());
-    
+  void _showEditWeightDialog(
+      BuildContext context, String participantId, int currentWeight) async {
+    final TextEditingController controller =
+        TextEditingController(text: currentWeight.toString());
+
     final int? result = await showDialog<int>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Chỉnh tỉ lệ trọng số'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Nhập giá trị trọng số (tối thiểu là 1):'),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Nhập giá trị từ 1 trở lên',
+      builder: (dialogContext) {
+        final localizations =
+            AppLocalizations.of(dialogContext)!; // Get localizations here
+        return AlertDialog(
+          title: Text(localizations.dialogEditWeightTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(localizations.dialogEditWeightInputLabel),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: localizations.dialogEditWeightInputHint,
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(localizations.buttonCancel),
+            ),
+            TextButton(
+              onPressed: () {
+                final newValue = int.tryParse(controller.text);
+                if (newValue != null && newValue >= 1) {
+                  Navigator.pop(dialogContext, newValue);
+                } else {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            localizations.dialogEditWeightValidationError)),
+                  );
+                }
+              },
+              child: Text(localizations.buttonSave),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () {
-              final newValue = int.tryParse(controller.text);
-              if (newValue != null && newValue >= 1) {
-                Navigator.pop(dialogContext, newValue);
-              } else {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập một số nguyên từ 1 trở lên')),
-                );
-              }
-            },
-            child: const Text('Lưu'),
-          ),
-        ],
-      ),
+        );
+      },
     );
-    
+
     // Clean up
     controller.dispose();
-    
+
     if (result != null) {
       _updateWeight(participantId, result);
     }
   }
-    @override
+
+  @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text('Chọn người chia sẻ cho "${widget.item.description}"'),
+      title:
+          Text(localizations.dialogParticipantsTitle(widget.item.description)),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -154,13 +166,18 @@ class _SelectItemParticipantsDialogState
               child: Row(
                 children: [
                   // Name takes most space
-                  const Expanded(
-                    child: Text('Người tham gia', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: Text(localizations.dialogParticipantsHeaderName,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                   // Weight ratio header on the right
-                  const SizedBox(width: 120, 
+                  SizedBox(
+                    // Removed const
+                    width: 120,
                     child: Center(
-                      child: Text('Tỉ lệ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      // Removed const
+                      child: Text(localizations.dialogParticipantsHeaderWeight,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -178,10 +195,13 @@ class _SelectItemParticipantsDialogState
                   if (participantId == null) {
                     return const SizedBox.shrink();
                   }
-                  
-                  final bool isSelected = _selectedParticipantIds.contains(participantId);
-                  final int weight = isSelected ? (_participantWeights[participantId] ?? 1) : 1;
-                  
+
+                  final bool isSelected =
+                      _selectedParticipantIds.contains(participantId);
+                  final int weight = isSelected
+                      ? (_participantWeights[participantId] ?? 1)
+                      : 1;
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Row(
@@ -205,7 +225,8 @@ class _SelectItemParticipantsDialogState
                                   width: 16,
                                   height: 16,
                                   decoration: BoxDecoration(
-                                    color: participant.color ?? Colors.grey.shade300,
+                                    color: participant.color ??
+                                        Colors.grey.shade300,
                                     shape: BoxShape.circle,
                                   ),
                                   margin: const EdgeInsets.only(right: 10),
@@ -217,11 +238,12 @@ class _SelectItemParticipantsDialogState
                               ],
                             ),
                             onTap: () {
-                              _onParticipantSelected(participantId, !isSelected);
+                              _onParticipantSelected(
+                                  participantId, !isSelected);
                             },
                           ),
                         ),
-                        
+
                         // Right side: Weight controls (if selected)
                         if (isSelected)
                           SizedBox(
@@ -231,12 +253,16 @@ class _SelectItemParticipantsDialogState
                               children: [
                                 // Decrement button
                                 InkWell(
-                                  onTap: weight > 1 ? () => _decrementWeight(participantId) : null,
+                                  onTap: weight > 1
+                                      ? () => _decrementWeight(participantId)
+                                      : null,
                                   child: Container(
                                     width: 28,
                                     height: 28,
                                     decoration: BoxDecoration(
-                                      color: weight > 1 ? Colors.grey.shade300 : Colors.grey.shade100,
+                                      color: weight > 1
+                                          ? Colors.grey.shade300
+                                          : Colors.grey.shade100,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Icon(Icons.remove, size: 16),
@@ -244,10 +270,14 @@ class _SelectItemParticipantsDialogState
                                 ),
                                 // Weight display - clickable to edit
                                 GestureDetector(
-                                  onTap: () => _showEditWeightDialog(context, participantId, weight),
+                                  onTap: () => _showEditWeightDialog(
+                                      context,
+                                      participantId,
+                                      weight), // Removed localizations here
                                   child: Container(
                                     alignment: Alignment.center,
-                                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 8),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade100,
                                       borderRadius: BorderRadius.circular(4),
@@ -281,7 +311,8 @@ class _SelectItemParticipantsDialogState
                             ),
                           )
                         else
-                          const SizedBox(width: 120), // Empty placeholder for alignment
+                          const SizedBox(
+                              width: 120), // Empty placeholder for alignment
                       ],
                     ),
                   );
@@ -293,23 +324,24 @@ class _SelectItemParticipantsDialogState
       ),
       actions: <Widget>[
         TextButton(
-          child: const Text('Hủy'),
+          child: Text(localizations.buttonCancel),
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
         TextButton(
-          child: const Text('Lưu'),
+          child: Text(localizations.buttonSave),
           onPressed: () {
             // Create a list of BillItemParticipant objects from the selected IDs and weights
             final List<String> selectedIds = _selectedParticipantIds.toList();
-            final List<BillItemParticipant> participants = selectedIds.map((id) {
+            final List<BillItemParticipant> participants =
+                selectedIds.map((id) {
               return BillItemParticipant(
                 participantId: id,
                 weight: _participantWeights[id] ?? 1,
               );
             }).toList();
-            
+
             // Return both the selected IDs and the weighted participants
             Navigator.of(context).pop({
               'selectedIds': selectedIds,

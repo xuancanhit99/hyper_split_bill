@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import currency map
-import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 
 class CurrencyDropdownRow extends StatelessWidget {
   final bool isEditingMode;
@@ -18,12 +17,9 @@ class CurrencyDropdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the localization instance
-    final l10n = AppLocalizations.of(context)!;
-
     final textStyle = Theme.of(context).textTheme.titleMedium;
     final selectedCurrencyCode = currencyController.text;
-    // Use the map constant defined in currencies.dart
+    // Get the currency name from the map, fallback to code if not found
     final currencyName =
         cCurrencyMap[selectedCurrencyCode] ?? selectedCurrencyCode;
 
@@ -45,13 +41,12 @@ class CurrencyDropdownRow extends StatelessWidget {
                               : null),
                       isExpanded: true,
                       items: dropdownCurrencies.map((String code) {
-                        // Use the map constant here as well
+                        // Get the currency name from the map, fallback to code if not found
                         final name = cCurrencyMap[code] ?? code;
                         return DropdownMenuItem<String>(
                           value: code,
                           child: Text(
-                              l10n.currencyDisplayFormat(
-                                  code, name), // Use localized format
+                              '$code - $name', // Display code and non-localized name
                               style: textStyle,
                               overflow: TextOverflow.ellipsis),
                         );
@@ -61,13 +56,12 @@ class CurrencyDropdownRow extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    // Display as plain text when not editing
-                    l10n.currencyDisplayFormat(selectedCurrencyCode,
-                        currencyName), // Use localized format
+                    // Display as plain text when not editing, using the non-localized name
+                    '$selectedCurrencyCode - $currencyName', // Display code and non-localized name
                     style: textStyle,
                     overflow: TextOverflow.ellipsis,
                   ),
-          ),
+          ), // Closes Expanded
           if (isEditingMode) // Show edit indicator only if editable
             Icon(Icons.edit_note_outlined, size: 18, color: Colors.grey[600]),
         ],

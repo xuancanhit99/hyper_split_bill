@@ -1,5 +1,6 @@
 {
   "@@locale": "en",
+  "appName": "Hyper Split Bill",
   "appTitle": "Hyper Split Bill",
   "billEditPageEditTitle": "Edit Bill",
   "billEditPageReviewTitle": "Review Bill",
@@ -162,8 +163,22 @@
     }
   },
   "itemDialogValidationDescriptionEmpty": "Description cannot be empty.",
+  "billItemWidgetNoParticipantSelected": "No participant selected",
   "itemDialogValidationQuantityNegative": "Quantity must be a non-negative number.",
+  "editDialogContentEnterDescriptionHint": "Enter description or store name",
+  "editDialogContentEnterValueHint": "Enter value",
+  "editDialogContentInvalidNumberError": "Please enter a valid number",
   "itemDialogValidationPriceNegative": "Prices cannot be negative.",
+  "editableRowTapToEdit": "Tap to edit {label}",
+  "@editableRowTapToEdit": {
+    "description": "Hint text when the value is empty, prompting the user to tap to edit the field.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Description"
+      }
+    }
+  },
   "itemDialogValidationConfirmTwo": "Please confirm exactly two values (Quantity, Unit Price, or Total Price) using the checkboxes.",
   "itemDialogValidationInconsistent": "Error: Final values are inconsistent (Qty * Unit Price != Total Price). Please re-confirm.",
   "itemDialogDescriptionLabel": "Description",
@@ -272,11 +287,18 @@
   "billUploadPageCameraButtonLabel": "Take Photo",
   "billUploadPageLoadingStructuring": "Structuring data...",
   "billUploadPageLoadingProcessing": "Processing image...",
+  "billUploadPageLogNoImageSelected": "No image selected.",
+  "billUploadPageLogCroppingCancelled": "Cropping cancelled or failed.",
+  "billUploadPageLogNoImageTaken": "No image taken.",
+  "billUploadPageLogRetryNoImage": "Retry OCR called but no image is selected.",
 
   "settingsPageTitle": "Settings",
   "settingsPageLanguageLabel": "Language",
   "settingsPageCurrentLanguage": "Current language",
   "settingsPageSelectLanguageTitle": "Select Language",
+  "languageEnglish": "English",
+  "languageRussian": "Russian",
+  "languageVietnamese": "Vietnamese",
 
   "settingsPageOcrServiceLabel": "OCR Service",
   "settingsPageChatServiceLabel": "Chat Service",
@@ -332,5 +354,24 @@
   "editBillInfoSectionDiscountLabel": "Discount",
   "editBillInfoSectionToggleDetailsHideTooltip": "Hide Item Quantity & Unit Price",
   "editBillInfoSectionToggleDetailsShowTooltip": "Show Item Quantity & Unit Price",
-  "editBillInfoSectionAddOptionalTooltip": "Add Tax, Tip, Discount, Currency"
+  "editBillInfoSectionAddOptionalTooltip": "Add Tax, Tip, Discount, Currency",
+  
+  "dialogParticipantsTitle": "Participants for \"{itemName}\"",
+  "@dialogParticipantsTitle": {
+    "description": "Title for the dialog to select participants for an item",
+    "placeholders": {
+      "itemName": {
+        "type": "String",
+        "example": "Pizza"
+      }
+    }
+  },
+  "dialogEditWeightTitle": "Edit Weight Ratio",
+  "dialogEditWeightInputLabel": "Enter weight value (minimum is 1):",
+  "dialogEditWeightInputHint": "Enter value 1 or higher",
+  "dialogEditWeightValidationError": "Please enter an integer number 1 or higher",
+  "dialogParticipantsHeaderName": "Participant",
+  "dialogParticipantsHeaderWeight": "Ratio",
+  "billItemWidgetOptionsTooltip": "Item options",
+  "symbolPercentage": "%"
 }

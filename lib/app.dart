@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         final localeProvider = Provider.of<LocaleProvider>(context);
         return MaterialApp.router(
           debugShowCheckedModeBanner: false, // Add this line
-          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
           theme: sl<ThemeData>(instanceName: 'lightTheme'),
           darkTheme: sl<ThemeData>(instanceName: 'darkTheme'),
           themeMode: ThemeMode.system,
