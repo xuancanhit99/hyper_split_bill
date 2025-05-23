@@ -57,13 +57,18 @@ class _BillUploadViewState extends State<_BillUploadView> {
                 null; // Clear previous web image before starting new crop
           });
 
+          final screenSize = MediaQuery.of(context).size;
+          final cropperWidth = (screenSize.width * 0.9).clamp(0.0, 500.0);
+          final cropperHeight = (screenSize.height * 0.8).clamp(0.0, 500.0);
+
           final CroppedFile? croppedFile = await ImageCropper().cropImage(
             sourcePath: _imagePath!,
             uiSettings: [
               WebUiSettings(
                 context: context,
                 presentStyle: WebPresentStyle.dialog,
-                size: const CropperSize(width: 500, height: 500),
+                size: CropperSize(
+                    width: cropperWidth.toInt(), height: cropperHeight.toInt()),
                 // viewwMode parameter does not exist in WebUiSettings for version 9.1.0
                 dragMode: WebDragMode.crop,
                 movable: true,
@@ -155,13 +160,18 @@ class _BillUploadViewState extends State<_BillUploadView> {
             _webImage = null; // Clear previous web image
           });
 
+          final screenSize = MediaQuery.of(context).size;
+          final cropperWidth = (screenSize.width * 0.9).clamp(0.0, 500.0);
+          final cropperHeight = (screenSize.height * 0.8).clamp(0.0, 500.0);
+
           final CroppedFile? croppedFile = await ImageCropper().cropImage(
             sourcePath: _imagePath!,
             uiSettings: [
               WebUiSettings(
                 context: context,
                 presentStyle: WebPresentStyle.dialog,
-                size: const CropperSize(width: 500, height: 500),
+                size: CropperSize(
+                    width: cropperWidth.toInt(), height: cropperHeight.toInt()),
                 // viewwMode parameter does not exist in WebUiSettings for version 9.1.0
                 dragMode: WebDragMode.crop,
                 movable: true,
@@ -245,13 +255,19 @@ class _BillUploadViewState extends State<_BillUploadView> {
       setState(() {
         _webImage = null; // Clear previous web image before retrying crop
       });
+
+      final screenSize = MediaQuery.of(context).size;
+      final cropperWidth = (screenSize.width * 0.9).clamp(0.0, 500.0);
+      final cropperHeight = (screenSize.height * 0.8).clamp(0.0, 500.0);
+
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: _imagePath!,
         uiSettings: [
           WebUiSettings(
             context: context,
             presentStyle: WebPresentStyle.dialog,
-            size: const CropperSize(width: 500, height: 500),
+            size: CropperSize(
+                width: cropperWidth.toInt(), height: cropperHeight.toInt()),
             // viewwMode parameter does not exist in WebUiSettings for version 9.1.0
             dragMode: WebDragMode.crop,
             movable: true,

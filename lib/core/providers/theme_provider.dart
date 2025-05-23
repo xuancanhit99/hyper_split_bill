@@ -14,11 +14,14 @@ class ThemeProvider with ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
 
   void _loadThemeMode() {
+    // If no theme mode is saved, default to light mode.
     final String savedThemeMode =
-        sharedPreferences.getString(_themeModePrefKey) ?? ThemeMode.system.name;
+        sharedPreferences.getString(_themeModePrefKey) ?? ThemeMode.light.name;
     _themeMode = ThemeMode.values.firstWhere(
       (e) => e.name == savedThemeMode,
-      orElse: () => ThemeMode.system,
+      // Fallback to light mode if the saved string is somehow invalid,
+      // though ThemeMode.light.name should always be valid.
+      orElse: () => ThemeMode.light,
     );
     // No need to notify listeners here as it's called during initialization
   }
