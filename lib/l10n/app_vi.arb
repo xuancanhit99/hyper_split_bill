@@ -325,7 +325,8 @@
   "billUploadPageLogNoImageTaken": "Chưa chụp hình ảnh.",
   "billUploadPageLogRetryNoImage": "Gọi thử lại OCR nhưng chưa chọn hình ảnh.",
   "billUploadPageCropCancelledSnackbar": "Đã hủy hoặc cắt ảnh thất bại.",
-
+  "billUploadPageCropFailedOrCancelledSnackbar": "Cắt ảnh thất bại hoặc đã bị hủy.",
+ 
   "settingsPageTitle": "Cài đặt",
   "settingsPageLanguageLabel": "Ngôn ngữ",
   "settingsPageCurrentLanguage": "Ngôn ngữ hiện tại",

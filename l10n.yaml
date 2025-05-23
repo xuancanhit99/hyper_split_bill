@@ -1,4 +1,5 @@
 arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
+# output-dir: lib/generated # Removed for now to revert to default behavior
 nullable-getter: false
