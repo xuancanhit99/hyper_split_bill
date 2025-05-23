@@ -1,6 +1,5 @@
 import 'dart:io'; // Will be needed for File type
 import 'dart:convert'; // Import for jsonDecode
-import 'package:hyper_split_bill/core/constants/app_colors.dart'; // Import AppColors
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Will be needed for Bloc
 import 'package:image_picker/image_picker.dart'; // For picking images
@@ -9,6 +8,9 @@ import 'package:hyper_split_bill/injection_container.dart'; // For sl
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes
 import 'package:go_router/go_router.dart'; // Import go_router for context.push
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
+import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
+import 'dart:typed_data'; // Import for Uint8List
+import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/process_bill_ocr_usecase.dart';
 
 // Wrap the page with BlocProvider to provide the Bloc instance
 class BillUploadPage extends StatelessWidget {
@@ -31,39 +33,64 @@ class _BillUploadView extends StatefulWidget {
 
 class _BillUploadViewState extends State<_BillUploadView> {
   final ImagePicker _picker = ImagePicker();
-  File? _selectedImage; // To hold the selected image file
-  // Removed _isLoading state variable, will use BlocBuilder instead
+  File? _selectedImage;
+  Uint8List? _webImage;
+  String? _imagePath;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   // Function to pick image from gallery
   Future<void> _pickImageFromGallery() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-      // Navigate to crop page and wait for result
-      if (mounted) {
-        final croppedFile = await GoRouter.of(context).push<File?>(
-          AppRoutes.cropImage,
-          extra: _selectedImage!.path,
-        );
-
-        // If a cropped file is returned, update the UI and dispatch the OCR event
-        if (croppedFile != null && mounted) {
-          print("Cropped file received: ${croppedFile.path}");
-          // Update the displayed image to the cropped one
+      if (kIsWeb) {
+        try {
+          // For web, read the image as bytes
+          final Uint8List imageBytes = await pickedFile.readAsBytes();
           setState(() {
-            _selectedImage = croppedFile;
+            _webImage = imageBytes;
+            _imagePath = pickedFile.path;
+            _selectedImage = null; // Clear native image reference
           });
-          // Dispatch the OCR event with the cropped file
+          
+          // Process image directly on web
           context.read<BillSplittingBloc>().add(
-                ProcessOcrEvent(imageFile: croppedFile),
-              );
-        } else {
-          print("Cropping cancelled or failed.");
-          // Optionally clear the selected image if cropping is cancelled
-          // setState(() { _selectedImage = null; });
+            ProcessOcrEvent(imageFile: null, webImageBytes: _webImage),
+          );
+        } catch (e) {
+          print("Error processing web image: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).billUploadPageOcrFailedSnackbar(e.toString())),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } else {
+        // For native platforms, continue with existing flow
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+        // Navigate to crop page and wait for result
+        if (mounted) {
+          final croppedFile = await GoRouter.of(context).push<File?>(
+            AppRoutes.cropImage,
+            extra: _selectedImage!.path,
+          );
+
+          if (croppedFile != null && mounted) {
+            setState(() {
+              _selectedImage = croppedFile;
+              _webImage = null; // Clear web image reference
+            });
+            // Dispatch the OCR event with the cropped file
+            context.read<BillSplittingBloc>().add(
+              ProcessOcrEvent(imageFile: croppedFile),
+            );
+          }
         }
       }
     } else {
@@ -73,34 +100,52 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
   // Function to take photo with camera
   Future<void> _pickImageFromCamera() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.camera);
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-      // Navigate to crop page and wait for result
-      if (mounted) {
-        final croppedFile = await GoRouter.of(context).push<File?>(
-          AppRoutes.cropImage,
-          extra: _selectedImage!.path,
-        );
-
-        // If a cropped file is returned, update the UI and dispatch the OCR event
-        if (croppedFile != null && mounted) {
-          print("Cropped file received: ${croppedFile.path}");
-          // Update the displayed image to the cropped one
+      if (kIsWeb) {
+        try {
+          // For web, read the image as bytes 
+          final Uint8List imageBytes = await pickedFile.readAsBytes();
           setState(() {
-            _selectedImage = croppedFile;
+            _webImage = imageBytes;
+            _imagePath = pickedFile.path;
+            _selectedImage = null; // Clear native image reference
           });
-          // Dispatch the OCR event with the cropped file
+
+          // Process image directly on web
           context.read<BillSplittingBloc>().add(
-                ProcessOcrEvent(imageFile: croppedFile),
-              );
-        } else {
-          print("Cropping cancelled or failed.");
-          // Optionally clear the selected image if cropping is cancelled
-          // setState(() { _selectedImage = null; });
+            ProcessOcrEvent(imageFile: null, webImageBytes: _webImage),
+          );
+        } catch (e) {
+          print("Error processing camera image: $e");
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).billUploadPageOcrFailedSnackbar(e.toString())),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } else {
+        // For native platforms, continue with existing flow
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+        // Navigate to crop page and wait for result  
+        if (mounted) {
+          final croppedFile = await GoRouter.of(context).push<File?>(
+            AppRoutes.cropImage,
+            extra: _selectedImage!.path,
+          );
+
+          if (croppedFile != null && mounted) {
+            setState(() {
+              _selectedImage = croppedFile;
+              _webImage = null;
+            });
+            context.read<BillSplittingBloc>().add(
+              ProcessOcrEvent(imageFile: croppedFile),
+            );
+          }
         }
       }
     } else {
@@ -108,47 +153,42 @@ class _BillUploadViewState extends State<_BillUploadView> {
     }
   }
 
-  // Removed _navigateToNextStep as logic is now handled by dispatching events to Bloc
-
-  // Function to retry OCR with the existing selected image
-  // Function to retry OCR, now navigating to crop page first
+  // Function to retry OCR with the existing image
   Future<void> _retryOcr() async {
-    if (_selectedImage != null) {
+    // For web platform
+    if (kIsWeb && _webImage != null) {
+      print("Retrying OCR on web with existing image.");
+      context.read<BillSplittingBloc>().add(
+        ProcessOcrEvent(imageFile: null, webImageBytes: _webImage),
+      );
+    }
+    // For native platforms 
+    else if (!kIsWeb && _selectedImage != null) {
       print("Retrying OCR: Navigating to crop page for existing image.");
-      // Navigate to crop page with the existing selected image
       final croppedFile = await GoRouter.of(context).push<File?>(
         AppRoutes.cropImage,
         extra: _selectedImage!.path,
       );
 
-      // If a cropped file is returned, update the UI and dispatch the OCR event
       if (croppedFile != null && mounted) {
-        print("Cropped file received after retry: ${croppedFile.path}");
-        // Update the displayed image to the cropped one
         setState(() {
           _selectedImage = croppedFile;
         });
-        // Dispatch the OCR event with the cropped file
         context.read<BillSplittingBloc>().add(
-              ProcessOcrEvent(imageFile: croppedFile),
-            );
+          ProcessOcrEvent(imageFile: croppedFile),
+        );
       } else {
-        print("Cropping cancelled or failed during retry.");
-        // Optionally show a message indicating cropping was cancelled
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!
-                .billUploadPageCropCancelledSnackbar), // Add localization key
+            content: Text(AppLocalizations.of(context).billUploadPageCropCancelledSnackbar),
           ),
         );
       }
     } else {
       print("Retry OCR called but no image is selected.");
-      // Show a message to the user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!
-              .billUploadPageNoImageToRetrySnackbar), // Use localization key
+          content: Text(AppLocalizations.of(context).billUploadPageNoImageToRetrySnackbar),
         ),
       );
     }
@@ -156,102 +196,66 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
   @override
   Widget build(BuildContext context) {
-    // Get the localization instance
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
-    // Wrap the Scaffold with BlocListener to react to state changes
     return BlocListener<BillSplittingBloc, BillSplittingState>(
       listener: (context, state) {
-        // No longer need to manage _isLoading here
-
         if (state is BillSplittingOcrSuccess) {
-          // OCR Success: Validate JSON before navigating
-          bool isReceipt = false; // Default to false
-          // Use localized default error message
+          bool isReceipt = false;
           String errorMessage = l10n.billUploadPageProcessingErrorDefault;
-          String imageCategory = l10n
-              .billUploadPageUnknownCategory; // Use localized default category
+          String imageCategory = l10n.billUploadPageUnknownCategory;
 
           try {
-            final data =
-                jsonDecode(state.structuredJson) as Map<String, dynamic>;
+            final data = jsonDecode(state.structuredJson) as Map<String, dynamic>;
 
-            // --- Validation using is_receipt and image_category ---
-
-            // 1. Check if 'is_receipt' field exists and is a boolean
             if (data.containsKey('is_receipt') && data['is_receipt'] is bool) {
               isReceipt = data['is_receipt'] as bool;
 
               if (!isReceipt) {
-                // 2. If it's not a receipt, try to get the category
-                imageCategory = data['image_category'] as String? ??
-                    l10n.billUploadPageUnknownCategory; // Use localized default
-                // Construct specific error message
-                if (imageCategory == l10n.billUploadPageUnknownCategory) {
-                  errorMessage =
-                      l10n.billUploadPageNotAReceiptError; // Use l10n
-                } else {
-                  errorMessage = l10n.billUploadPageNotAReceiptButCategoryError(
-                      imageCategory); // Use l10n with placeholder
-                }
+                imageCategory = data['image_category'] as String? ?? 
+                    l10n.billUploadPageUnknownCategory;
+                errorMessage = imageCategory == l10n.billUploadPageUnknownCategory
+                    ? l10n.billUploadPageNotAReceiptError
+                    : l10n.billUploadPageNotAReceiptButCategoryError(imageCategory);
               }
-              // If isReceipt is true, we don't need to set an error message here.
             } else {
-              // Handle case where 'is_receipt' is missing or has wrong type
-              print(
-                  "Warning: 'is_receipt' field missing or not a boolean in JSON response.");
-              errorMessage =
-                  l10n.billUploadPageCannotDetermineReceiptError; // Use l10n
-              isReceipt = false; // Treat as invalid if field is missing/wrong
+              print("'is_receipt' field missing or not boolean in JSON response.");
+              errorMessage = l10n.billUploadPageCannotDetermineReceiptError;
+              isReceipt = false;
             }
-            // --- End Validation ---
           } catch (e) {
             print("Error decoding structured JSON: $e");
-            errorMessage = l10n.billUploadPageJsonProcessingError; // Use l10n
-            isReceipt = false; // Treat as invalid on decoding error
+            errorMessage = l10n.billUploadPageJsonProcessingError;
+            isReceipt = false;
           }
 
           if (isReceipt) {
-            // Navigate only if it's confirmed to be a receipt
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  // Remove const
-                  content:
-                      Text(l10n.billUploadPageOcrSuccessSnackbar)), // Use l10n
+              SnackBar(content: Text(l10n.billUploadPageOcrSuccessSnackbar)),
             );
             context.push(AppRoutes.editBill, extra: state.structuredJson);
           } else {
-            // Show the specific error message if it's not a receipt or if an error occurred
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(errorMessage), // Use the determined error message
+                content: Text(errorMessage),
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
-          // Clear the selected image after processing (optional)
-          // setState(() { _selectedImage = null; });
         } else if (state is BillSplittingOcrFailure) {
-          // OCR Failure: Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.billUploadPageOcrFailedSnackbar(
-                  state.message)), // Use l10n with placeholder
+              content: Text(l10n.billUploadPageOcrFailedSnackbar(state.message)),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
       },
       child: Scaffold(
-        // The actual UI remains inside the listener's child
         appBar: AppBar(
-          title: Text(l10n.billUploadPageTitle), // Use l10n
-          // Remove loading indicator from AppBar actions
-          actions: [], // Define an empty actions list
+          title: Text(l10n.billUploadPageTitle),
         ),
-        // Use BlocBuilder to conditionally add a loading overlay using Stack
         body: SafeArea(
-          // Added SafeArea
           child: BlocBuilder<BillSplittingBloc, BillSplittingState>(
             builder: (context, state) {
               final isLoading = state is BillSplittingOcrProcessing ||
@@ -259,7 +263,6 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
               return Stack(
                 children: [
-                  // Main content (always present)
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -267,8 +270,17 @@ class _BillUploadViewState extends State<_BillUploadView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          // Display selected image preview (optional)
-                          if (_selectedImage != null) ...[
+                          if (_webImage != null && kIsWeb) ...[
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 20.0),
+                                child: Image.memory(
+                                  _webImage!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ] else if (_selectedImage != null && !kIsWeb) ...[
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 20.0),
@@ -279,37 +291,29 @@ class _BillUploadViewState extends State<_BillUploadView> {
                               ),
                             ),
                           ] else ...[
-                            // Placeholder Image
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.all(
-                                    8.0), // Add some padding around the placeholder
+                                padding: const EdgeInsets.all(8.0),
                                 child: Image.asset(
-                                  'assets/images/Two-Cat-Scan-Bill.png', // Path to your default image
-                                  fit: BoxFit.contain, // Adjust fit as needed
+                                  'assets/images/Two-Cat-Scan-Bill.png',
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                             ),
                           ],
 
-                          // Add the Retry OCR button conditionally first
-                          if (_selectedImage != null) ...[
+                          if ((_selectedImage != null && !kIsWeb) || (_webImage != null && kIsWeb)) ...[
                             OutlinedButton.icon(
                               icon: const Icon(Icons.refresh),
-                              label: Text(l10n
-                                  .billUploadPageRetryOcrButtonLabel), // Use l10n
+                              label: Text(l10n.billUploadPageRetryOcrButtonLabel),
                               onPressed: isLoading ? null : _retryOcr,
-                              // style property can be removed to use the default OutlinedButtonTheme
-                              // or customized if needed, e.g., OutlinedButton.styleFrom(...)
                             ),
                             const SizedBox(height: 16),
                           ],
 
-                          // Buttons (still disable based on isLoading)
                           ElevatedButton.icon(
                             icon: const Icon(Icons.photo_library_outlined),
-                            label: Text(l10n
-                                .billUploadPageGalleryButtonLabel), // Use l10n
+                            label: Text(l10n.billUploadPageGalleryButtonLabel),
                             onPressed: isLoading ? null : _pickImageFromGallery,
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 15),
@@ -318,8 +322,7 @@ class _BillUploadViewState extends State<_BillUploadView> {
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.camera_alt_outlined),
-                            label: Text(l10n
-                                .billUploadPageCameraButtonLabel), // Use l10n
+                            label: Text(l10n.billUploadPageCameraButtonLabel),
                             onPressed: isLoading ? null : _pickImageFromCamera,
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 15),
@@ -330,28 +333,23 @@ class _BillUploadViewState extends State<_BillUploadView> {
                     ),
                   ),
 
-                  // Loading Overlay (conditionally shown)
                   if (isLoading)
                     Positioned.fill(
                       child: Container(
-                        color: Colors.black
-                            .withOpacity(0.5), // Semi-transparent background
+                        color: Colors.black.withOpacity(0.5),
                         child: Center(
                           child: Column(
-                            // Added Column for text
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const CircularProgressIndicator(),
                               const SizedBox(height: 16),
                               Text(
                                 state is BillSplittingStructuring
-                                    ? l10n
-                                        .billUploadPageLoadingStructuring // Use l10n
-                                    : l10n
-                                        .billUploadPageLoadingProcessing, // Use l10n
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 16),
+                                    ? l10n.billUploadPageLoadingStructuring
+                                    : l10n.billUploadPageLoadingProcessing,
+                                style: const TextStyle(color: Colors.white, fontSize: 16),
                               ),
+                              const SizedBox(height: 8),
                             ],
                           ),
                         ),

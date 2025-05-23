@@ -28,11 +28,12 @@ class ImageSelectedEvent extends BillSplittingEvent {
 
 // Event to trigger OCR processing on the selected image
 class ProcessOcrEvent extends BillSplittingEvent {
-  final File imageFile;
+  final File? imageFile; // File for native platforms
+  final Uint8List? webImageBytes; // Image bytes for web platform
   final String? prompt; // Optional prompt for OCR
-  const ProcessOcrEvent({required this.imageFile, this.prompt});
+  const ProcessOcrEvent({this.imageFile, this.webImageBytes, this.prompt});
   @override
-  List<Object?> get props => [imageFile, prompt];
+  List<Object?> get props => [imageFile, webImageBytes, prompt];
 }
 
 // Event to save the current bill data (new or updated)

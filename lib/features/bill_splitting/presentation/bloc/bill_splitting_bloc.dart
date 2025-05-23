@@ -2,8 +2,10 @@ library bill_splitting_bloc; // Define the library
 
 import 'dart:convert'; // For jsonDecode
 import 'dart:io'; // Import File
+import 'dart:typed_data'; // Import for Uint8List
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
 import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_entity.dart'; // Import Entity
 import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/get_bills_usecase.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/process_bill_ocr_usecase.dart';
@@ -52,21 +54,24 @@ class BillSplittingBloc extends Bloc<BillSplittingEvent, BillSplittingState> {
         emit(BillSplittingInitial()); // Go back to initial for now
       },
     );
-  }
-
-  Future<void> _onProcessOcr(
+  }  Future<void> _onProcessOcr(
     ProcessOcrEvent event,
     Emitter<BillSplittingState> emit,
   ) async {
     emit(BillSplittingOcrProcessing());
-    final ocrResult = await _processBillOcrUseCase(imageFile: event.imageFile);
+    
+    // Use appropriate parameter based on platform (native file or web bytes)
+    final ocrResult = await _processBillOcrUseCase(
+      imageFile: event.imageFile,
+      webImageBytes: event.webImageBytes,
+    );
 
     await ocrResult.fold(
       // OCR failed directly
       (failure) async => emit(BillSplittingOcrFailure(failure.message)),
       // OCR succeeded, resultString might be structured JSON or raw text
       (resultString) async {
-        // OCR trả về JSON trực tiếp
+        // OCR returns direct JSON
         print("Bloc: Received structured JSON from OCR.");
         emit(BillSplittingOcrSuccess(structuredJson: resultString));
       },

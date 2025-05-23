@@ -1,5 +1,6 @@
 import 'dart:convert'; // For jsonDecode
 import 'dart:io';
+import 'dart:typed_data'; // For Uint8List
 import 'package:fpdart/fpdart.dart';
 import 'package:hyper_split_bill/core/error/exceptions.dart'; // Import exceptions for specific handling
 import 'package:hyper_split_bill/core/error/failures.dart';
@@ -14,18 +15,26 @@ import 'package:hyper_split_bill/core/prompts/ocr_prompts.dart';
 class ProcessBillOcrUseCase {
   // Inject OcrDataSource directly. Alternatively, create an OcrRepository.
   final OcrDataSource ocrDataSource;
-
   ProcessBillOcrUseCase(this.ocrDataSource);
 
-  // Takes the image file.
+  // Takes the image file or web image bytes.
   // Returns a structured JSON representation of the bill or a Failure.
-  Future<Either<Failure, String>> call({required File imageFile}) async {
+  Future<Either<Failure, String>> call({
+    File? imageFile,
+    Uint8List? webImageBytes,
+  }) async {
+    // Ensure at least one image source is provided
+    if (imageFile == null && webImageBytes == null) {
+      return Left(ServerFailure('No image provided for OCR processing'));
+    }
+
     // --- Define the Detailed Prompt for OCR API ---
 
     try {
       // Call OCR DataSource with the detailed prompt
       final structuredJsonString = await ocrDataSource.extractTextFromImage(
         imageFile: imageFile,
+        webImageBytes: webImageBytes,
         prompt: ocrPrompt, // Pass the detailed prompt
       );
 
@@ -139,5 +148,10 @@ class ProcessBillOcrUseCase {
       return Left(
           ServerFailure('Unexpected OCR processing error: ${e.runtimeType}'));
     }
+  }
+
+  // Checks if the OCR API is available
+  Future<bool> checkOcrApiAvailability() async {
+    return ocrDataSource.checkOcrApiAvailability();
   }
 }

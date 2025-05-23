@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  hyper_split_bill_web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hyper_split_bill_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"  # Map port 8080 c?a m�y host d?n port 80 c?a container
+    networks:
+      - web_network
+
+networks:
+  web_network:
+    driver: bridge

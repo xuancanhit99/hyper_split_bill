@@ -5,7 +5,7 @@ const String _themeModePrefKey = 'theme_mode'; // Reuse key
 
 class ThemeProvider with ChangeNotifier {
   final SharedPreferences sharedPreferences;
-  ThemeMode _themeMode = ThemeMode.system; // Default
+  ThemeMode _themeMode = ThemeMode.light; // Default
 
   ThemeProvider(this.sharedPreferences) {
     _loadThemeMode();

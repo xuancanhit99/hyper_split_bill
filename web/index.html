@@ -10,9 +10,6 @@
 
     For more details:
     * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
   -->
   <base href="$FLUTTER_BASE_HREF">
 
@@ -20,8 +17,11 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Web app capability -->
   <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="hyper_split_bill">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -31,8 +31,68 @@
 
   <title>hyper_split_bill</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    .loading-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff; /* Bạn có thể thay đổi màu nền hoặc sử dụng RGBA để làm mờ */
+      z-index: 9999; /* Đảm bảo spinner hiển thị trên cùng */
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3; /* Màu viền nhẹ */
+      border-top: 4px solid #3498db; /* Màu viền cho hiệu ứng xoay */
+      border-radius: 50%;
+      animation: spin 1s linear infinite; /* Áp dụng animation xoay */
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    var serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the Flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
 </head>
-<body>
-  <script src="flutter_bootstrap.js" async></script>
+<body>  
+  <script>
+    window.addEventListener('load', function() {
+      var loading = document.createElement('div');
+      loading.className = 'loading-indicator';
+      var spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      loading.appendChild(spinner);
+      document.body.appendChild(loading);
+
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: async function(engineInitializer) {
+          let appRunner = await engineInitializer.initializeEngine();
+          await appRunner.runApp();
+          // Sử dụng độ trễ nhỏ để đảm bảo frame đầu tiên của ứng dụng được render
+          // trước khi xóa indicator tải. Điều này giúp tránh hiện tượng nhấp nháy.
+          setTimeout(function() {
+            document.body.removeChild(loading);
+          }, 50); // Điều chỉnh độ trễ nếu cần thiết
+        }
+      });
+    });
+  </script>
 </body>
 </html>
