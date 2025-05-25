@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'; // Import AuthBloc
 import 'package:hyper_split_bill/features/auth/presentation/pages/auth_page.dart';
+import 'package:hyper_split_bill/features/bill_history/presentation/bloc/bill_history_bloc.dart'; // Import BillHistoryBloc
+import 'package:hyper_split_bill/features/bill_history/domain/entities/historical_bill_entity.dart'; // Import HistoricalBillEntity
+import 'package:hyper_split_bill/features/bill_history/presentation/widgets/bill_history_fetcher.dart'; // Import our new helper widget
 
 import 'package:hyper_split_bill/features/auth/presentation/pages/home_page.dart';
 import 'package:hyper_split_bill/features/bill_splitting/presentation/pages/bill_upload_page.dart'; // Import upload page
@@ -15,6 +18,7 @@ import 'package:flutter_bloc/flutter_bloc.dart'; // Import BlocProvider
 import 'package:hyper_split_bill/features/bill_splitting/presentation/bloc/bill_splitting_bloc.dart'; // Import the Bloc
 import 'package:hyper_split_bill/injection_container.dart'; // Import sl
 import 'package:hyper_split_bill/features/settings/presentation/pages/settings_page.dart'; // Import SettingsPage
+import 'package:hyper_split_bill/features/bill_history/presentation/pages/bill_history_page.dart'; // Import BillHistoryPage
 // Removed import for reset_password_page.dart
 
 // --- Define Route Paths ---
@@ -96,31 +100,62 @@ class AppRouter {
             }
             return ImageCropPage(imagePath: imagePath);
           },
-        ),
-        GoRoute(
-          path: AppRoutes.editBill,
+        ),        GoRoute(
+          path: '${AppRoutes.editBill}/:billId', // Add path parameter for bill ID
           name: AppRoutes.editBill,
-          // Provide BillSplittingBloc to the route and its descendants
           pageBuilder: (context, state) {
-            final structuredJson =
-                state.extra as String?; // Renamed variable for clarity
-            if (structuredJson == null) {
-              // Redirect immediately if possible
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                context.go(AppRoutes.upload);
-              });
-              return const MaterialPage(
-                  child: Scaffold(
-                      body: Center(child: Text("Error: OCR result missing"))));
+            final billId = state.pathParameters['billId']; // Get bill ID from path parameters
+            final structuredJson = state.extra as String?;
+            
+            if (billId != null) {
+              // Route for editing existing bill from history
+              return MaterialPage(
+                key: state.pageKey,
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: sl<BillSplittingBloc>()),
+                    BlocProvider.value(value: sl<BillHistoryBloc>()),
+                  ],
+                  child: BillHistoryFetcher(
+                    billId: billId,
+                    structuredJsonString: structuredJson,
+                  ),
+                ),
+              );
+            } else {
+              // This should never happen with the current route pattern
+              return MaterialPage(
+                key: state.pageKey,
+                child: Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
+                  body: const Center(child: Text('Missing bill ID')),
+                ),
+              );
             }
+          },
+        ),
+        // Add a separate route for the OCR flow without billId
+        GoRoute(
+          path: AppRoutes.editBill, // Without billId parameter
+          pageBuilder: (context, state) {
+            final structuredJson = state.extra as String?;
+            if (structuredJson == null) {
+              return MaterialPage(
+                key: state.pageKey,
+                child: Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
+                  body: const Center(child: Text('Missing bill data')),
+                ),
+              );
+            }
+            
             return MaterialPage(
               key: state.pageKey,
               child: BlocProvider.value(
-                value:
-                    sl<BillSplittingBloc>(), // Provide the singleton instance
+                value: sl<BillSplittingBloc>(),
                 child: BillEditPage(
-                    structuredJsonString:
-                        structuredJson), // Pass correct parameter name
+                  structuredJsonString: structuredJson,
+                ),
               ),
             );
           },
@@ -128,9 +163,8 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.history,
           name: AppRoutes.history,
-          builder: (context, state) => const Scaffold(
-            body: Center(child: Text('History Page Placeholder')),
-          ), // Placeholder
+          // Use the actual BillHistoryPage
+          builder: (context, state) => const BillHistoryPage(),
         ),
         // TODO: Create ChatbotPage and replace Placeholder
         GoRoute(

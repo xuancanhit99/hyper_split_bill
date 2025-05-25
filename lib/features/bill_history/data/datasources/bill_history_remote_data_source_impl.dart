@@ -39,10 +39,19 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
   @override
   Future<List<HistoricalBillModel>> getBillHistory() async {
     try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        // Handle case where user is not logged in
+        // For history, it's expected user is logged in. Throwing an exception might be appropriate.
+        throw ServerException('User not authenticated');
+      }
+
       final response = await supabase
           .from(_tableName)
           .select()
+          .eq('user_id', userId) // Filter by user ID
           .order('created_at', ascending: false); // Order by newest first
+
       return response
           .map((item) => HistoricalBillModel.fromJson(item))
           .toList();

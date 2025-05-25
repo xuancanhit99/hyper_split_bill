@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart'; // Import go_router for navigation
+import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes
 import 'package:hyper_split_bill/features/bill_history/presentation/bloc/bill_history_bloc.dart';
 import 'package:hyper_split_bill/injection_container.dart'; // For sl()
 import 'package:intl/intl.dart'; // For date formatting
@@ -30,7 +32,7 @@ class BillHistoryPage extends StatelessWidget {
                   return ListTile(
                     title: Text(bill.description ?? 'Unnamed Bill'),
                     subtitle: Text(
-                        'Bill Date: ${DateFormat.yMd().format(bill.billDate)}\nSaved: ${DateFormat.yMd().add_jm().format(bill.createdAt)}\nTotal: ${NumberFormat.currency(symbol: bill.currencyCode, decimalDigits: 2).format(bill.totalAmount)}'),
+                        'Bill Date: ${DateFormat.yMd().format(bill.billDate)}\nSaved: ${DateFormat.yMd().add_jm().format(bill.createdAt)}\nTotal: ${NumberFormat('#,##0.00').format(bill.totalAmount)} ${bill.currencyCode}'), // Format number and append currency code
                     isThreeLine: true,
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
@@ -62,16 +64,8 @@ class BillHistoryPage extends StatelessWidget {
                       },
                     ),
                     onTap: () {
-                      // Navigate to BillEditPage or a BillReviewPage
-                      // For now, just print details or navigate to a placeholder
-                      // context.read<BillHistoryBloc>().add(LoadBillDetailsEvent(bill.id));
-                      // Navigator.push(context, MaterialPageRoute(builder: (_) => BillEditPage(bill: bill))); // This needs adjustment
-                      print('Tapped on bill: ${bill.id}');
-                      // TODO: Implement navigation to view/edit bill details
-                      // You might want to pass the HistoricalBillEntity or its ID
-                      // and then fetch/load it in the BillEditPage or a new BillReviewPage.
-                      // If using BillEditPage, it needs to be adapted to handle HistoricalBillEntity
-                      // or convert it to BillEntity.
+                      // Navigate to BillEditPage using go_router with bill ID as a path parameter
+                      context.push('${AppRoutes.editBill}/${bill.id}');
                     },
                   );
                 },
