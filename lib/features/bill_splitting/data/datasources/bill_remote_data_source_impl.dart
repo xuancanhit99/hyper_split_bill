@@ -151,21 +151,17 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
   Future<List<BillItemModel>> saveBillItems(
       List<BillItemModel> items, String billId) async {
     if (items.isEmpty) return [];
-    final userId = _getCurrentUserId(); // Lấy userId
+    // final userId = _getCurrentUserId(); // Xóa dòng này, không cần userId nữa
 
     try {
       final itemsToInsert = items.map((item) {
-        // Truyền cả billId và userId vào toMap
-        // Tuy nhiên, bill_id sẽ được thêm vào map một cách riêng biệt bên dưới
-        // để đảm bảo nó được đặt chính xác cho việc chèn.
-        // Nếu toMap của bạn đã bao gồm bill_id, bạn có thể không cần dòng ..['bill_id'] = billId
-        // Nhưng để an toàn và rõ ràng, chúng ta sẽ đặt nó một cách tường minh.
-        final itemMap = item.toMap(
-            billId: billId, userId: userId); // Truyền các tham số bắt buộc
-        itemMap['bill_id'] = billId; // Đảm bảo bill_id được đặt cho việc chèn
+        // final itemMap = item.toMap(billId: billId, userId: userId); // Dòng cũ
+        final itemMap =
+            item.toMap(billId: billId); // Dòng mới: chỉ truyền billId
+        itemMap['bill_id'] =
+            billId; // Đảm bảo bill_id được đặt cho việc chèn (toMap đã làm điều này, nhưng để chắc chắn)
         itemMap.remove('id'); // Xóa id nếu toMap bao gồm nó, để Supabase tạo
-        // Nếu toMap không bao gồm user_id cho bảng bill_items, bạn có thể xóa nó khỏi map ở đây
-        // itemMap.remove('user_id');
+        // itemMap.remove('user_id'); // Xóa dòng này, toMap không còn trả về user_id
         return itemMap;
       }).toList();
 
@@ -193,16 +189,15 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
   Future<List<ParticipantModel>> saveParticipants(
       List<ParticipantModel> participants, String billId) async {
     if (participants.isEmpty) return [];
-    final userId = _getCurrentUserId(); // Lấy userId
 
     try {
       final participantsToInsert = participants.map((p) {
-        // Tương tự như với items
-        final participantMap = p.toMap(
-            billId: billId, userId: userId); // Truyền các tham số bắt buộc
-        participantMap['bill_id'] = billId; // Đảm bảo bill_id
+        // final participantMap = p.toMap(billId: billId, userId: userId); // Dòng cũ
+        final participantMap =
+            p.toMap(billId: billId); // Dòng mới: chỉ truyền billId
+        participantMap['bill_id'] = billId; // Đảm bảo bill_id (toMap đã làm)
         participantMap.remove('id'); // Xóa id
-        // participantMap.remove('user_id'); // Cân nhắc xóa nếu không cần trong bảng participants
+        // participantMap.remove('user_id'); // Xóa dòng này
         return participantMap;
       }).toList();
 

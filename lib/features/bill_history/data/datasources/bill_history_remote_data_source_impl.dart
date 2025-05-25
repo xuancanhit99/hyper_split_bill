@@ -11,25 +11,24 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
 
   BillHistoryRemoteDataSourceImpl({required this.supabase});
 
-  static const String _tableName = 'bill_history';
+  static const String _tableName = 'bills';
 
   @override
   Future<HistoricalBillModel> saveBillToHistory(
       HistoricalBillEntity bill) async {
     try {
-      // Ensure the entity is converted to a model if it's not already
-      final model = bill is HistoricalBillModel
-          ? bill
-          : HistoricalBillModel.fromEntity(
-              bill as HistoricalBillEntity); // Cast to ensure type safety
+      // Với giải pháp này, chúng ta không thực sự "lưu" bill vào history
+      // mà chỉ trả về bill đã tồn tại trong bảng bills
+      // Kiểm tra xem bill có tồn tại hay không
+      final response =
+          await supabase.from(_tableName).select().eq('id', bill.id).single();
 
-      final response = await supabase
-          .from(_tableName)
-          .insert(model.toJson())
-          .select()
-          .single();
       return HistoricalBillModel.fromJson(response);
     } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116') {
+        // Bill không tồn tại, có thể bill chưa được lưu
+        throw ServerException('Bill not found in database. Code: ${e.code}');
+      }
       throw ServerException('Code: ${e.code} - ${e.message}');
     } catch (e) {
       throw ServerException(e.toString());
@@ -48,12 +47,16 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
 
       final response = await supabase
           .from(_tableName)
-          .select()
+          .select('''
+            *,
+            bill_items!inner(*),
+            bill_participants!inner(*)
+          ''')
           .eq('user_id', userId) // Filter by user ID
           .order('created_at', ascending: false); // Order by newest first
 
       return response
-          .map((item) => HistoricalBillModel.fromJson(item))
+          .map((item) => HistoricalBillModel.fromJsonWithRelations(item))
           .toList();
     } on PostgrestException catch (e) {
       throw ServerException('Code: ${e.code} - ${e.message}');
@@ -65,9 +68,12 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
   @override
   Future<HistoricalBillModel> getBillDetailsFromHistory(String billId) async {
     try {
-      final response =
-          await supabase.from(_tableName).select().eq('id', billId).single();
-      return HistoricalBillModel.fromJson(response);
+      final response = await supabase.from(_tableName).select('''
+            *,
+            bill_items!inner(*),
+            bill_participants!inner(*)
+          ''').eq('id', billId).single();
+      return HistoricalBillModel.fromJsonWithRelations(response);
     } on PostgrestException catch (e) {
       if (e.code == 'PGRST116') {
         // "PGRST116: Query result has no rows"
@@ -87,13 +93,15 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
           ? bill
           : HistoricalBillModel.fromEntity(bill as HistoricalBillEntity);
 
+      final updateData = model.toJson()
+        ..remove('id')
+        ..remove('user_id')
+        ..remove(
+            'created_at'); // ID, user_id, created_at should not be updated directly
+
       final response = await supabase
           .from(_tableName)
-          .update(model.toJson()
-            ..remove('id')
-            ..remove('user_id')
-            ..remove(
-                'created_at')) // ID, user_id, created_at should not be updated directly
+          .update(updateData)
           .eq('id', model.id)
           .select()
           .single();
