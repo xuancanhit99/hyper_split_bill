@@ -256,16 +256,17 @@ class BillItemWidget extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
-            Row(
+            const SizedBox(height: 4),            Row(
               children: [
                 const Icon(Icons.people_alt_outlined,
                     size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
                 Expanded(
-                    child: _buildParticipantChips(item.participants.isNotEmpty
-                        ? item.participants.map((p) => p.participantId).toList()
-                        : item.participantIds)),
+                    child: _buildParticipantChips(
+                        // Prioritize item.participantIds as it is more consistently populated
+                        item.participantIds.isNotEmpty
+                            ? item.participantIds
+                            : item.participants.map((p) => p.participantId).toList())),
                 // Optional: Add a small edit icon here too for participants if needed
                 // IconButton(
                 //   icon: const Icon(Icons.edit_outlined, size: 16),

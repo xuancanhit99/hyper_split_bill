@@ -45,6 +45,14 @@ class SaveBillEvent extends BillSplittingEvent {
   List<Object?> get props => [bill];
 }
 
+// Event to update an existing bill
+class UpdateBillEvent extends BillSplittingEvent {
+  final BillEntity bill;
+  const UpdateBillEvent(this.bill);
+  @override
+  List<Object?> get props => [bill];
+}
+
 // Event to delete a bill
 class DeleteBillEvent extends BillSplittingEvent {
   final String billId;

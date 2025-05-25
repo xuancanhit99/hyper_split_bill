@@ -67,7 +67,7 @@ class _BillEditPageState extends State<BillEditPage> {
   bool _showSplitDetails = false; // State to control split detail visibility
   String? _editingHistoricalBillId; // ID of the historical bill being edited
   String?
-      _firebaseBillId; // ID of the bill in Firebase (if editing an existing one)
+      _currentSupabaseBillId; // ID of the bill in Supabase (if editing an existing one or after a save)
 
   // State for optional field visibility
   bool _showTax = false;
@@ -322,16 +322,24 @@ class _BillEditPageState extends State<BillEditPage> {
     _isInitializing = false;
     _isEditingMode = true; // Start in editing mode
     _finalBillJsonString = null;
-    _editingHistoricalBillId = historicalBill.id;
-    // Attempt to get firebaseBillId from the historical data.
+    _editingHistoricalBillId = historicalBill
+        .id; // Attempt to get firebaseBillId from the historical data.
     // This assumes finalBillDataJson might contain the original Firebase bill's ID.
     // A more robust solution would be a dedicated field in HistoricalBillEntity.
-    _firebaseBillId =
-        historicalBill.finalBillDataJson?['firebase_bill_id'] as String? ??
-            historicalBill.finalBillDataJson?['id'] as String?;
+    _currentSupabaseBillId =
+        historicalBill.finalBillDataJson['supabase_bill_id'] as String?;
+    if (_currentSupabaseBillId == null) {
+      // Fallback to 'id' if 'supabase_bill_id' is not present (for older records or other conventions)
+      _currentSupabaseBillId =
+          historicalBill.finalBillDataJson['id'] as String?;
+      if (_currentSupabaseBillId != null) {
+        print(
+            "Warning: 'supabase_bill_id' not found in historical JSON, using 'id' as fallback for Supabase ID: $_currentSupabaseBillId");
+      }
+    }
 
     print(
-        "Attempting to load data from HistoricalBillEntity: ${historicalBill.id}. Firebase Bill ID: $_firebaseBillId");
+        "Attempting to load data from HistoricalBillEntity: ${historicalBill.id}. Current Supabase Bill ID: $_currentSupabaseBillId");
 
     try {
       final data = historicalBill.finalBillDataJson;
@@ -408,20 +416,35 @@ class _BillEditPageState extends State<BillEditPage> {
         for (var itemMap in (data['items'] as List)) {
           if (itemMap is Map<String, dynamic>) {
             try {
-              final List<BillItemParticipant> itemParticipants =
-                  (itemMap['participants'] as List<dynamic>? ?? [])
-                      .map((pMap) {
-                        if (pMap is Map<String, dynamic>) {
-                          return BillItemParticipant.fromJson(pMap);
-                        }
-                        return null;
-                      })
-                      .whereType<BillItemParticipant>()
-                      .toList();
+              List<BillItemParticipant> itemParticipants = [];
+              List<String> itemParticipantIds = [];
 
-              // Ensure participantIds are derived from the parsed itemParticipants
-              final List<String> itemParticipantIds =
-                  itemParticipants.map((p) => p.participantId).toList();
+              if (itemMap['participants'] != null &&
+                  (itemMap['participants'] as List).isNotEmpty) {
+                // Ưu tiên trường 'participants' nếu có
+                itemParticipants = (itemMap['participants'] as List<dynamic>)
+                    .map((pMap) {
+                      if (pMap is Map<String, dynamic>) {
+                        return BillItemParticipant.fromJson(pMap);
+                      }
+                      return null;
+                    })
+                    .whereType<BillItemParticipant>()
+                    .toList();
+                itemParticipantIds =
+                    itemParticipants.map((p) => p.participantId).toList();
+              } else if (itemMap['participant_ids'] != null &&
+                  (itemMap['participant_ids'] as List).isNotEmpty) {
+                // Nếu không, sử dụng 'participant_ids' và tạo BillItemParticipant với trọng số mặc định
+                itemParticipantIds =
+                    (itemMap['participant_ids'] as List<dynamic>)
+                        .cast<String>()
+                        .toList();
+                itemParticipants = itemParticipantIds
+                    .map((id) =>
+                        BillItemParticipant(participantId: id, weight: 1))
+                    .toList();
+              }
 
               _items.add(BillItemEntity(
                 id: itemMap['id'] as String? ?? 'temp_hist_item_${itemIndex++}',
@@ -434,8 +457,10 @@ class _BillEditPageState extends State<BillEditPage> {
                 unitPrice: _parseNum(itemMap['unit_price'])?.toDouble() ?? 0.0,
                 totalPrice:
                     _parseNum(itemMap['total_price'])?.toDouble() ?? 0.0,
-                participantIds: itemParticipantIds, // Use derived IDs
-                participants: itemParticipants, // Use parsed participants
+                participantIds:
+                    itemParticipantIds, // Sử dụng ID đã lấy hoặc tạo
+                participants:
+                    itemParticipants, // Sử dụng người tham gia đã phân tích cú pháp hoặc tạo
               ));
             } catch (e, s) {
               print(
@@ -516,30 +541,14 @@ class _BillEditPageState extends State<BillEditPage> {
     }
   }
 
-  void _dispatchSaveEvent(BillEntity billToSave, {bool isUpdate = false}) {
-    if (isUpdate && _firebaseBillId != null) {
-      // We need to ensure the billToSave has the correct Firebase ID for update.
-      // The BillEntity created in _saveBillInternal might have an empty ID if it's a fresh calculation.
-      // Or, if it's based on an existing bill, it should retain its ID.
-      // This needs careful checking. For now, assume billToSave.id is the Firebase ID if isUpdate is true.
-      print(
-          "Dispatching UpdateBillEvent for bill ID: ${billToSave.id}, User ID: ${billToSave.payerUserId}");
-      // TODO: Create and dispatch an UpdateBillEvent to BillSplittingBloc
-      // context.read<BillSplittingBloc>().add(UpdateBillEvent(billToSave.copyWith(id: _firebaseBillId ?? billToSave.id)));
-      // For now, let's assume SaveBillEvent can handle updates if ID is present,
-      // or we need a specific UpdateBillEvent in BillSplittingBloc.
-      // This part needs to align with BillSplittingBloc's capabilities.
-      // If SaveBillUseCase handles upsert, then this is fine.
-      // Otherwise, a dedicated UpdateBillEvent and use case are needed.
-      print(
-          "Update logic for Firebase to be fully implemented. Dispatching SaveBillEvent for now, assuming upsert.");
-      context.read<BillSplittingBloc>().add(SaveBillEvent(
-          billToSave.copyWith(id: _firebaseBillId ?? billToSave.id)));
-    } else {
-      print(
-          "Dispatching SaveBillEvent (new bill) for user ID: ${billToSave.payerUserId}");
-      context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
-    }
+  void _dispatchSaveEvent(BillEntity billToSave) {
+    // BillSplittingBloc._onSaveBill will determine create vs update
+    // based on whether billToSave.id is populated.
+    // billToSave.id should have been correctly set in _saveBillInternal
+    // to _currentSupabaseBillId (if available) or null/empty (for new).
+    print(
+        "Dispatching SaveBillEvent. Bill ID to send: '${billToSave.id}', User ID: ${billToSave.payerUserId}");
+    context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
   }
 
   // Helper to get actual tax, tip, discount amounts
@@ -684,10 +693,21 @@ class _BillEditPageState extends State<BillEditPage> {
 
     // Create Bill Entity for saving
     // If editing, use the existing _firebaseBillId, otherwise it's a new bill (ID will be generated or is empty)
-    final String billIdForSave =
-        _editingHistoricalBillId != null ? (_firebaseBillId ?? '') : '';
-    print(
-        "Bill ID for save operation: '$billIdForSave'. _editingHistoricalBillId: $_editingHistoricalBillId, _firebaseBillId: $_firebaseBillId");
+    final String billIdForSave;
+    if (_currentSupabaseBillId != null && _currentSupabaseBillId!.isNotEmpty) {
+      billIdForSave = _currentSupabaseBillId!;
+      print(
+          "Using _currentSupabaseBillId for save operation: '$billIdForSave'");
+    } else {
+      // If no _currentSupabaseBillId, this is a new bill to be created,
+      // or a historical bill that was never synced and is being saved for the first time.
+      // BLoC will handle ID generation if billIdForSave is empty.
+      billIdForSave = '';
+      print(
+          "No _currentSupabaseBillId found. Preparing for new bill creation or first remote save. Bill ID for save: '$billIdForSave'");
+    }
+    // print(
+    //     "Bill ID for save operation: '$billIdForSave'. _editingHistoricalBillId: $_editingHistoricalBillId, _currentSupabaseBillId: $_currentSupabaseBillId");
 
     final currentBillData = BillEntity(
       id: billIdForSave, // Use existing ID if updating, or empty for new
@@ -731,10 +751,10 @@ class _BillEditPageState extends State<BillEditPage> {
       _isEditingMode = false;
       _showSplitDetails = false;
     });
-
     print(
         "Internal save complete. Dispatching save event to BillSplittingBloc...");
     // The actual saving to history will be triggered by the BillSplittingBloc's success state.
+    // Dispatch the event. The BLoC will handle create or update.
     _dispatchSaveEvent(currentBillData);
   }
 
@@ -1204,13 +1224,22 @@ class _BillEditPageState extends State<BillEditPage> {
     return BlocListener<BillSplittingBloc, BillSplittingState>(
       listener: (context, state) {
         if (state is BillSplittingSuccess && !_isEditingMode) {
+          // Ensure we are in review mode
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(l10n.billEditPageSuccessSnackbar(state.message)),
                 backgroundColor: Colors.green),
           );
 
-          // Save to history after successful Firebase save
+          // Update _currentSupabaseBillId with the ID from the successful save/update
+          if (state.billEntity?.id != null &&
+              state.billEntity!.id!.isNotEmpty) {
+            _currentSupabaseBillId = state.billEntity!.id;
+            print(
+                "Updated _currentSupabaseBillId from BLoC success: $_currentSupabaseBillId");
+          }
+
+          // Save to history after successful Supabase save
           final authState = context.read<AuthBloc>().state;
           String? currentUserId;
           if (authState is AuthAuthenticated) {
@@ -1239,40 +1268,77 @@ class _BillEditPageState extends State<BillEditPage> {
                   [],
               'participants': billToSaveInHistory.participants?.map((p) {
                     return {
+                      'id': p.id,
                       'name': p.name,
                       'amount_owed': p.amountOwed,
                     };
                   }).toList() ??
                   [],
+              // Store the Supabase ID for future reference
+              'supabase_bill_id':
+                  billToSaveInHistory.id, // This should be the ID from Supabase
               // Add any other fields that HistoricalBillEntity expects in finalBillDataJson
             };
+            print(
+                "Saving to history with Supabase Bill ID: ${billToSaveInHistory.id}"); // Thêm log
 
-            final historicalBill = HistoricalBillEntity(
-              id: const Uuid().v4(), // Generate a new UUID for history entry
-              userId: currentUserId,
-              description: billToSaveInHistory.description,
-              totalAmount: billToSaveInHistory.totalAmount,
-              currencyCode: billToSaveInHistory.currencyCode ??
-                  'USD', // Provide default if null
-              billDate: billToSaveInHistory.date,
-              // rawOcrJson: jsonDecode(_ocrTextController.text), // Assuming _ocrTextController.text is valid JSON
-              rawOcrJson: (() {
-                // Safely decode rawOcrJson
-                try {
-                  return jsonDecode(_ocrTextController.text)
-                      as Map<String, dynamic>?;
-                } catch (e) {
-                  print("Error decoding rawOcrJson for history: $e");
-                  return null; // Or an empty map: <String, dynamic>{}
-                }
-              })(),
-              finalBillDataJson: billMapForHistoryJson,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
-            context
-                .read<BillHistoryBloc>()
-                .add(SaveBillToHistoryEvent(historicalBill));
+            // Check if we are updating an existing historical bill            // Create a variable to hold the historical bill entity that will be available after the if-else
+            HistoricalBillEntity historicalBill;
+
+            if (_editingHistoricalBillId != null) {
+              // Update existing historical bill
+              historicalBill = HistoricalBillEntity(
+                id: _editingHistoricalBillId!, // Use the existing history ID
+                userId: currentUserId,
+                description: billToSaveInHistory.description,
+                totalAmount: billToSaveInHistory.totalAmount,
+                currencyCode: billToSaveInHistory.currencyCode ?? 'USD',
+                billDate: billToSaveInHistory.date,
+                rawOcrJson: (() {
+                  try {
+                    return jsonDecode(_ocrTextController.text)
+                        as Map<String, dynamic>?;
+                  } catch (e) {
+                    print("Error decoding rawOcrJson for history: $e");
+                    return null;
+                  }
+                })(),
+                finalBillDataJson: billMapForHistoryJson,
+                createdAt:
+                    DateTime.now(), // Keep original creation time if available
+                updatedAt: DateTime.now(),
+              );
+              context.read<BillHistoryBloc>().add(
+                  UpdateBillInHistoryEvent(historicalBill)); // Use update event
+              print(
+                  "Updating existing historical bill: $_editingHistoricalBillId");
+            } else {
+              // Create new historical bill
+              historicalBill = HistoricalBillEntity(
+                id: const Uuid()
+                    .v4(), // Generate a new UUID for new history entry
+                userId: currentUserId,
+                description: billToSaveInHistory.description,
+                totalAmount: billToSaveInHistory.totalAmount,
+                currencyCode: billToSaveInHistory.currencyCode ?? 'USD',
+                billDate: billToSaveInHistory.date,
+                rawOcrJson: (() {
+                  try {
+                    return jsonDecode(_ocrTextController.text)
+                        as Map<String, dynamic>?;
+                  } catch (e) {
+                    print("Error decoding rawOcrJson for history: $e");
+                    return null;
+                  }
+                })(),
+                finalBillDataJson: billMapForHistoryJson,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+              context.read<BillHistoryBloc>().add(SaveBillToHistoryEvent(
+                  historicalBill)); // Use create event for new bill
+              print("Creating new historical bill");
+            }
             print(
                 "Dispatched SaveBillToHistoryEvent for bill ID (original): ${billToSaveInHistory.id}, History ID: ${historicalBill.id}");
           } else {
