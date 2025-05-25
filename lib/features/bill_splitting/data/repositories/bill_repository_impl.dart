@@ -67,16 +67,30 @@ class BillRepositoryImpl implements BillRepository {
       if (itemModels.isNotEmpty) {
         savedItemModels =
             await remoteDataSource.saveBillItems(itemModels, billId);
-      }
-
-      // 3. Save participants associated with the new bill ID
+      }      // 3. Save participants associated with the new bill ID
       List<ParticipantModel> savedParticipantModels = [];
       if (participantModels.isNotEmpty) {
         savedParticipantModels =
             await remoteDataSource.saveParticipants(participantModels, billId);
       }
+      
+      // 4. Save item assignments (relationships between items and participants)
+      if (savedItemModels.isNotEmpty) {
+        // Update the item IDs in the original entities with the saved IDs from the database
+        List<BillItemEntity> itemsWithCorrectIds = [];
+        for (int i = 0; i < savedItemModels.length; i++) {
+          if (i < bill.items!.length) {
+            // Copy the original entity with updated ID
+            itemsWithCorrectIds.add(bill.items![i].copyWith(
+              id: savedItemModels[i].id,
+              // Keep the original participants and participantIds
+            ));
+          }
+        }
+        await remoteDataSource.saveItemAssignments(itemsWithCorrectIds);
+      }
 
-      // 4. Return the complete BillEntity (including saved items/participants if needed)
+      // 5. Return the complete BillEntity (including saved items/participants if needed)
       // Convert saved models back to entities
       final savedItems = savedItemModels.cast<BillItemEntity>().toList();
       final savedParticipants =
@@ -114,14 +128,62 @@ class BillRepositoryImpl implements BillRepository {
       // but explicit mapping can be safer if subtypes have differences.
       return billModels.cast<BillEntity>().toList();
     });
-  }
-
-  @override
+  }  @override
   Future<Either<Failure, BillEntity>> updateBill(BillEntity bill) async {
+    // Convert main entity and lists to models
     final billModel = BillModel.fromEntity(bill);
-    return _handleRemoteCall(() async {
+    final itemModels = (bill.items ?? [])
+        .map((item) => BillItemModel.fromEntity(item))
+        .toList();
+    final participantModels = (bill.participants ?? [])
+        .map((p) => ParticipantModel.fromEntity(p))
+        .toList();
+      return _handleRemoteCall<BillEntity>(() async {
+      // 1. Update the main bill record
       final updatedBillModel = await remoteDataSource.updateBill(billModel);
-      return updatedBillModel as BillEntity; // BillModel extends BillEntity
+      final billId = updatedBillModel.id;
+      
+      // 2. Delete existing related data to prevent duplicates
+      await remoteDataSource.deleteBillItems(billId);
+      await remoteDataSource.deleteParticipants(billId);
+      await remoteDataSource.deleteItemAssignments(billId);
+      
+      // 3. Save new items associated with the bill ID
+      List<BillItemModel> savedItemModels = [];
+      if (itemModels.isNotEmpty) {
+        savedItemModels = await remoteDataSource.saveBillItems(itemModels, billId);
+      }
+      
+      // 4. Save new participants associated with the bill ID
+      List<ParticipantModel> savedParticipantModels = [];
+      if (participantModels.isNotEmpty) {
+        savedParticipantModels = await remoteDataSource.saveParticipants(participantModels, billId);
+      }
+      
+      // 5. Save item assignments (relationships between items and participants)
+      if (savedItemModels.isNotEmpty) {
+        // Update the item IDs in the original entities with the saved IDs from the database
+        List<BillItemEntity> itemsWithCorrectIds = [];
+        for (int i = 0; i < savedItemModels.length; i++) {
+          if (i < bill.items!.length) {
+            // Copy the original entity with updated ID
+            itemsWithCorrectIds.add(bill.items![i].copyWith(
+              id: savedItemModels[i].id,
+              // Keep the original participants and participantIds
+            ));
+          }
+        }
+        await remoteDataSource.saveItemAssignments(itemsWithCorrectIds);
+      }
+      
+      // 5. Return the complete updated BillEntity with related entities
+      final savedItems = savedItemModels.cast<BillItemEntity>().toList();
+      final savedParticipants = savedParticipantModels.cast<ParticipantEntity>().toList();
+      
+      return (updatedBillModel as BillEntity).copyWith(
+        items: savedItems.isNotEmpty ? savedItems : null,
+        participants: savedParticipants.isNotEmpty ? savedParticipants : null,
+      );
     });
   }
 

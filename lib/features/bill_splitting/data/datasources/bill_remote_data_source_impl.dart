@@ -3,6 +3,8 @@ import 'package:hyper_split_bill/features/bill_splitting/data/datasources/bill_r
 import 'package:hyper_split_bill/features/bill_splitting/data/models/bill_item_model.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/models/bill_model.dart';
 import 'package:hyper_split_bill/features/bill_splitting/data/models/participant_model.dart';
+import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_item_entity.dart';
+
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -222,6 +224,228 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
           'An unexpected error occurred while saving participants: ${e.runtimeType}');
     }
   }
-
-  // TODO: Implement methods for assignments
+  @override
+  Future<void> deleteBillItems(String billId) async {
+    try {
+      await _supabaseClient.from('bill_items').delete().eq('bill_id', billId);
+      print("Deleted bill items for bill ID: $billId");
+    } on PostgrestException catch (e) {
+      print('Supabase PostgrestException during deleteBillItems: ${e.message}');
+      throw ServerException('Failed to delete bill items: ${e.message}');
+    } catch (e) {
+      print('Unexpected error during deleteBillItems: $e');
+      throw ServerException(
+          'An unexpected error occurred while deleting bill items: ${e.runtimeType}');
+    }
+  }
+  @override
+  Future<void> deleteParticipants(String billId) async {
+    try {
+      await _supabaseClient.from('bill_participants').delete().eq('bill_id', billId);
+      print("Deleted participants for bill ID: $billId");
+    } on PostgrestException catch (e) {
+      print('Supabase PostgrestException during deleteParticipants: ${e.message}');
+      throw ServerException('Failed to delete participants: ${e.message}');
+    } catch (e) {
+      print('Unexpected error during deleteParticipants: $e');
+      throw ServerException(
+          'An unexpected error occurred while deleting participants: ${e.runtimeType}');
+    }
+  }  @override
+  Future<void> deleteItemAssignments(String billId) async {
+    try {
+      print("Beginning deletion of item assignments for bill ID: $billId");
+      
+      // Item assignments are linked to bill items, which are linked to the bill
+      // We need to first get all item IDs associated with this bill
+      final itemsResponse = await _supabaseClient
+          .from('bill_items')
+          .select('id')
+          .eq('bill_id', billId);
+            if (itemsResponse.isNotEmpty) {
+        // Extract item IDs
+        final List<String> itemIds = [];
+        for (var item in itemsResponse) {
+          if (item['id'] != null) {
+            itemIds.add(item['id'] as String);
+          }
+        }
+        
+        print("Found ${itemIds.length} bill items for bill ID: $billId");
+        
+        if (itemIds.isNotEmpty) {
+          // Delete assignments for these items using filter for large ID lists
+          // Use batches if there are many items
+          const int batchSize = 100; // Supabase may have limits on array size
+          
+          for (int i = 0; i < itemIds.length; i += batchSize) {
+            final end = (i + batchSize < itemIds.length) ? i + batchSize : itemIds.length;
+            final batchIds = itemIds.sublist(i, end);
+            
+            await _supabaseClient
+                .from('bill_item_assignments')
+                .delete()
+                .filter('bill_item_id', 'in', batchIds);
+                
+            print("Deleted item assignments for batch ${i ~/ batchSize + 1}");
+          }
+          
+          print("Successfully deleted all item assignments for bill ID: $billId");
+        } else {
+          print("No valid item IDs found for bill ID: $billId");
+        }
+      } else {
+        print("No items found for bill ID: $billId, no assignments to delete");
+      }
+    } on PostgrestException catch (e) {
+      print('Supabase PostgrestException during deleteItemAssignments: ${e.message}');
+      print('Details: ${e.details}');
+      throw ServerException('Failed to delete item assignments: ${e.message}');
+    } catch (e) {
+      print('Unexpected error during deleteItemAssignments: $e');
+      throw ServerException(
+          'An unexpected error occurred while deleting item assignments: ${e.runtimeType}');
+    }
+  }  @override
+  Future<void> saveItemAssignments(List<BillItemEntity> items) async {
+    if (items.isEmpty) return;
+    
+    try {
+      // Get the bill ID from the first item
+      final firstItem = items.firstWhere((item) => item.id != null && item.id!.isNotEmpty);
+      final firstItemId = firstItem.id;
+      if (firstItemId == null || firstItemId.isEmpty) return;
+      
+      // Query to get the bill_id from the first item
+      final itemData = await _supabaseClient
+          .from('bill_items')
+          .select('bill_id')
+          .eq('id', firstItemId)
+          .single();
+      
+      final billId = itemData['bill_id'] as String;
+      
+      // Get all participants for this bill to create the mapping
+      final participantsResponse = await _supabaseClient
+          .from('bill_participants')
+          .select('id, name')
+          .eq('bill_id', billId);
+      
+      if (participantsResponse.isEmpty) {
+        print('No participants found for bill ID: $billId');
+        return;
+      }
+      
+      // Build a map of participant names to database UUIDs
+      final Map<String, String> participantNameToDbIdMap = {};
+      for (final participant in participantsResponse) {
+        final name = participant['name'] as String;
+        final dbId = participant['id'] as String;
+        participantNameToDbIdMap[name] = dbId;
+      }
+      
+      print('Participant name to DB ID mapping: $participantNameToDbIdMap');
+      
+      List<Map<String, dynamic>> assignmentsToInsert = [];
+      
+      // Process each item and create assignments
+      for (final item in items) {
+        final itemId = item.id;
+        if (itemId == null || itemId.isEmpty) continue;
+        
+        // Process participants with weights if available
+        if (item.participants.isNotEmpty) {
+          for (final participant in item.participants) {
+            final clientParticipantId = participant.participantId;
+            if (clientParticipantId.isEmpty) continue;
+            
+            // Find the database UUID by matching participant names
+            // The client participant ID might be a client-generated ID, but we need to map it to the actual participant
+            String? databaseId;
+            
+            // Try to find the participant by looking through the database participants
+            // Since we don't have a direct mapping from client ID to DB ID, 
+            // we need to use the fact that the participant order should be preserved
+            // or find another way to match them.
+            
+            // For now, let's try to match by name if the participantId looks like a client-generated ID
+            if (clientParticipantId.startsWith('p_')) {
+              // This is a client-generated ID, we need to find the corresponding participant by other means
+              // For bills from history, we need to look at the bill structure to map properly
+              
+              // Let's try a different approach: match by index in the participants list
+              // This assumes the order is preserved between client and database
+              final participantIndex = item.participants.indexOf(participant);
+              if (participantIndex < participantsResponse.length) {
+                databaseId = participantsResponse[participantIndex]['id'] as String;
+                print('Mapped client participant ID $clientParticipantId at index $participantIndex to database ID: $databaseId');
+              }
+            } else {
+              // If it's not a client-generated ID, try to find by name
+              databaseId = participantNameToDbIdMap[clientParticipantId];
+            }
+            
+            if (databaseId != null) {
+              assignmentsToInsert.add({
+                'bill_item_id': itemId,
+                'participant_id': databaseId,
+                'weight': participant.weight.toDouble(),
+              });
+              print('Added assignment: item $itemId -> participant $databaseId (weight: ${participant.weight})');
+            } else {
+              print('Warning: Could not map client participant ID $clientParticipantId to database ID');
+            }
+          }
+        }
+        // Fall back to participantIds for backward compatibility
+        else if (item.participantIds.isNotEmpty) {
+          for (final clientParticipantId in item.participantIds) {
+            if (clientParticipantId.isEmpty) continue;
+            
+            String? databaseId;
+            
+            if (clientParticipantId.startsWith('p_')) {
+              // Client-generated ID, match by index
+              final participantIndex = item.participantIds.indexOf(clientParticipantId);
+              if (participantIndex < participantsResponse.length) {
+                databaseId = participantsResponse[participantIndex]['id'] as String;
+              }
+            } else {
+              // Try to match by name
+              databaseId = participantNameToDbIdMap[clientParticipantId];
+            }
+            
+            if (databaseId != null) {
+              assignmentsToInsert.add({
+                'bill_item_id': itemId,
+                'participant_id': databaseId,
+                'weight': 1.0, // Default weight
+              });
+            }
+          }
+        }
+      }
+      
+      if (assignmentsToInsert.isEmpty) {
+        print('No valid assignments to insert after mapping');
+        return;
+      }
+      
+      // Insert the assignments
+      print("Inserting ${assignmentsToInsert.length} item assignments");
+      final response = await _supabaseClient
+        .from('bill_item_assignments')
+        .insert(assignmentsToInsert)
+        .select();
+          print("Successfully saved ${(response as List).length} item assignments");
+    } on PostgrestException catch (e) {
+      print('Supabase PostgrestException during saveItemAssignments: ${e.message}');
+      print('Details: ${e.details}');
+      throw ServerException('Failed to save item assignments: ${e.message}');
+    } catch (e) {
+      print('Unexpected error during saveItemAssignments: $e');
+      throw ServerException(
+          'An unexpected error occurred while saving item assignments: ${e.runtimeType}');
+    }
+  }
 }
