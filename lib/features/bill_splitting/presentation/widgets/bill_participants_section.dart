@@ -12,10 +12,17 @@ String _formatCurrencyValue(num? value) {
   return format.format(value);
 }
 
+// Define a callback type for when the list of participants (with their colors) is updated internally
+typedef ParticipantListUpdatedCallback = void Function(
+    List<ParticipantEntity> updatedParticipants);
+
 class BillParticipantsSection extends StatefulWidget {
   final List<ParticipantEntity> initialParticipants;
   final bool enabled; // Controls edit vs review mode
-  final Function(List<ParticipantEntity>) onParticipantsChanged;
+  final Function(List<ParticipantEntity>)
+      onParticipantsChanged; // For general changes like adding/removing/editing name
+  final ParticipantListUpdatedCallback
+      onParticipantsUpdated; // Specifically for when colors or internal state changes that BillEditPage needs to know
   final String?
       currencyCode; // Still needed for review mode display of amountOwed
   final double?
@@ -25,6 +32,7 @@ class BillParticipantsSection extends StatefulWidget {
     super.key,
     required this.initialParticipants,
     required this.onParticipantsChanged,
+    required this.onParticipantsUpdated, // Add to constructor
     this.enabled = true,
     this.currencyCode,
     this.billTotalAmount, // Added for warning display
@@ -182,6 +190,12 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
         '[BPS] _initializeState: Final _participants: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
     print(
         '[BPS] _initializeState: Global _nextColorIndex updated to $_nextColorIndex at end.');
+    // Notify parent about the (potentially) updated participant list with colors
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onParticipantsUpdated(List.from(_participants));
+      }
+    });
   }
 
   // Removed _updateControllerTexts, _distributePercentages, _listEquals,
@@ -256,8 +270,9 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                     setState(() {
                       _participants.add(newParticipant);
                     });
-                    widget.onParticipantsChanged(List.from(
-                        _participants)); // Inform parent about the change
+                    widget.onParticipantsChanged(List.from(_participants));
+                    widget.onParticipantsUpdated(List.from(
+                        _participants)); // Also call this to update colors in parent
                     print(
                         '[BPS] _addParticipantDialog: _participants after adding: ${_participants.map((p) => '${p.name}:${p.id}:${p.color}').toList()}');
                     Navigator.of(dialogContext).pop();
@@ -277,18 +292,18 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       },
     );
   }
+
   // Method to edit participant name
   Future<void> _editParticipantDialog(ParticipantEntity participant) async {
     if (participant.id == null) return;
-    
+
     final nameController = TextEditingController(text: participant.name);
     showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(
-              AppLocalizations.of(context)!.dialogEditParticipantTitle),
+          title: Text(AppLocalizations.of(context)!.dialogEditParticipantTitle),
           content: TextField(
             controller: nameController,
             autofocus: true,
@@ -307,15 +322,17 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
                 final name = nameController.text.trim();
                 if (name.isNotEmpty) {
                   // Check if another participant already has this name (excluding current participant)
-                  if (!_participants
-                      .any((p) => p.id != participant.id && p.name.toLowerCase() == name.toLowerCase())) {
-                    
+                  if (!_participants.any((p) =>
+                      p.id != participant.id &&
+                      p.name.toLowerCase() == name.toLowerCase())) {
                     setState(() {
                       // Find index of participant to update
-                      final index = _participants.indexWhere((p) => p.id == participant.id);
+                      final index = _participants
+                          .indexWhere((p) => p.id == participant.id);
                       if (index != -1) {
                         // Create a new participant with updated name but keep other properties
-                        _participants[index] = _participants[index].copyWith(name: name);
+                        _participants[index] =
+                            _participants[index].copyWith(name: name);
                       }
                     });
                     widget.onParticipantsChanged(List.from(_participants));
@@ -352,6 +369,8 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       _participants.removeWhere((p) => p.id == participant.id);
     });
     widget.onParticipantsChanged(List.from(_participants));
+    widget.onParticipantsUpdated(
+        List.from(_participants)); // Also call this to update colors in parent
   }
 
   @override
@@ -442,6 +461,7 @@ class _BillParticipantsSectionState extends State<BillParticipantsSection> {
       ],
     );
   }
+
   // Builds a row for Edit Mode (Simplified)
   Widget _buildEditModeRow(
       AppLocalizations l10n, ParticipantEntity participant) {

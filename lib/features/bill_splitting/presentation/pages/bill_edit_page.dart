@@ -45,6 +45,9 @@ class BillEditPage extends StatefulWidget {
 }
 
 class _BillEditPageState extends State<BillEditPage> {
+  // Helper class for _calculateBillDetails return type
+  _BillCalculationResult? _currentCalculationResult;
+
   // Dynamic list to hold currencies for the dropdown, initialized in initState
   late List<String> _dropdownCurrencies;
   // Controllers for main bill fields
@@ -544,8 +547,6 @@ class _BillEditPageState extends State<BillEditPage> {
   void _dispatchSaveEvent(BillEntity billToSave) {
     // BillSplittingBloc._onSaveBill will determine create vs update
     // based on whether billToSave.id is populated.
-    // billToSave.id should have been correctly set in _saveBillInternal
-    // to _currentSupabaseBillId (if available) or null/empty (for new).
     print(
         "Dispatching SaveBillEvent. Bill ID to send: '${billToSave.id}', User ID: ${billToSave.payerUserId}");
     context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
@@ -576,62 +577,36 @@ class _BillEditPageState extends State<BillEditPage> {
     };
   }
 
-  void _saveBillInternal() {
-    final l10n = AppLocalizations.of(context)!; // For localization
+  _BillCalculationResult? _calculateBillDetails() {
+    final l10n = AppLocalizations.of(context)!;
     final totalAmountFromController = _parseNum(_totalAmountController.text);
     final currencyCode = _currencyController.text.trim().toUpperCase();
 
-    // Validate Total Amount
     if (totalAmountFromController == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.billEditPageValidationErrorTotalAmount)));
-      return;
+      return null;
     }
 
-    // Validate if all items have at least one participant
-    final unassignedItems =
-        _items.where((item) => item.participantIds.isEmpty).toList();
-    if (unassignedItems.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(l10n.billEditPageErrorUnassignedItems(
-            unassignedItems.length, unassignedItems.first.description)),
-        // Example: "2 items are unassigned, starting with 'Pizza'."
-        // You might want a more generic message or list all unassigned items.
-      ));
-      return;
-    }
+    // Removed validation for unassignedItems as per user request
+    // final unassignedItems =
+    //     _items.where((item) => item.participantIds.isEmpty).toList();
+    // if (unassignedItems.isNotEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    //     content: Text(l10n.billEditPageErrorUnassignedItems(
+    //         unassignedItems.length, unassignedItems.first.description)),
+    //   ));
+    //   return null;
+    // }
 
-    // Validate if there are any participants
-    if (_participants.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(l10n.billEditPageErrorNoParticipants),
-      ));
-      return;
-    }
+    // Removed validation for empty participants list as per user request
+    // if (_participants.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    //     content: Text(l10n.billEditPageErrorNoParticipants),
+    //   ));
+    //   return null;
+    // }
 
-    // --- Participant Percentage Handling (for display/external JSON, not for owed amount calculation) ---
-    // This section related to percentages can be removed or simplified as percentages are no longer central.
-    // If _participants.first.percentage is still used anywhere for display in JSON, it might need adjustment.
-    // For now, let's comment it out as the core logic relies on item assignment.
-    /*
-    if (_participants.length == 1 && _participants.first.percentage == null) {
-      _participants[0] = _participants[0].copyWith(
-        percentage: 100.0,
-        isPercentageLocked: false,
-        setPercentageToNull: false,
-      );
-    }
-    double totalPercentage =
-        _participants.fold(0.0, (sum, p) => sum + (p.percentage ?? 0.0));
-    if ((totalPercentage - 100.0).abs() > 0.01 && _participants.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(l10n.billEditPageValidationErrorPercentages(
-              totalPercentage.toStringAsFixed(2)))));
-      return;
-    }
-    */
-
-    // Validate and Parse Date
     DateTime? parsedBillDate;
     try {
       parsedBillDate = _displayDateFormat.parseStrict(_dateController.text);
@@ -639,18 +614,16 @@ class _BillEditPageState extends State<BillEditPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
               AppLocalizations.of(context)!.billEditPageValidationErrorDate)));
-      return;
+      return null;
     }
 
-    // Validate Currency
     if (!_dropdownCurrencies.contains(currencyCode)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(AppLocalizations.of(context)!
               .billEditPageValidationErrorCurrency)));
-      return;
+      return null;
     }
 
-    // Get User ID
     final authState = context.read<AuthBloc>().state;
     String? currentUserId;
     if (authState is AuthAuthenticated) {
@@ -659,21 +632,19 @@ class _BillEditPageState extends State<BillEditPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
               AppLocalizations.of(context)!.billEditPageValidationErrorAuth)));
-      return;
+      return null;
     }
 
-    // --- Calculate Owed Amounts ---
     final additionalCosts = _getActualAdditionalCosts();
     final billEntityForCalc = BillEntity(
       id: '', // Not needed for calculation logic itself
-      totalAmount:
-          totalAmountFromController.toDouble(), // Main total from input
+      totalAmount: totalAmountFromController.toDouble(),
       date: parsedBillDate,
       description: _descriptionController.text.trim(),
       payerUserId: currentUserId!,
       currencyCode: currencyCode,
       items: _items,
-      participants: _participants, // Current participants, will be updated
+      participants: _participants,
     );
 
     final calculateSplitBillUsecase = CalculateSplitBillUsecase();
@@ -684,78 +655,111 @@ class _BillEditPageState extends State<BillEditPage> {
       actualDiscountAmount: additionalCosts['discount']!,
     );
 
-    // Update participants in state with owed amounts
-    // This needs to happen before creating currentBillData for Firebase
-    // and before setState for UI update.
-    // Create a new list to ensure state update.
-    final List<ParticipantEntity> finalParticipantsForStateAndFirebase =
-        List.from(updatedParticipantsWithOwedAmount);
+    // Merge updated owed amounts with original participant data to preserve color, etc.
+    final List<ParticipantEntity> finalParticipantsForState =
+        _participants.map((originalParticipant) {
+      final updatedInfo = updatedParticipantsWithOwedAmount.firstWhere(
+        (updatedP) => updatedP.id == originalParticipant.id,
+        // If an original participant is somehow not in the updated list (should not happen),
+        // return the original one. This case needs to be reviewed if it occurs.
+        orElse: () {
+          print(
+              "Warning: Original participant ID ${originalParticipant.id} not found in updated list from usecase.");
+          return originalParticipant;
+        },
+      );
+      return originalParticipant.copyWith(
+        amountOwed: updatedInfo.amountOwed,
+        // If CalculateSplitBillUsecase also modifies other fields like 'percentage',
+        // ensure they are copied here too. For now, it primarily sets 'amountOwed'.
+      );
+    }).toList();
 
-    // Create Bill Entity for saving
-    // If editing, use the existing _firebaseBillId, otherwise it's a new bill (ID will be generated or is empty)
     final String billIdForSave;
     if (_currentSupabaseBillId != null && _currentSupabaseBillId!.isNotEmpty) {
       billIdForSave = _currentSupabaseBillId!;
-      print(
-          "Using _currentSupabaseBillId for save operation: '$billIdForSave'");
     } else {
-      // If no _currentSupabaseBillId, this is a new bill to be created,
-      // or a historical bill that was never synced and is being saved for the first time.
-      // BLoC will handle ID generation if billIdForSave is empty.
       billIdForSave = '';
-      print(
-          "No _currentSupabaseBillId found. Preparing for new bill creation or first remote save. Bill ID for save: '$billIdForSave'");
     }
-    // print(
-    //     "Bill ID for save operation: '$billIdForSave'. _editingHistoricalBillId: $_editingHistoricalBillId, _currentSupabaseBillId: $_currentSupabaseBillId");
 
-    final currentBillData = BillEntity(
-      id: billIdForSave, // Use existing ID if updating, or empty for new
+    final billDataForSavingOrEvent = BillEntity(
+      id: billIdForSave,
       totalAmount: totalAmountFromController.toDouble(),
       date: parsedBillDate,
       description: _descriptionController.text.trim(),
       payerUserId: currentUserId!,
       currencyCode: currencyCode,
       items: _items,
-      participants:
-          finalParticipantsForStateAndFirebase, // Use participants with owed amounts
+      participants: finalParticipantsForState,
     );
 
-    // Create JSON Map for DISPLAY and CHATBOT
     final billMapForExternalUse = {
-      'bill_date': _isoDateFormat.format(currentBillData.date),
-      'description': currentBillData.description,
-      'currency_code': currentBillData.currencyCode,
-      'total_amount': currentBillData.totalAmount,
+      'bill_date': _isoDateFormat.format(billDataForSavingOrEvent.date),
+      'description': billDataForSavingOrEvent.description,
+      'currency_code': billDataForSavingOrEvent.currencyCode,
+      'total_amount': billDataForSavingOrEvent.totalAmount,
       'tax_amount': additionalCosts['tax']!,
       'tip_amount': additionalCosts['tip']!,
       'discount_amount': additionalCosts['discount']!,
-      'items':
-          currentBillData.items?.map((item) => item.toJson()).toList() ?? [],
-      'participants': currentBillData.participants?.map((p) {
+      'items': billDataForSavingOrEvent.items
+              ?.map((item) => item.toJson())
+              .toList() ??
+          [],
+      'participants': billDataForSavingOrEvent.participants?.map((p) {
             return {
+              'id': p.id, // Ensure ID is included for item assignment linking
               'name': p.name,
-              // 'percentage': p.percentage, // Percentage might be less relevant now
-              'amount_owed': p.amountOwed, // Include amount_owed
+              'amount_owed': p.amountOwed,
             };
           }).toList() ??
           [],
+      // Include Supabase ID if available, for consistency in JSON output
+      if (billDataForSavingOrEvent.id.isNotEmpty)
+        'supabase_bill_id': billDataForSavingOrEvent.id,
     };
     const jsonEncoder = JsonEncoder.withIndent('  ');
     final generatedJson = jsonEncoder.convert(billMapForExternalUse);
 
-    setState(() {
-      _participants =
-          finalParticipantsForStateAndFirebase; // Update UI with owed amounts
-      _finalBillJsonString = generatedJson;
-      _isEditingMode = false;
-      _showSplitDetails = false;
-    });
-    print(
-        "Internal save complete. Dispatching save event to BillSplittingBloc...");
-    // The actual saving to history will be triggered by the BillSplittingBloc's success state.
-    // Dispatch the event. The BLoC will handle create or update.
-    _dispatchSaveEvent(currentBillData);
+    return _BillCalculationResult(
+      billEntity: billDataForSavingOrEvent,
+      finalBillJson: generatedJson,
+      updatedParticipants: finalParticipantsForState,
+    );
+  }
+
+  void _handleShowResultButton() {
+    final calculationResult = _calculateBillDetails();
+    if (calculationResult != null) {
+      setState(() {
+        _participants = calculationResult.updatedParticipants;
+        _finalBillJsonString = calculationResult.finalBillJson;
+        _isEditingMode = false;
+        _showSplitDetails = false; // Reset this as well
+        _currentCalculationResult =
+            calculationResult; // Store for potential save later
+      });
+      // DO NOT dispatch save event here
+    }
+  }
+
+  void _handleSaveAppBarButton() {
+    final calculationResult = _currentCalculationResult ??
+        _calculateBillDetails(); // Recalculate if not already done or if changes were made after review
+
+    if (calculationResult != null) {
+      // Update state with potentially recalculated participants before saving
+      // This ensures that if user edited something after review and hit save directly,
+      // the latest calculations are used.
+      setState(() {
+        _participants = calculationResult.updatedParticipants;
+        _finalBillJsonString = calculationResult.finalBillJson;
+        // DO NOT change _isEditingMode here
+      });
+      print(
+          "Save AppBar button pressed. Dispatching save event to BillSplittingBloc...");
+      _dispatchSaveEvent(calculationResult.billEntity);
+      // SnackBar for "Saved" will be handled by BlocListener on BillSplittingSuccess
+    }
   }
 
   // --- Split Equally Logic ---
@@ -798,20 +802,39 @@ class _BillEditPageState extends State<BillEditPage> {
       _items = updatedItems;
     });
 
-    // Immediately trigger save to calculate and show result
-    _saveBillInternal();
+    // Immediately trigger calculation and show result
+    setState(() {
+      _items = updatedItems;
+    });
+    _handleShowResultButton(); // This will calculate and switch to review mode
   }
 
   void _toggleEditMode() {
     setState(() {
-      _isEditingMode = !_isEditingMode; // Toggle edit mode
+      _isEditingMode = !_isEditingMode;
       if (_isEditingMode) {
-        _finalBillJsonString = null; // Clear final JSON when going back to edit
-        _showSplitDetails = false; // Reset split details visibility
+        _finalBillJsonString = null;
+        _showSplitDetails = false;
+        _currentCalculationResult =
+            null; // Clear stored result when going back to edit
+      } else {
+        // If switching to review mode (e.g. from an external trigger, though not current flow)
+        // ensure calculation is fresh if _currentCalculationResult is null.
+        if (_currentCalculationResult == null) {
+          final calculationResult = _calculateBillDetails();
+          if (calculationResult != null) {
+            _participants = calculationResult.updatedParticipants;
+            _finalBillJsonString = calculationResult.finalBillJson;
+            _currentCalculationResult = calculationResult;
+          } else {
+            _isEditingMode = true; // Stay in edit mode if calculation fails
+          }
+        } else {
+          // Use existing stored calculation
+          _participants = _currentCalculationResult!.updatedParticipants;
+          _finalBillJsonString = _currentCalculationResult!.finalBillJson;
+        }
       }
-      // When switching back to review mode, percentages might need redistribution
-      // if they were edited but not saved (though save is required now).
-      // However, the BillParticipantsSection handles its state based on `enabled`.
     });
     print("Switched to ${_isEditingMode ? 'editing' : 'review'} mode.");
   }
@@ -1223,15 +1246,14 @@ class _BillEditPageState extends State<BillEditPage> {
 
     return BlocListener<BillSplittingBloc, BillSplittingState>(
       listener: (context, state) {
-        if (state is BillSplittingSuccess && !_isEditingMode) {
-          // Ensure we are in review mode
+        if (state is BillSplittingSuccess) {
+          // This listener handles successful saves triggered by _handleSaveAppBarButton
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(l10n.billEditPageSuccessSnackbar(state.message)),
                 backgroundColor: Colors.green),
           );
 
-          // Update _currentSupabaseBillId with the ID from the successful save/update
           if (state.billEntity?.id != null &&
               state.billEntity!.id!.isNotEmpty) {
             _currentSupabaseBillId = state.billEntity!.id;
@@ -1239,7 +1261,6 @@ class _BillEditPageState extends State<BillEditPage> {
                 "Updated _currentSupabaseBillId from BLoC success: $_currentSupabaseBillId");
           }
 
-          // Save to history after successful Supabase save
           final authState = context.read<AuthBloc>().state;
           String? currentUserId;
           if (authState is AuthAuthenticated) {
@@ -1248,11 +1269,6 @@ class _BillEditPageState extends State<BillEditPage> {
 
           if (currentUserId != null && state.billEntity != null) {
             final billToSaveInHistory = state.billEntity!;
-            // Create the JSON map for finalBillDataJson
-            // This should ideally come from the successful save operation or be reconstructed
-            // For now, let's reconstruct it similarly to how it's done in _saveBillInternal
-            // This is a bit redundant and could be optimized if BillSplittingSuccess carried more data.
-
             final additionalCosts = _getActualAdditionalCosts();
             final billMapForHistoryJson = {
               'bill_date': _isoDateFormat.format(billToSaveInHistory.date),
@@ -1266,29 +1282,23 @@ class _BillEditPageState extends State<BillEditPage> {
                       ?.map((item) => item.toJson())
                       .toList() ??
                   [],
-              'participants': billToSaveInHistory.participants?.map((p) {
-                    return {
-                      'id': p.id,
-                      'name': p.name,
-                      'amount_owed': p.amountOwed,
-                    };
-                  }).toList() ??
-                  [],
-              // Store the Supabase ID for future reference
-              'supabase_bill_id':
-                  billToSaveInHistory.id, // This should be the ID from Supabase
-              // Add any other fields that HistoricalBillEntity expects in finalBillDataJson
+              'participants': (billToSaveInHistory.participants ?? []).map((p) {
+                // Ensure participants is always a list
+                return {
+                  'id': p.id,
+                  'name': p.name,
+                  'amount_owed': p.amountOwed,
+                };
+              }).toList(), // .toList() handles empty list correctly
+              'supabase_bill_id': billToSaveInHistory.id,
             };
             print(
-                "Saving to history with Supabase Bill ID: ${billToSaveInHistory.id}"); // Thêm log
+                "Saving to history with Supabase Bill ID: ${billToSaveInHistory.id}");
 
-            // Check if we are updating an existing historical bill            // Create a variable to hold the historical bill entity that will be available after the if-else
             HistoricalBillEntity historicalBill;
-
             if (_editingHistoricalBillId != null) {
-              // Update existing historical bill
               historicalBill = HistoricalBillEntity(
-                id: _editingHistoricalBillId!, // Use the existing history ID
+                id: _editingHistoricalBillId!,
                 userId: currentUserId,
                 description: billToSaveInHistory.description,
                 totalAmount: billToSaveInHistory.totalAmount,
@@ -1304,19 +1314,18 @@ class _BillEditPageState extends State<BillEditPage> {
                   }
                 })(),
                 finalBillDataJson: billMapForHistoryJson,
-                createdAt:
-                    DateTime.now(), // Keep original creation time if available
+                createdAt: widget.historicalBillToEdit?.createdAt ??
+                    DateTime.now(), // Preserve original if possible
                 updatedAt: DateTime.now(),
               );
-              context.read<BillHistoryBloc>().add(
-                  UpdateBillInHistoryEvent(historicalBill)); // Use update event
+              context
+                  .read<BillHistoryBloc>()
+                  .add(UpdateBillInHistoryEvent(historicalBill));
               print(
                   "Updating existing historical bill: $_editingHistoricalBillId");
             } else {
-              // Create new historical bill
               historicalBill = HistoricalBillEntity(
-                id: const Uuid()
-                    .v4(), // Generate a new UUID for new history entry
+                id: const Uuid().v4(),
                 userId: currentUserId,
                 description: billToSaveInHistory.description,
                 totalAmount: billToSaveInHistory.totalAmount,
@@ -1335,17 +1344,19 @@ class _BillEditPageState extends State<BillEditPage> {
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
               );
-              context.read<BillHistoryBloc>().add(SaveBillToHistoryEvent(
-                  historicalBill)); // Use create event for new bill
+              context
+                  .read<BillHistoryBloc>()
+                  .add(SaveBillToHistoryEvent(historicalBill));
               print("Creating new historical bill");
             }
             print(
-                "Dispatched SaveBillToHistoryEvent for bill ID (original): ${billToSaveInHistory.id}, History ID: ${historicalBill.id}");
+                "Dispatched BillHistoryEvent for bill ID (original): ${billToSaveInHistory.id}, History ID: ${historicalBill.id}");
           } else {
             print(
                 "Could not save to history: User ID or BillEntity is null after BillSplittingSuccess.");
           }
-          // Optionally navigate away or disable further editing
+          // Stay on the page, in edit mode, after successful save.
+          // _isEditingMode should still be true.
         } else if (state is BillSplittingError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1353,14 +1364,14 @@ class _BillEditPageState extends State<BillEditPage> {
                     Text(l10n.billEditPageSaveErrorSnackbar(state.message)),
                 backgroundColor: Theme.of(context).colorScheme.error),
           );
-          // Allow user to stay in edit mode or toggle back if save failed from review mode
+          // If save fails, user remains in edit mode.
+          // If they were in review mode and somehow triggered a save that failed (not standard flow now),
+          // they should arguably be returned to edit mode.
           if (!_isEditingMode) {
             setState(() {
               _isEditingMode = true;
-            }); // Go back to editing on error
+            });
           }
-        } else if (state is BillSplittingLoading) {
-          // Optional: Show loading indicator on save button or elsewhere
         }
       },
       child: Scaffold(
@@ -1369,7 +1380,6 @@ class _BillEditPageState extends State<BillEditPage> {
               ? l10n.billEditPageEditTitle
               : l10n.billEditPageReviewTitle),
           actions: [
-            // Show progress indicator instead of button while loading
             if (context.watch<BillSplittingBloc>().state
                 is BillSplittingLoading)
               const Padding(
@@ -1380,16 +1390,18 @@ class _BillEditPageState extends State<BillEditPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))),
               )
+            // Always show Save button on AppBar, regardless of mode.
+            // Tooltip might change based on whether it's a new save or update.
             else
               IconButton(
-                icon: Icon(
-                    _isEditingMode ? Icons.save_outlined : Icons.edit_outlined),
-                tooltip: _isEditingMode
-                    ? (_editingHistoricalBillId != null
-                        ? l10n.billEditPageUpdateTooltip
-                        : l10n.billEditPageSaveTooltip) // Placeholder
-                    : l10n.billEditPageEditTooltip,
-                onPressed: _isEditingMode ? _saveBillInternal : _toggleEditMode,
+                icon: const Icon(Icons.save_outlined),
+                tooltip: (_currentSupabaseBillId != null &&
+                            _currentSupabaseBillId!.isNotEmpty) ||
+                        (_editingHistoricalBillId != null)
+                    ? l10n.billEditPageUpdateTooltip // "Update Bill"
+                    : l10n.billEditPageSaveTooltip, // "Save Bill"
+                onPressed:
+                    _handleSaveAppBarButton, // Always calls save function
               ),
           ],
         ),
@@ -1489,32 +1501,69 @@ class _BillEditPageState extends State<BillEditPage> {
                   billTotalAmount: _parseNum(_totalAmountController.text)
                       ?.toDouble(), // Pass bill total for warning
                   onParticipantsChanged: (updatedParticipants) {
-                    // No need to check _isEditingMode here, the callback should only be called when enabled
+                    // This callback is for when names are edited, or participants are added/removed.
+                    // The list structure might change.
+                    if (!mounted) return;
                     setState(() {
-                      _participants = updatedParticipants;
+                      _participants = List.from(updatedParticipants);
 
                       // After participants are updated, filter out removed participants from items
                       final updatedItems = _items.map((item) {
-                        final validParticipants = item.participants
+                        final validItemParticipants = item.participants
                             .where((itemParticipant) => updatedParticipants.any(
                                 (p) => p.id == itemParticipant.participantId))
                             .toList();
-                        final validParticipantIds = validParticipants
+                        final validParticipantIds = validItemParticipants
                             .map((p) => p.participantId)
                             .toList();
 
-                        // Create a new BillItemEntity with updated participants and IDs
                         return item.copyWith(
-                          participants: validParticipants,
+                          participants: validItemParticipants,
                           participantIds: validParticipantIds,
                         );
                       }).toList();
-
                       _items = updatedItems;
-
-                      // Recalculate total after items potentially change
                       _recalculateAndCompareTotal();
                     });
+                  },
+                  onParticipantsUpdated: (updatedParticipantsWithColors) {
+                    // This callback is specifically for when BPS updates colors or other internal
+                    // states that BillEditPage needs to be aware of for its children (like BillItemsSection).
+                    if (!mounted) return;
+
+                    // Check if there's an actual change to avoid unnecessary rebuilds
+                    bool changed = false;
+                    if (_participants.length !=
+                        updatedParticipantsWithColors.length) {
+                      changed = true;
+                    } else {
+                      for (int i = 0; i < _participants.length; i++) {
+                        if (_participants[i].id !=
+                                updatedParticipantsWithColors[i].id ||
+                            _participants[i].name !=
+                                updatedParticipantsWithColors[i].name ||
+                            _participants[i].color !=
+                                updatedParticipantsWithColors[i].color ||
+                            _participants[i].amountOwed !=
+                                updatedParticipantsWithColors[i].amountOwed) {
+                          changed = true;
+                          break;
+                        }
+                      }
+                    }
+
+                    if (changed) {
+                      print(
+                          "[BillEditPage] onParticipantsUpdated from BPS. Updating _participants and rebuilding.");
+                      setState(() {
+                        // Crucially update _participants here so BillItemsSection gets the colored list
+                        _participants =
+                            List.from(updatedParticipantsWithColors);
+                      });
+                    } else {
+                      print(
+                          "[BillEditPage] onParticipantsUpdated from BPS. No effective change detected in _participants list content, not forcing setState.");
+                    }
                   },
                 ),
                 const SizedBox(
@@ -1528,23 +1577,20 @@ class _BillEditPageState extends State<BillEditPage> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: _saveBillInternal,
+                    onPressed: _handleShowResultButton,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: Text(_editingHistoricalBillId != null
-                        ? l10n.billEditPageUpdateButtonLabel
-                        : l10n.billEditPageResultButtonLabel), // Placeholder
+                    child: Text(l10n.billEditPageResultButtonLabel),
                   ),
                 ] else ...[
-                  // Show Edit button when in review mode
+                  // In Review Mode, show an "Edit" button at the bottom
                   ElevatedButton(
                     onPressed: _toggleEditMode, // Call toggle edit mode
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: Text(l10n
-                        .billEditPageEditButtonLabel), // Use a new localization string or existing one
+                    child: Text(l10n.billEditPageEditButtonLabel),
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -1595,10 +1641,25 @@ class _BillEditPageState extends State<BillEditPage> {
   }
 }
 
+// Helper class for _calculateBillDetails return type
+class _BillCalculationResult {
+  final BillEntity billEntity;
+  final String finalBillJson;
+  final List<ParticipantEntity> updatedParticipants;
+
+  _BillCalculationResult({
+    required this.billEntity,
+    required this.finalBillJson,
+    required this.updatedParticipants,
+  });
+}
 // Placeholder for localization strings to be added to .arb files:
 // billEditPageErrorNoDataSource: "No data source provided to edit the bill."
 // billEditPageNoRawOcrData: "No raw OCR data available for this historical bill."
 // billEditPageErrorLoadingHistorical: "Error loading bill from history: {error}"
 // billEditPageUpdateTooltip: "Update Bill"
-// billEditPageUpdateButtonLabel: "Update Bill"
+// billEditPageSaveTooltip: "Save Bill" (New or ensure it exists)
+// billEditPageEditTooltip: "Edit Bill" (Ensure it exists)
+// billEditPageResultButtonLabel: "Show Result" (Ensure it exists or update)
+// billEditPageUpdateButtonLabel: "Update Bill" // This might be redundant if AppBar tooltip covers "Update"
 // billEditPageErrorUnknown: "An unknown error occurred."

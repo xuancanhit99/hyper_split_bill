@@ -68,6 +68,10 @@ class BillItemWidget extends StatelessWidget {
         final participant = allParticipants
             .firstWhere((p) => p.id == id); // Now participant must exist
 
+        // DEBUG: Print participant details
+        print(
+            '[BillItemWidget] Building chip for participant: ${participant.name}, ID: ${participant.id}, Color: ${participant.color}, All participants in widget: ${allParticipants.map((p) => '(${p.name}:${p.id}:${p.color})').join(', ')}');
+
         // Get participant weight if available
         int weight = 1;
         if (item.participants.isNotEmpty) {
@@ -256,7 +260,8 @@ class BillItemWidget extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),            Row(
+            const SizedBox(height: 4),
+            Row(
               children: [
                 const Icon(Icons.people_alt_outlined,
                     size: 16, color: Colors.grey),
@@ -266,7 +271,9 @@ class BillItemWidget extends StatelessWidget {
                         // Prioritize item.participantIds as it is more consistently populated
                         item.participantIds.isNotEmpty
                             ? item.participantIds
-                            : item.participants.map((p) => p.participantId).toList())),
+                            : item.participants
+                                .map((p) => p.participantId)
+                                .toList())),
                 // Optional: Add a small edit icon here too for participants if needed
                 // IconButton(
                 //   icon: const Icon(Icons.edit_outlined, size: 16),

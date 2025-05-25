@@ -50,7 +50,7 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
           .select('''
             *,
             bill_items!inner(*),
-            bill_participants!inner(*)
+            bill_participants!left(*)
           ''')
           .eq('user_id', userId) // Filter by user ID
           .order('created_at', ascending: false); // Order by newest first
@@ -71,7 +71,7 @@ class BillHistoryRemoteDataSourceImpl implements BillHistoryRemoteDataSource {
       final response = await supabase.from(_tableName).select('''
             *,
             bill_items!inner(*),
-            bill_participants!inner(*)
+            bill_participants!left(*)
           ''').eq('id', billId).single();
       return HistoricalBillModel.fromJsonWithRelations(response);
     } on PostgrestException catch (e) {
