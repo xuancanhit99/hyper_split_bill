@@ -58,10 +58,12 @@ class BillSplittingDataLoaded extends BillSplittingState {
 // State indicating the bill has been successfully saved/updated
 class BillSplittingSuccess extends BillSplittingState {
   final String message; // e.g., "Bill saved successfully!"
-  const BillSplittingSuccess(this.message);
+  final BillEntity? billEntity; // Add the saved bill entity
+
+  const BillSplittingSuccess(this.message, {this.billEntity});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, billEntity];
 }
 
 // General error state for other operations (saving, loading details etc.)

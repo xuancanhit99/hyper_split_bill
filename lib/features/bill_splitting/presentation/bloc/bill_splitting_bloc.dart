@@ -10,7 +10,8 @@ import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_en
 import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/get_bills_usecase.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/process_bill_ocr_usecase.dart';
 import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/create_bill_usecase.dart';
-// TODO: Import other use cases (DeleteBill, etc.) when needed
+import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/update_bill_usecase.dart'; // Import UpdateBillUseCase
+import 'package:hyper_split_bill/features/bill_splitting/domain/usecases/delete_bill_usecase.dart'; // Import DeleteBillUseCase
 import 'package:injectable/injectable.dart';
 
 part 'bill_splitting_event.dart'; // Include the event file
@@ -21,19 +22,22 @@ class BillSplittingBloc extends Bloc<BillSplittingEvent, BillSplittingState> {
   final GetBillsUseCase _getBillsUseCase;
   final ProcessBillOcrUseCase _processBillOcrUseCase;
   final CreateBillUseCase _createBillUseCase;
-  // TODO: Inject other use cases
+  final UpdateBillUseCase _updateBillUseCase; // Add UpdateBillUseCase
+  final DeleteBillUseCase _deleteBillUseCase; // Add DeleteBillUseCase
 
   BillSplittingBloc(
     this._getBillsUseCase,
     this._processBillOcrUseCase,
     this._createBillUseCase,
-    // TODO: Add other use cases (Update, Delete) to constructor
+    this._updateBillUseCase, // Inject UpdateBillUseCase
+    this._deleteBillUseCase, // Inject DeleteBillUseCase
   ) : super(BillSplittingInitial()) {
     // Register event handlers
     on<FetchBillsEvent>(_onFetchBills);
     on<ProcessOcrEvent>(_onProcessOcr);
-    on<SaveBillEvent>(_onSaveBill);
-    // TODO: Register handlers for other events (SaveBill, DeleteBill, etc.)
+    on<SaveBillEvent>(
+        _onSaveBill); // This handles both create and update based on bill.id
+    on<DeleteBillEvent>(_onDeleteBill); // Register DeleteBillEvent handler
   }
 
   // --- Event Handlers ---
@@ -54,12 +58,14 @@ class BillSplittingBloc extends Bloc<BillSplittingEvent, BillSplittingState> {
         emit(BillSplittingInitial()); // Go back to initial for now
       },
     );
-  }  Future<void> _onProcessOcr(
+  }
+
+  Future<void> _onProcessOcr(
     ProcessOcrEvent event,
     Emitter<BillSplittingState> emit,
   ) async {
     emit(BillSplittingOcrProcessing());
-    
+
     // Use appropriate parameter based on platform (native file or web bytes)
     final ocrResult = await _processBillOcrUseCase(
       imageFile: event.imageFile,
@@ -84,23 +90,41 @@ class BillSplittingBloc extends Bloc<BillSplittingEvent, BillSplittingState> {
   ) async {
     emit(BillSplittingLoading()); // Indicate saving process
 
-    // TODO: Add logic here to also save associated items and participants
-    // This might involve multiple repository calls or a dedicated use case/transaction.
-    // For now, just save the main bill entity.
-
-    final failureOrSavedBill = await _createBillUseCase(event.bill);
-
-    failureOrSavedBill.fold(
-        (failure) => emit(
-            BillSplittingError(failure.message)), // Pass the raw error message
-        (savedBill) {
-      // TODO: Maybe update state with the saved bill (which now has an ID)
-      // or navigate back/show success message.
-      emit(const BillSplittingSuccess('Bill saved successfully!'));
-      // Consider resetting state or navigating after success
-      // emit(BillSplittingInitial());
-    });
+    // If the bill has an ID, it's an update operation. Otherwise, it's a create operation.
+    if (event.bill.id != null && event.bill.id!.isNotEmpty) {
+      final failureOrUpdatedBill =
+          await _updateBillUseCase(UpdateBillParams(bill: event.bill));
+      failureOrUpdatedBill.fold(
+        (failure) => emit(BillSplittingError(failure.message)),
+        (updatedBill) {
+          emit(BillSplittingSuccess('Bill updated successfully!',
+              billEntity: updatedBill));
+        },
+      );
+    } else {
+      final failureOrCreatedBill = await _createBillUseCase(event.bill);
+      failureOrCreatedBill.fold(
+        (failure) => emit(BillSplittingError(failure.message)),
+        (createdBill) {
+          emit(BillSplittingSuccess('Bill created successfully!',
+              billEntity: createdBill));
+        },
+      );
+    }
   }
 
-// TODO: Implement handlers for DeleteBillEvent, UpdateBillEvent etc.
+  Future<void> _onDeleteBill(
+    DeleteBillEvent event,
+    Emitter<BillSplittingState> emit,
+  ) async {
+    emit(BillSplittingLoading());
+    final failureOrDeleted =
+        await _deleteBillUseCase(DeleteBillParams(billId: event.billId));
+
+    failureOrDeleted.fold(
+      (failure) => emit(BillSplittingError(failure.message)),
+      (_) => emit(BillSplittingSuccess(
+          'Bill deleted successfully!')), // No specific entity to return on delete
+    );
+  }
 }

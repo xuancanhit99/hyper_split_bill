@@ -438,5 +438,62 @@
   "settingsPageThemeLight": "Light",
   "settingsPageThemeDark": "Dark",
   "settingsPageThemeSystem": "System",
-  "settingsPageThemeTooltip": "Toggle theme"
+  "settingsPageThemeTooltip": "Toggle theme",
+
+  "billHistoryPageTitle": "Bill History",
+  "billHistoryPageNoBills": "No bills found in history.",
+  "billHistoryPageErrorLoading": "Error loading bill history: {error}",
+  "@billHistoryPageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billHistoryPageDeleteConfirmationTitle": "Confirm Delete",
+  "billHistoryPageDeleteConfirmationContent": "Are you sure you want to delete this bill from history? This action cannot be undone.",
+  "billHistoryPageDeleteSuccess": "Bill deleted from history.",
+  "billHistoryPageDeleteFailure": "Failed to delete bill: {error}",
+  "@billHistoryPageDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billHistoryPageDetailsButton": "Details",
+  "billHistoryPageDateLabel": "Date",
+  "billHistoryPageTotalLabel": "Total",
+  "billHistoryPageCreatedAtLabel": "Created",
+
+  "billEditPageErrorNoDataSource": "No data source provided to edit the bill.",
+  "@billEditPageErrorNoDataSource": {
+    "description": "Error message when BillEditPage is opened without necessary data."
+  },
+  "billEditPageNoRawOcrData": "No raw OCR data available for this historical bill.",
+  "@billEditPageNoRawOcrData": {
+    "description": "Message displayed in OCR text field if historical bill has no raw OCR data."
+  },
+  "billEditPageErrorLoadingHistorical": "Error loading bill from history: {error}",
+  "@billEditPageErrorLoadingHistorical": {
+    "description": "Error message when loading a bill from history fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network timeout"
+      }
+    }
+  },
+  "billEditPageUpdateTooltip": "Update Bill",
+  "@billEditPageUpdateTooltip": {
+    "description": "Tooltip for the save/update button when editing a historical bill."
+  },
+  "billEditPageUpdateButtonLabel": "Update Bill",
+  "@billEditPageUpdateButtonLabel": {
+    "description": "Label for the save/update button when editing a historical bill."
+  },
+  "billEditPageErrorUnknown": "An unknown error occurred.",
+  "@billEditPageErrorUnknown": {
+    "description": "Generic error message for unknown errors on the bill edit page."
+  }
 }

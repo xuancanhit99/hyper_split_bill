@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart';
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:hyper_split_bill/injection_container.dart'; // Import GetIt instance
+import 'package:hyper_split_bill/features/bill_history/presentation/bloc/bill_history_bloc.dart'; // Import BillHistoryBloc
 import 'package:flutter_localizations/flutter_localizations.dart'; // Add localization delegates
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 import 'package:hyper_split_bill/core/providers/locale_provider.dart'; // Import LocaleProvider
@@ -26,6 +27,10 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => sl<ThemeProvider>(), // Get ThemeProvider from GetIt
+        ),
+        BlocProvider<BillHistoryBloc>(
+          // Add BillHistoryBloc provider
+          create: (_) => sl<BillHistoryBloc>(),
         ),
       ],
       child: Builder(builder: (context) {

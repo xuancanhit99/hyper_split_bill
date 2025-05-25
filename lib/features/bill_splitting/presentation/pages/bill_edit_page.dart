@@ -14,6 +14,9 @@ import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart'
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes for navigation
 import 'package:hyper_split_bill/core/constants/currencies.dart'; // Import the new currency constants file
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
+import 'package:hyper_split_bill/features/bill_history/presentation/bloc/bill_history_bloc.dart';
+import 'package:hyper_split_bill/features/bill_history/domain/entities/historical_bill_entity.dart';
+import 'package:uuid/uuid.dart'; // For generating unique IDs for history entries
 
 // Import newly created widgets
 import 'package:hyper_split_bill/features/bill_splitting/presentation/widgets/edit_dialog_content.dart';
@@ -25,9 +28,17 @@ import 'package:hyper_split_bill/features/bill_splitting/domain/entities/bill_it
 enum AmountType { percentage, fixed }
 
 class BillEditPage extends StatefulWidget {
-  final String structuredJsonString; // Receive the structured JSON string
+  final String?
+      structuredJsonString; // Receive the structured JSON string (nullable for editing history)
+  final HistoricalBillEntity?
+      historicalBillToEdit; // For editing an existing bill from history
 
-  const BillEditPage({super.key, required this.structuredJsonString});
+  const BillEditPage({
+    super.key,
+    this.structuredJsonString,
+    this.historicalBillToEdit,
+  }) : assert(structuredJsonString != null || historicalBillToEdit != null,
+            'Either structuredJsonString or historicalBillToEdit must be provided');
 
   @override
   State<BillEditPage> createState() => _BillEditPageState();
@@ -53,8 +64,10 @@ class _BillEditPageState extends State<BillEditPage> {
   List<ParticipantEntity> _participants = [];
   bool _isEditingMode = true; // Start in editing mode
   String? _finalBillJsonString; // Stores the final JSON after saving internally
-  bool _showSplitDetails =
-      false; // State to control split detail visibility (kept for potential future use)
+  bool _showSplitDetails = false; // State to control split detail visibility
+  String? _editingHistoricalBillId; // ID of the historical bill being edited
+  String?
+      _firebaseBillId; // ID of the bill in Firebase (if editing an existing one)
 
   // State for optional field visibility
   bool _showTax = false;
@@ -105,12 +118,21 @@ class _BillEditPageState extends State<BillEditPage> {
     // Parse JSON here, as context is available and it runs after initState
     // Use a flag to ensure it only runs once during initialization
     if (_isInitializing) {
-      _parseStructuredJson(widget.structuredJsonString);
-      // Perform initial calculation *after* parsing is complete
+      if (widget.historicalBillToEdit != null) {
+        _loadDataFromHistoricalBill(widget.historicalBillToEdit!);
+      } else if (widget.structuredJsonString != null) {
+        _parseStructuredJson(widget.structuredJsonString!);
+      } else {
+        // This case should not happen due to the assert in the constructor
+        setState(() {
+          _parsingError =
+              AppLocalizations.of(context)!.billEditPageErrorNoDataSource;
+          _isInitializing = false;
+        });
+      }
+      // Perform initial calculation *after* parsing/loading is complete
       _recalculateAndCompareTotal();
-      // Set the flag to false after the first run
-      // Note: _parseStructuredJson already sets _isInitializing = false internally
-      // If it didn't, we would set it here: _isInitializing = false;
+      // _isInitializing is set to false within _parseStructuredJson or _loadDataFromHistoricalBill
     }
   }
 
@@ -293,6 +315,181 @@ class _BillEditPageState extends State<BillEditPage> {
     }
   }
 
+  void _loadDataFromHistoricalBill(HistoricalBillEntity historicalBill) {
+    _items = [];
+    _participants = [];
+    _parsingError = null;
+    _isInitializing = false;
+    _isEditingMode = true; // Start in editing mode
+    _finalBillJsonString = null;
+    _editingHistoricalBillId = historicalBill.id;
+    // Attempt to get firebaseBillId from the historical data.
+    // This assumes finalBillDataJson might contain the original Firebase bill's ID.
+    // A more robust solution would be a dedicated field in HistoricalBillEntity.
+    _firebaseBillId =
+        historicalBill.finalBillDataJson?['firebase_bill_id'] as String? ??
+            historicalBill.finalBillDataJson?['id'] as String?;
+
+    print(
+        "Attempting to load data from HistoricalBillEntity: ${historicalBill.id}. Firebase Bill ID: $_firebaseBillId");
+
+    try {
+      final data = historicalBill.finalBillDataJson;
+      if (data == null) {
+        throw Exception("finalBillDataJson is null in HistoricalBillEntity");
+      }
+      print("Historical bill data map: $data");
+
+      _descriptionController.text = data['description'] as String? ??
+          historicalBill.description ??
+          ''; // Provide default empty string
+      _totalAmountController.text =
+          (data['total_amount'] as num?)?.toString() ??
+              historicalBill.totalAmount.toString();
+
+      final taxAmount = _parseNum(data['tax_amount']);
+      _taxController.text = taxAmount?.toString() ?? '0.0';
+      _showTax = taxAmount != null && taxAmount != 0;
+
+      final tipAmount = _parseNum(data['tip_amount']);
+      _tipController.text = tipAmount?.toString() ?? '0.0';
+      _showTip = tipAmount != null && tipAmount != 0;
+
+      final discountAmount = _parseNum(data['discount_amount']);
+      _discountController.text = discountAmount?.toString() ?? '0.0';
+      _showDiscount = discountAmount != null && discountAmount != 0;
+
+      final parsedCurrency =
+          data['currency_code'] as String? ?? historicalBill.currencyCode;
+      String effectiveCurrency = 'USD';
+      if (parsedCurrency.isNotEmpty) {
+        final upperCaseCurrency = parsedCurrency.toUpperCase();
+        if (upperCaseCurrency.length == 3) {
+          effectiveCurrency = upperCaseCurrency;
+          if (!_dropdownCurrencies.contains(effectiveCurrency)) {
+            _dropdownCurrencies.add(effectiveCurrency);
+            _dropdownCurrencies.sort();
+          }
+        }
+      }
+      _currencyController.text = effectiveCurrency;
+
+      final dateString = data['bill_date'] as String? ??
+          _isoDateFormat.format(historicalBill.billDate);
+      if (dateString.isNotEmpty) {
+        DateTime? parsedDate;
+        try {
+          parsedDate = _isoDateFormat.parseStrict(dateString);
+        } catch (_) {
+          try {
+            parsedDate = DateFormat('MM/dd/yyyy').parseStrict(dateString);
+          } catch (_) {
+            try {
+              parsedDate = DateFormat('dd/MM/yyyy').parseStrict(dateString);
+            } catch (_) {
+              try {
+                parsedDate = _displayDateFormat.parseStrict(dateString);
+              } catch (_) {
+                print(
+                    "Warning: Could not parse date string '$dateString' from historical bill. Using original from entity.");
+                parsedDate = historicalBill.billDate;
+              }
+            }
+          }
+        }
+        _dateController.text = _displayDateFormat.format(parsedDate);
+      } else {
+        _dateController.text =
+            _displayDateFormat.format(historicalBill.billDate);
+      }
+
+      if (data['items'] is List) {
+        int itemIndex = 0;
+        for (var itemMap in (data['items'] as List)) {
+          if (itemMap is Map<String, dynamic>) {
+            try {
+              final List<BillItemParticipant> itemParticipants =
+                  (itemMap['participants'] as List<dynamic>? ?? [])
+                      .map((pMap) {
+                        if (pMap is Map<String, dynamic>) {
+                          return BillItemParticipant.fromJson(pMap);
+                        }
+                        return null;
+                      })
+                      .whereType<BillItemParticipant>()
+                      .toList();
+
+              // Ensure participantIds are derived from the parsed itemParticipants
+              final List<String> itemParticipantIds =
+                  itemParticipants.map((p) => p.participantId).toList();
+
+              _items.add(BillItemEntity(
+                id: itemMap['id'] as String? ?? 'temp_hist_item_${itemIndex++}',
+                description: itemMap['description'] as String? ??
+                    AppLocalizations.of(context)!
+                        .billEditPageDefaultItemDescription,
+                quantity: _parseNum(itemMap['quantity'], allowNegative: false)
+                        ?.toInt() ??
+                    1,
+                unitPrice: _parseNum(itemMap['unit_price'])?.toDouble() ?? 0.0,
+                totalPrice:
+                    _parseNum(itemMap['total_price'])?.toDouble() ?? 0.0,
+                participantIds: itemParticipantIds, // Use derived IDs
+                participants: itemParticipants, // Use parsed participants
+              ));
+            } catch (e, s) {
+              print(
+                  "Error parsing item map from historical bill: $itemMap. Error: $e\nStackTrace: $s");
+            }
+          }
+        }
+      }
+
+      if (data['participants'] is List) {
+        for (var pMap in (data['participants'] as List)) {
+          if (pMap is Map<String, dynamic>) {
+            try {
+              final String participantId = pMap['id'] as String? ??
+                  'temp_hist_p_${_participants.length}';
+              _participants.add(ParticipantEntity(
+                id: participantId,
+                name: pMap['name'] as String? ??
+                    AppLocalizations.of(context)!
+                        .billEditPageDefaultParticipantName,
+                amountOwed: _parseNum(pMap['amount_owed'])?.toDouble(),
+              ));
+            } catch (e, s) {
+              print(
+                  "Error parsing participant map from historical bill: $pMap. Error: $e\nStackTrace: $s");
+            }
+          }
+        }
+      }
+
+      if (historicalBill.rawOcrJson != null) {
+        try {
+          _ocrTextController.text = const JsonEncoder.withIndent('  ')
+              .convert(historicalBill.rawOcrJson);
+        } catch (e) {
+          _ocrTextController.text = "Error displaying raw OCR JSON: $e";
+        }
+      } else {
+        _ocrTextController.text = AppLocalizations.of(context)!
+            .billEditPageNoRawOcrData; // Placeholder, add to .arb
+      }
+
+      setState(() {});
+    } catch (e, s) {
+      print("Error loading data from HistoricalBillEntity: $e\nStackTrace: $s");
+      setState(() {
+        _parsingError = AppLocalizations.of(context)!
+            .billEditPageErrorLoadingHistorical(e.toString()); // Placeholder
+      });
+    }
+    _recalculateAndCompareTotal();
+    _isInitializing = false; // Ensure this is set
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     if (!_isEditingMode) return;
     DateTime initialDate = DateTime.now(); // Default to now
@@ -319,9 +516,30 @@ class _BillEditPageState extends State<BillEditPage> {
     }
   }
 
-  void _dispatchSaveEvent(BillEntity billToSave) {
-    print("Dispatching SaveBillEvent for user ID: ${billToSave.payerUserId}");
-    context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
+  void _dispatchSaveEvent(BillEntity billToSave, {bool isUpdate = false}) {
+    if (isUpdate && _firebaseBillId != null) {
+      // We need to ensure the billToSave has the correct Firebase ID for update.
+      // The BillEntity created in _saveBillInternal might have an empty ID if it's a fresh calculation.
+      // Or, if it's based on an existing bill, it should retain its ID.
+      // This needs careful checking. For now, assume billToSave.id is the Firebase ID if isUpdate is true.
+      print(
+          "Dispatching UpdateBillEvent for bill ID: ${billToSave.id}, User ID: ${billToSave.payerUserId}");
+      // TODO: Create and dispatch an UpdateBillEvent to BillSplittingBloc
+      // context.read<BillSplittingBloc>().add(UpdateBillEvent(billToSave.copyWith(id: _firebaseBillId ?? billToSave.id)));
+      // For now, let's assume SaveBillEvent can handle updates if ID is present,
+      // or we need a specific UpdateBillEvent in BillSplittingBloc.
+      // This part needs to align with BillSplittingBloc's capabilities.
+      // If SaveBillUseCase handles upsert, then this is fine.
+      // Otherwise, a dedicated UpdateBillEvent and use case are needed.
+      print(
+          "Update logic for Firebase to be fully implemented. Dispatching SaveBillEvent for now, assuming upsert.");
+      context.read<BillSplittingBloc>().add(SaveBillEvent(
+          billToSave.copyWith(id: _firebaseBillId ?? billToSave.id)));
+    } else {
+      print(
+          "Dispatching SaveBillEvent (new bill) for user ID: ${billToSave.payerUserId}");
+      context.read<BillSplittingBloc>().add(SaveBillEvent(billToSave));
+    }
   }
 
   // Helper to get actual tax, tip, discount amounts
@@ -464,9 +682,15 @@ class _BillEditPageState extends State<BillEditPage> {
     final List<ParticipantEntity> finalParticipantsForStateAndFirebase =
         List.from(updatedParticipantsWithOwedAmount);
 
-    // Create Bill Entity for saving to Firebase (includes owed amounts)
+    // Create Bill Entity for saving
+    // If editing, use the existing _firebaseBillId, otherwise it's a new bill (ID will be generated or is empty)
+    final String billIdForSave =
+        _editingHistoricalBillId != null ? (_firebaseBillId ?? '') : '';
+    print(
+        "Bill ID for save operation: '$billIdForSave'. _editingHistoricalBillId: $_editingHistoricalBillId, _firebaseBillId: $_firebaseBillId");
+
     final currentBillData = BillEntity(
-      id: '', // ID will be generated by backend/storage
+      id: billIdForSave, // Use existing ID if updating, or empty for new
       totalAmount: totalAmountFromController.toDouble(),
       date: parsedBillDate,
       description: _descriptionController.text.trim(),
@@ -508,7 +732,9 @@ class _BillEditPageState extends State<BillEditPage> {
       _showSplitDetails = false;
     });
 
-    print("Internal save complete. Dispatching save event...");
+    print(
+        "Internal save complete. Dispatching save event to BillSplittingBloc...");
+    // The actual saving to history will be triggered by the BillSplittingBloc's success state.
     _dispatchSaveEvent(currentBillData);
   }
 
@@ -983,6 +1209,76 @@ class _BillEditPageState extends State<BillEditPage> {
                 content: Text(l10n.billEditPageSuccessSnackbar(state.message)),
                 backgroundColor: Colors.green),
           );
+
+          // Save to history after successful Firebase save
+          final authState = context.read<AuthBloc>().state;
+          String? currentUserId;
+          if (authState is AuthAuthenticated) {
+            currentUserId = authState.user.id;
+          }
+
+          if (currentUserId != null && state.billEntity != null) {
+            final billToSaveInHistory = state.billEntity!;
+            // Create the JSON map for finalBillDataJson
+            // This should ideally come from the successful save operation or be reconstructed
+            // For now, let's reconstruct it similarly to how it's done in _saveBillInternal
+            // This is a bit redundant and could be optimized if BillSplittingSuccess carried more data.
+
+            final additionalCosts = _getActualAdditionalCosts();
+            final billMapForHistoryJson = {
+              'bill_date': _isoDateFormat.format(billToSaveInHistory.date),
+              'description': billToSaveInHistory.description,
+              'currency_code': billToSaveInHistory.currencyCode,
+              'total_amount': billToSaveInHistory.totalAmount,
+              'tax_amount': additionalCosts['tax']!,
+              'tip_amount': additionalCosts['tip']!,
+              'discount_amount': additionalCosts['discount']!,
+              'items': billToSaveInHistory.items
+                      ?.map((item) => item.toJson())
+                      .toList() ??
+                  [],
+              'participants': billToSaveInHistory.participants?.map((p) {
+                    return {
+                      'name': p.name,
+                      'amount_owed': p.amountOwed,
+                    };
+                  }).toList() ??
+                  [],
+              // Add any other fields that HistoricalBillEntity expects in finalBillDataJson
+            };
+
+            final historicalBill = HistoricalBillEntity(
+              id: const Uuid().v4(), // Generate a new UUID for history entry
+              userId: currentUserId,
+              description: billToSaveInHistory.description,
+              totalAmount: billToSaveInHistory.totalAmount,
+              currencyCode: billToSaveInHistory.currencyCode ??
+                  'USD', // Provide default if null
+              billDate: billToSaveInHistory.date,
+              // rawOcrJson: jsonDecode(_ocrTextController.text), // Assuming _ocrTextController.text is valid JSON
+              rawOcrJson: (() {
+                // Safely decode rawOcrJson
+                try {
+                  return jsonDecode(_ocrTextController.text)
+                      as Map<String, dynamic>?;
+                } catch (e) {
+                  print("Error decoding rawOcrJson for history: $e");
+                  return null; // Or an empty map: <String, dynamic>{}
+                }
+              })(),
+              finalBillDataJson: billMapForHistoryJson,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+            context
+                .read<BillHistoryBloc>()
+                .add(SaveBillToHistoryEvent(historicalBill));
+            print(
+                "Dispatched SaveBillToHistoryEvent for bill ID (original): ${billToSaveInHistory.id}, History ID: ${historicalBill.id}");
+          } else {
+            print(
+                "Could not save to history: User ID or BillEntity is null after BillSplittingSuccess.");
+          }
           // Optionally navigate away or disable further editing
         } else if (state is BillSplittingError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1023,7 +1319,9 @@ class _BillEditPageState extends State<BillEditPage> {
                 icon: Icon(
                     _isEditingMode ? Icons.save_outlined : Icons.edit_outlined),
                 tooltip: _isEditingMode
-                    ? l10n.billEditPageSaveTooltip
+                    ? (_editingHistoricalBillId != null
+                        ? l10n.billEditPageUpdateTooltip
+                        : l10n.billEditPageSaveTooltip) // Placeholder
                     : l10n.billEditPageEditTooltip,
                 onPressed: _isEditingMode ? _saveBillInternal : _toggleEditMode,
               ),
@@ -1040,8 +1338,9 @@ class _BillEditPageState extends State<BillEditPage> {
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Center(
                       child: Text(
-                          l10n.billEditPageErrorParsingOcr(
-                              _parsingError ?? 'Unknown error'),
+                          _parsingError ??
+                              AppLocalizations.of(context)!
+                                  .billEditPageErrorUnknown, // Placeholder
                           style: TextStyle(
                               color: Theme.of(context).colorScheme.error))),
                 )
@@ -1167,7 +1466,9 @@ class _BillEditPageState extends State<BillEditPage> {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: Text(l10n.billEditPageResultButtonLabel),
+                    child: Text(_editingHistoricalBillId != null
+                        ? l10n.billEditPageUpdateButtonLabel
+                        : l10n.billEditPageResultButtonLabel), // Placeholder
                   ),
                 ] else ...[
                   // Show Edit button when in review mode
@@ -1209,13 +1510,16 @@ class _BillEditPageState extends State<BillEditPage> {
                   const Divider(),
                 ],
 
-                // --- Raw OCR Text (Styled like Final JSON, always available) ---
-                JsonExpansionTile(
-                  title: l10n.billEditPageRawJsonTileTitle,
-                  jsonString: _ocrTextController.text,
-                  initiallyExpanded: false,
-                ),
-                const SizedBox(height: 16), // Add some space at the bottom
+                // --- Raw OCR Text ---
+                if (widget.historicalBillToEdit == null ||
+                    (widget.historicalBillToEdit?.rawOcrJson != null &&
+                        _ocrTextController.text.isNotEmpty))
+                  JsonExpansionTile(
+                    title: l10n.billEditPageRawJsonTileTitle,
+                    jsonString: _ocrTextController.text,
+                    initiallyExpanded: false,
+                  ),
+                const SizedBox(height: 16),
               ],
             ],
           ),
@@ -1224,3 +1528,11 @@ class _BillEditPageState extends State<BillEditPage> {
     );
   }
 }
+
+// Placeholder for localization strings to be added to .arb files:
+// billEditPageErrorNoDataSource: "No data source provided to edit the bill."
+// billEditPageNoRawOcrData: "No raw OCR data available for this historical bill."
+// billEditPageErrorLoadingHistorical: "Error loading bill from history: {error}"
+// billEditPageUpdateTooltip: "Update Bill"
+// billEditPageUpdateButtonLabel: "Update Bill"
+// billEditPageErrorUnknown: "An unknown error occurred."
