@@ -688,14 +688,25 @@ class _ChatbotPageState extends State<ChatbotPage>
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
-    if (difference.inMinutes < 1) {
+    if (difference.inSeconds < 5) {
       return 'now';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds}s ago';
     } else if (difference.inHours < 1) {
       return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
+    }
+
+    // Check if the message is from today
+    final isToday = now.year == dateTime.year &&
+        now.month == dateTime.month &&
+        now.day == dateTime.day;
+
+    if (isToday) {
+      // If today and more than 1 hour ago, show time (HH:mm)
+      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else {
-      return '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+      // If not today, show date and time (DD/MM HH:mm)
+      return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     }
   }
 }
