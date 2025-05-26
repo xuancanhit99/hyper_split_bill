@@ -1923,7 +1923,7 @@ class _BillEditPageState extends State<BillEditPage> {
                                   ),
                             ),
 
-                            // Show participants warning only (no duplicate participant cards)
+                            // Show warnings only (before the styled participant cards)
                             BillParticipantsSection(
                               key: ValueKey(
                                   'bill_participants_section_warning_${_isEditingMode}'),
@@ -1941,6 +1941,71 @@ class _BillEditPageState extends State<BillEditPage> {
                                 // No-op in review mode
                               },
                             ),
+
+                            const SizedBox(height: 12),
+                            ...(_participants.map((participant) => Container(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        participant.color?.withOpacity(0.1) ??
+                                            Theme.of(context)
+                                                .primaryColor
+                                                .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color:
+                                          participant.color?.withOpacity(0.3) ??
+                                              Theme.of(context)
+                                                  .primaryColor
+                                                  .withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 12,
+                                            height: 12,
+                                            decoration: BoxDecoration(
+                                              color: participant.color ??
+                                                  Theme.of(context)
+                                                      .primaryColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            participant.name,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '${_currencyController.text} ${_formatCurrencyValue(participant.amountOwed)}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: participant.color ??
+                                                  Theme.of(context)
+                                                      .primaryColor,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ))),
                           ],
                         ],
                       ),
