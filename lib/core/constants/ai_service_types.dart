@@ -3,4 +3,5 @@ enum AiServiceType {
   gemini,
   grok,
   gigachat,
+  tesseract,
 }

@@ -1,6 +1,7 @@
 import 'dart:io'; // Will be needed for File type
 import 'dart:convert'; // Import for jsonDecode
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Will be needed for Bloc
 import 'package:image_picker/image_picker.dart'; // For picking images
 import 'package:image_cropper/image_cropper.dart'; // For cropping images
@@ -337,6 +338,116 @@ class _BillUploadViewState extends State<_BillUploadView> {
     }
   }
 
+  // Helper method to build image preview card
+  Widget _buildImagePreviewCard({required Widget child}) {
+    return Container(
+      height: 300,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: child,
+      ),
+    );
+  }
+
+  // Helper method to build action cards
+  Widget _buildActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onTap,
+    required Color color,
+    bool isOutlined = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isOutlined ? Colors.transparent : color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: isOutlined ? Border.all(color: color, width: 2) : null,
+        boxShadow: isOutlined
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isOutlined
+                        ? color.withOpacity(0.1)
+                        : color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: onTap == null ? Colors.grey : null,
+                                ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: onTap == null
+                                  ? Colors.grey
+                                  : Colors.grey[600],
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: onTap == null ? Colors.grey : color,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -400,8 +511,20 @@ class _BillUploadViewState extends State<_BillUploadView> {
         }
       },
       child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           title: Text(l10n.billUploadPageTitle),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          centerTitle: true,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness:
+                Theme.of(context).brightness == Brightness.light
+                    ? Brightness.dark
+                    : Brightness.light,
+            statusBarBrightness: Theme.of(context).brightness,
+          ),
         ),
         body: SafeArea(
           child: BlocBuilder<BillSplittingBloc, BillSplittingState>(
@@ -411,73 +534,122 @@ class _BillUploadViewState extends State<_BillUploadView> {
 
               return Stack(
                 children: [
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          if (_webImage != null && kIsWeb) ...[
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 20.0),
-                                child: Image.memory(
-                                  _webImage!,
-                                  fit: BoxFit.contain,
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header Section
+                        Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  Icons.receipt_long,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
-                            ),
-                          ] else if (_selectedImage != null && !kIsWeb) ...[
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 20.0),
-                                child: Image.file(
-                                  _selectedImage!,
-                                  fit: BoxFit.contain,
-                                ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Upload Your Bill',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ] else ...[
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Image.asset(
-                                  'assets/images/Two-Cat-Scan-Bill.png',
-                                  fit: BoxFit.contain,
-                                ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Take a photo or select from gallery to get started',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ],
-                          if ((_selectedImage != null && !kIsWeb) ||
-                              (_webImage != null && kIsWeb)) ...[
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.refresh),
-                              label:
-                                  Text(l10n.billUploadPageRetryOcrButtonLabel),
-                              onPressed: isLoading ? null : _retryOcr,
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.photo_library_outlined),
-                            label: Text(l10n.billUploadPageGalleryButtonLabel),
-                            onPressed: isLoading ? null : _pickImageFromGallery,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                            ),
+                            ],
                           ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Image Preview Section
+                        if (_webImage != null && kIsWeb) ...[
+                          _buildImagePreviewCard(
+                            child:
+                                Image.memory(_webImage!, fit: BoxFit.contain),
+                          ),
+                          const SizedBox(height: 24),
+                        ] else if (_selectedImage != null && !kIsWeb) ...[
+                          _buildImagePreviewCard(
+                            child: Image.file(_selectedImage!,
+                                fit: BoxFit.contain),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Action Buttons Section
+                        Text(
+                          'Choose Upload Method',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Gallery Button
+                        _buildActionCard(
+                          context,
+                          icon: Icons.photo_library_outlined,
+                          title: l10n.billUploadPageGalleryButtonLabel,
+                          subtitle: 'Select from your photo gallery',
+                          onTap: isLoading ? null : _pickImageFromGallery,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Camera Button
+                        _buildActionCard(
+                          context,
+                          icon: Icons.camera_alt_outlined,
+                          title: l10n.billUploadPageCameraButtonLabel,
+                          subtitle: 'Take a new photo with camera',
+                          onTap: isLoading ? null : _pickImageFromCamera,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+
+                        if ((_selectedImage != null && !kIsWeb) ||
+                            (_webImage != null && kIsWeb)) ...[
                           const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.camera_alt_outlined),
-                            label: Text(l10n.billUploadPageCameraButtonLabel),
-                            onPressed: isLoading ? null : _pickImageFromCamera,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                            ),
+
+                          // Retry Button
+                          _buildActionCard(
+                            context,
+                            icon: Icons.refresh,
+                            title: l10n.billUploadPageRetryOcrButtonLabel,
+                            subtitle: 'Process the image again',
+                            onTap: isLoading ? null : _retryOcr,
+                            color: Colors.orange,
+                            isOutlined: true,
                           ),
                         ],
-                      ),
+
+                        const SizedBox(height: 32),
+                      ],
                     ),
                   ),
                   if (isLoading)
