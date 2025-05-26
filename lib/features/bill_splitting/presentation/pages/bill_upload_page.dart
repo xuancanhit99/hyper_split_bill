@@ -610,6 +610,21 @@ class _BillUploadViewState extends State<_BillUploadView> {
                         ),
                         const SizedBox(height: 16),
 
+                        // Retry Button (appears first when image is selected)
+                        if ((_selectedImage != null && !kIsWeb) ||
+                            (_webImage != null && kIsWeb)) ...[
+                          _buildActionCard(
+                            context,
+                            icon: Icons.refresh,
+                            title: l10n.billUploadPageRetryOcrButtonLabel,
+                            subtitle: 'Process the image again',
+                            onTap: isLoading ? null : _retryOcr,
+                            color: Colors.orange,
+                            isOutlined: true,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
                         // Gallery Button
                         _buildActionCard(
                           context,
@@ -631,22 +646,6 @@ class _BillUploadViewState extends State<_BillUploadView> {
                           onTap: isLoading ? null : _pickImageFromCamera,
                           color: Theme.of(context).colorScheme.secondary,
                         ),
-
-                        if ((_selectedImage != null && !kIsWeb) ||
-                            (_webImage != null && kIsWeb)) ...[
-                          const SizedBox(height: 16),
-
-                          // Retry Button
-                          _buildActionCard(
-                            context,
-                            icon: Icons.refresh,
-                            title: l10n.billUploadPageRetryOcrButtonLabel,
-                            subtitle: 'Process the image again',
-                            onTap: isLoading ? null : _retryOcr,
-                            color: Colors.orange,
-                            isOutlined: true,
-                          ),
-                        ],
 
                         const SizedBox(height: 32),
                       ],
