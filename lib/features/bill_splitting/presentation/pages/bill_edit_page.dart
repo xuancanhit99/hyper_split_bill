@@ -1351,12 +1351,15 @@ class _BillEditPageState extends State<BillEditPage> {
             }
             print(
                 "Dispatched BillHistoryEvent for bill ID (original): ${billToSaveInHistory.id}, History ID: ${historicalBill.id}");
+
+            // Navigate to Bill History page immediately after successful save
+            if (mounted) {
+              context.go(AppRoutes.history);
+            }
           } else {
             print(
                 "Could not save to history: User ID or BillEntity is null after BillSplittingSuccess.");
           }
-          // Stay on the page, in edit mode, after successful save.
-          // _isEditingMode should still be true.
         } else if (state is BillSplittingError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

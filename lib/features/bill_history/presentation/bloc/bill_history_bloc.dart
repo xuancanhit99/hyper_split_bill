@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hyper_split_bill/core/usecases/usecase.dart';
-import 'package:hyper_split_bill/features/bill_history/domain/entities/historical_bill_entity.dart'; // Ensure this is imported
+import 'package:hyper_split_bill/features/bill_history/domain/entities/historical_bill_entity.dart';
 import 'package:hyper_split_bill/features/bill_history/domain/usecases/delete_bill_from_history_usecase.dart';
 import 'package:hyper_split_bill/features/bill_history/domain/usecases/get_bill_details_from_history_usecase.dart';
 import 'package:hyper_split_bill/features/bill_history/domain/usecases/get_bill_history_usecase.dart';
@@ -36,12 +36,19 @@ class BillHistoryBloc extends Bloc<BillHistoryEvent, BillHistoryState> {
 
   Future<void> _onLoadBillHistory(
       LoadBillHistoryEvent event, Emitter<BillHistoryState> emit) async {
+    print('BillHistoryBloc: Loading bill history...');
     emit(BillHistoryLoading());
     final failureOrHistory = await getBillHistoryUseCase(NoParams());
-    emit(failureOrHistory.fold(
-      (failure) => BillHistoryError(failure.message),
-      (history) => BillHistoryLoaded(history),
-    ));
+    failureOrHistory.fold(
+      (failure) {
+        print('BillHistoryBloc: Failed to load history: ${failure.message}');
+        emit(BillHistoryError(failure.message));
+      },
+      (history) {
+        print('BillHistoryBloc: Loaded ${history.length} bills successfully');
+        emit(BillHistoryLoaded(history));
+      },
+    );
   }
 
   Future<void> _onLoadBillDetails(
@@ -56,41 +63,96 @@ class BillHistoryBloc extends Bloc<BillHistoryEvent, BillHistoryState> {
 
   Future<void> _onSaveBillToHistory(
       SaveBillToHistoryEvent event, Emitter<BillHistoryState> emit) async {
-    // emit(BillHistoryLoading()); // Or a specific loading state for this action
+    print('BillHistoryBloc: Saving bill to history with ID: ${event.bill.id}');
     final failureOrSavedBill = await saveBillToHistoryUseCase(event.bill);
-    emit(failureOrSavedBill.fold(
-      (failure) => BillHistoryError(failure.message),
-      (bill) {
-        // Optionally, reload the entire history or just emit success
-        add(LoadBillHistoryEvent()); // Reload history after saving
-        return BillHistoryActionSuccess(message: 'Bill saved successfully!');
+
+    await failureOrSavedBill.fold(
+      (failure) async {
+        print('BillHistoryBloc: Save failed with error: ${failure.message}');
+        emit(BillHistoryError(failure.message));
       },
-    ));
+      (bill) async {
+        print('BillHistoryBloc: Save successful, reloading history...');
+        // Reload history after saving successfully
+        emit(BillHistoryLoading());
+        final failureOrHistory = await getBillHistoryUseCase(NoParams());
+        failureOrHistory.fold(
+          (failure) {
+            print(
+                'BillHistoryBloc: Failed to reload history after save: ${failure.message}');
+            if (!emit.isDone) emit(BillHistoryError(failure.message));
+          },
+          (history) {
+            print(
+                'BillHistoryBloc: History reloaded after save with ${history.length} bills');
+            if (!emit.isDone) emit(BillHistoryLoaded(history));
+          },
+        );
+      },
+    );
   }
 
   Future<void> _onUpdateBillInHistory(
       UpdateBillInHistoryEvent event, Emitter<BillHistoryState> emit) async {
-    // emit(BillHistoryLoading()); // Or a specific loading state for this action
+    print(
+        'BillHistoryBloc: Updating bill in history with ID: ${event.bill.id}');
     final failureOrUpdatedBill = await updateBillInHistoryUseCase(event.bill);
-    emit(failureOrUpdatedBill.fold(
-      (failure) => BillHistoryError(failure.message),
-      (bill) {
-        add(LoadBillHistoryEvent()); // Reload history after updating
-        return BillHistoryActionSuccess(message: 'Bill updated successfully!');
+
+    await failureOrUpdatedBill.fold(
+      (failure) async {
+        print('BillHistoryBloc: Update failed with error: ${failure.message}');
+        emit(BillHistoryError(failure.message));
       },
-    ));
+      (bill) async {
+        print('BillHistoryBloc: Update successful, reloading history...');
+        // Reload history after updating successfully
+        emit(BillHistoryLoading());
+        final failureOrHistory = await getBillHistoryUseCase(NoParams());
+        failureOrHistory.fold(
+          (failure) {
+            print(
+                'BillHistoryBloc: Failed to reload history: ${failure.message}');
+            if (!emit.isDone) emit(BillHistoryError(failure.message));
+          },
+          (history) {
+            print(
+                'BillHistoryBloc: History reloaded successfully with ${history.length} bills');
+            if (!emit.isDone) emit(BillHistoryLoaded(history));
+          },
+        );
+      },
+    );
   }
 
   Future<void> _onDeleteBillFromHistory(
       DeleteBillFromHistoryEvent event, Emitter<BillHistoryState> emit) async {
-    // emit(BillHistoryLoading()); // Or a specific loading state for this action
+    print(
+        'BillHistoryBloc: Deleting bill from history with ID: ${event.billId}');
     final failureOrVoid = await deleteBillFromHistoryUseCase(event.billId);
-    emit(failureOrVoid.fold(
-      (failure) => BillHistoryError(failure.message),
-      (_) {
-        add(LoadBillHistoryEvent()); // Reload history after deleting
-        return BillHistoryActionSuccess(message: 'Bill deleted successfully!');
+
+    await failureOrVoid.fold(
+      (failure) async {
+        print('BillHistoryBloc: Delete failed with error: ${failure.message}');
+        emit(BillHistoryError(failure.message));
       },
-    ));
+      (_) async {
+        print('BillHistoryBloc: Delete successful, reloading history...');
+        // Reload history after deleting successfully
+        emit(BillHistoryLoading());
+        final failureOrHistory = await getBillHistoryUseCase(NoParams());
+        failureOrHistory.fold(
+          (failure) {
+            print(
+                'BillHistoryBloc: Failed to reload history after delete: ${failure.message}');
+            if (!emit.isDone) emit(BillHistoryError(failure.message));
+          },
+          (history) {
+            print(
+                'BillHistoryBloc: History reloaded after delete with ${history.length} bills');
+            if (!emit.isDone) emit(BillHistoryLoaded(history));
+          },
+        );
+      },
+    );
   }
 }

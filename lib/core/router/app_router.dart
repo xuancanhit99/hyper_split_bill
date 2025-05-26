@@ -100,13 +100,16 @@ class AppRouter {
             }
             return ImageCropPage(imagePath: imagePath);
           },
-        ),        GoRoute(
-          path: '${AppRoutes.editBill}/:billId', // Add path parameter for bill ID
+        ),
+        GoRoute(
+          path:
+              '${AppRoutes.editBill}/:billId', // Add path parameter for bill ID
           name: AppRoutes.editBill,
           pageBuilder: (context, state) {
-            final billId = state.pathParameters['billId']; // Get bill ID from path parameters
+            final billId = state
+                .pathParameters['billId']; // Get bill ID from path parameters
             final structuredJson = state.extra as String?;
-            
+
             if (billId != null) {
               // Route for editing existing bill from history
               return MaterialPage(
@@ -148,11 +151,14 @@ class AppRouter {
                 ),
               );
             }
-            
+
             return MaterialPage(
               key: state.pageKey,
-              child: BlocProvider.value(
-                value: sl<BillSplittingBloc>(),
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: sl<BillSplittingBloc>()),
+                  BlocProvider.value(value: sl<BillHistoryBloc>()),
+                ],
                 child: BillEditPage(
                   structuredJsonString: structuredJson,
                 ),
@@ -163,8 +169,14 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.history,
           name: AppRoutes.history,
-          // Use the actual BillHistoryPage
-          builder: (context, state) => const BillHistoryPage(),
+          // Provide BillHistoryBloc to BillHistoryPage
+          pageBuilder: (context, state) => MaterialPage(
+            key: state.pageKey,
+            child: BlocProvider.value(
+              value: sl<BillHistoryBloc>(),
+              child: const BillHistoryPage(),
+            ),
+          ),
         ),
         // TODO: Create ChatbotPage and replace Placeholder
         GoRoute(

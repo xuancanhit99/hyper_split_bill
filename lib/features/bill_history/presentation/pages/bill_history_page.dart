@@ -1,43 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart'; // Import go_router for navigation
-import 'package:hyper_split_bill/core/router/app_router.dart'; // Import AppRoutes
+import 'package:go_router/go_router.dart';
+import 'package:hyper_split_bill/core/router/app_router.dart';
 import 'package:hyper_split_bill/features/bill_history/presentation/bloc/bill_history_bloc.dart';
-import 'package:hyper_split_bill/injection_container.dart'; // For sl()
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:intl/intl.dart';
 
-class BillHistoryPage extends StatelessWidget {
+class BillHistoryPage extends StatefulWidget {
   const BillHistoryPage({super.key});
 
   @override
+  State<BillHistoryPage> createState() => _BillHistoryPageState();
+}
+
+class _BillHistoryPageState extends State<BillHistoryPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Load bill history when page is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BillHistoryBloc>().add(LoadBillHistoryEvent());
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<BillHistoryBloc>()..add(LoadBillHistoryEvent()),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Bill History'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Bill History'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go(AppRoutes.home);
+          },
+          tooltip: 'Back to Home',
         ),
-        body: BlocBuilder<BillHistoryBloc, BillHistoryState>(
-          builder: (context, state) {
-            if (state is BillHistoryLoading) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is BillHistoryLoaded) {
-              if (state.bills.isEmpty) {
-                return const Center(child: Text('No bills in history yet.'));
-              }
-              return ListView.builder(
+      ),
+      body: BlocConsumer<BillHistoryBloc, BillHistoryState>(
+        listener: (context, state) {
+          // Handle any side effects here if needed
+        },
+        builder: (context, state) {
+          if (state is BillHistoryLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is BillHistoryLoaded) {
+            if (state.bills.isEmpty) {
+              return const Center(child: Text('No bills in history yet.'));
+            }
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<BillHistoryBloc>().add(LoadBillHistoryEvent());
+              },
+              child: ListView.builder(
                 itemCount: state.bills.length,
                 itemBuilder: (context, index) {
                   final bill = state.bills[index];
                   return ListTile(
                     title: Text(bill.description ?? 'Unnamed Bill'),
                     subtitle: Text(
-                        'Bill Date: ${DateFormat.yMd().format(bill.billDate)}\nSaved: ${DateFormat.yMd().add_jm().format(bill.createdAt)}\nTotal: ${NumberFormat('#,##0.00').format(bill.totalAmount)} ${bill.currencyCode}'), // Format number and append currency code
+                        'Bill Date: ${DateFormat.yMd().format(bill.billDate)}\n'
+                        'Saved: ${DateFormat.yMd().add_jm().format(bill.createdAt)}\n'
+                        'Total: ${NumberFormat('#,##0.00').format(bill.totalAmount)} ${bill.currencyCode}'),
                     isThreeLine: true,
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () {
-                        // Show confirmation dialog before deleting
                         showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
@@ -64,34 +90,47 @@ class BillHistoryPage extends StatelessWidget {
                       },
                     ),
                     onTap: () {
-                      // Navigate to BillEditPage using go_router with bill ID as a path parameter
                       context.push('${AppRoutes.editBill}/${bill.id}');
                     },
                   );
                 },
-              );
-            } else if (state is BillHistoryError) {
-              return Center(child: Text('Error: ${state.message}'));
-            } else if (state is BillHistoryActionSuccess) {
-              // This state might be better handled by a BlocListener to show a SnackBar
-              // and then the BlocBuilder would show the updated list (due to LoadBillHistoryEvent being added)
-              // For simplicity here, we just show a text, but ideally, UI should reflect the list.
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (state.message != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message!)),
-                  );
-                }
-                // Optionally, trigger a reload if not already handled by the event that led to this state
-                // context.read<BillHistoryBloc>().add(LoadBillHistoryEvent());
-              });
-              return const Center(
-                  child: Text(
-                      'Action successful. Loading history...')); // Placeholder
-            }
-            return const Center(child: Text('Press button to load history.'));
-          },
-        ),
+              ),
+            );
+          } else if (state is BillHistoryError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${state.message}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      context
+                          .read<BillHistoryBloc>()
+                          .add(LoadBillHistoryEvent());
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Press button to load history.'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<BillHistoryBloc>().add(LoadBillHistoryEvent());
+                  },
+                  child: const Text('Load History'),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
