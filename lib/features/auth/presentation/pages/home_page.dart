@@ -3,13 +3,48 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hyper_split_bill/core/router/app_router.dart'; // Added import for AppRoutes
 import 'package:hyper_split_bill/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:hyper_split_bill/features/bill_history/presentation/bloc/bill_history_bloc.dart'; // Import BillHistoryBloc
 import 'package:hyper_split_bill/features/settings/presentation/pages/settings_page.dart'; // Import SettingsPage
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Import generated localizations
 import 'package:provider/provider.dart'; // Import Provider
 import 'package:hyper_split_bill/core/providers/theme_provider.dart'; // Import ThemeProvider
+import 'package:intl/intl.dart'; // Import for date formatting
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Load bill history when home page is opened
+    _loadBillHistory();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload bills when returning to home page
+    _loadBillHistory();
+  }
+
+  void _loadBillHistory() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentState = context.read<BillHistoryBloc>().state;
+        print(
+            'HomePage: Current BillHistoryBloc state: ${currentState.runtimeType}');
+
+        // Always reload to ensure fresh data
+        print('HomePage: Loading bill history...');
+        context.read<BillHistoryBloc>().add(LoadBillHistoryEvent());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,19 +178,182 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-              // Cat image in the center (expanded to take available space)
+              // Recent Bills Grid or Cat image
               Expanded(
-                child: Center(
-                  // Center the image within the Expanded space
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 8.0), // Add vertical padding
-                    child: Image.asset(
-                      'assets/images/A-Cat-With-Bill.png', // Assuming this path
-                      height: 500, // Adjust height as needed
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                child: BlocBuilder<BillHistoryBloc, BillHistoryState>(
+                  builder: (context, state) {
+                    if (state is BillHistoryLoaded && state.bills.isNotEmpty) {
+                      // Show recent bills in 2x2 grid
+                      final recentBills = state.bills.take(4).toList();
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: Text(
+                                'Recent Bills',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GridView.builder(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12.0,
+                                  mainAxisSpacing: 12.0,
+                                  childAspectRatio: 0.8,
+                                ),
+                                itemCount: recentBills.length,
+                                itemBuilder: (context, index) {
+                                  final bill = recentBills[index];
+                                  return Card(
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                      onTap: () {
+                                        context.push(
+                                            '${AppRoutes.editBill}/${bill.id}');
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              bill.description ??
+                                                  'Unnamed Bill',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.calendar_today,
+                                                    size: 12,
+                                                    color: Colors.grey),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    DateFormat.yMd()
+                                                        .format(bill.billDate),
+                                                    style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.grey),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.save,
+                                                    size: 12,
+                                                    color: Colors.grey),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    DateFormat.yMd()
+                                                        .format(bill.createdAt),
+                                                    style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.grey),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const Spacer(),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '${NumberFormat('#,##0.00').format(bill.totalAmount)} ${bill.currencyCode}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      // Show message if no bills or loading
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                state is BillHistoryLoading
+                                    ? 'Loading your bills...'
+                                    : 'No bills yet',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              if (state is! BillHistoryLoading)
+                                Text(
+                                  'Create your first bill by uploading a receipt!',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Colors.grey[500],
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
               // Buttons at the bottom
@@ -178,7 +376,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   context.push(AppRoutes.history);
                 },
-                child: Text(l10n.homePageViewHistoryButton),
+                child: Text('View Full Bill History'),
               ),
               const SizedBox(height: 20), // Add some padding at the bottom
             ],

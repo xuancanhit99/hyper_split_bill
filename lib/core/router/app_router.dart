@@ -169,14 +169,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.history,
           name: AppRoutes.history,
-          // Provide BillHistoryBloc to BillHistoryPage
-          pageBuilder: (context, state) => MaterialPage(
-            key: state.pageKey,
-            child: BlocProvider.value(
-              value: sl<BillHistoryBloc>(),
-              child: const BillHistoryPage(),
-            ),
-          ),
+          builder: (context, state) => const BillHistoryPage(),
         ),
         // TODO: Create ChatbotPage and replace Placeholder
         GoRoute(
