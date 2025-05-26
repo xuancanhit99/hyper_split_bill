@@ -1426,153 +1426,159 @@ class _BillEditPageState extends State<BillEditPage> {
                               color: Theme.of(context).colorScheme.error))),
                 )
               else ...[
-                // --- Use the new EditBillInfoSection ---
-                EditBillInfoSection(
-                  isEditingMode: _isEditingMode,
-                  descriptionController: _descriptionController,
-                  dateController: _dateController,
-                  totalAmountController: _totalAmountController,
-                  taxController: _taxController,
-                  tipController: _tipController,
-                  discountController: _discountController,
-                  currencyController: _currencyController,
-                  showTax: _showTax,
-                  showTip: _showTip,
-                  showDiscount: _showDiscount,
-                  showCurrency: _showCurrency,
-                  dropdownCurrencies: _dropdownCurrencies,
-                  onEditDescription: _showEditDescriptionDialog,
-                  onSelectDate: () => _selectDate(context),
-                  onEditTotalAmount: _showEditTotalAmountDialog,
-                  onEditTax: _showEditTaxDialog,
-                  onEditTip: _showEditTipDialog,
-                  onEditDiscount: _showEditDiscountDialog,
-                  onCurrencyChanged: _handleCurrencyChanged,
-                  onAddOptionalFields: _showAddFieldDialog,
-                  onToggleItemDetails:
-                      _toggleItemDetailsVisibility, // Pass the toggle function
-                  showItemDetails:
-                      _showItemDetails, // Pass the visibility state
-                  formatCurrencyValue: _formatCurrencyValue,
-                  // Pass calculation results and update callback
-                  calculatedTotalAmount: _calculatedTotalAmount,
-                  onUpdateTotalAmount: _updateTotalAmountFromCalculation,
-                  // Pass input types and handlers
-                  taxInputType: _taxInputType,
-                  tipInputType: _tipInputType,
-                  discountInputType: _discountInputType,
-                  onTaxInputTypeChanged: _setTaxInputType,
-                  onTipInputTypeChanged: _setTipInputType,
-                  onDiscountInputTypeChanged: _setDiscountInputType,
-                ),
+                // Show different content based on editing mode
+                if (_isEditingMode) ...[
+                  // EDITING MODE - Show interactive components
+                  // --- Use the new EditBillInfoSection ---
+                  EditBillInfoSection(
+                    isEditingMode: _isEditingMode,
+                    descriptionController: _descriptionController,
+                    dateController: _dateController,
+                    totalAmountController: _totalAmountController,
+                    taxController: _taxController,
+                    tipController: _tipController,
+                    discountController: _discountController,
+                    currencyController: _currencyController,
+                    showTax: _showTax,
+                    showTip: _showTip,
+                    showDiscount: _showDiscount,
+                    showCurrency: _showCurrency,
+                    dropdownCurrencies: _dropdownCurrencies,
+                    onEditDescription: _showEditDescriptionDialog,
+                    onSelectDate: () => _selectDate(context),
+                    onEditTotalAmount: _showEditTotalAmountDialog,
+                    onEditTax: _showEditTaxDialog,
+                    onEditTip: _showEditTipDialog,
+                    onEditDiscount: _showEditDiscountDialog,
+                    onCurrencyChanged: _handleCurrencyChanged,
+                    onAddOptionalFields: _showAddFieldDialog,
+                    onToggleItemDetails:
+                        _toggleItemDetailsVisibility, // Pass the toggle function
+                    showItemDetails:
+                        _showItemDetails, // Pass the visibility state
+                    formatCurrencyValue: _formatCurrencyValue,
+                    // Pass calculation results and update callback
+                    calculatedTotalAmount: _calculatedTotalAmount,
+                    onUpdateTotalAmount: _updateTotalAmountFromCalculation,
+                    // Pass input types and handlers
+                    taxInputType: _taxInputType,
+                    tipInputType: _tipInputType,
+                    discountInputType: _discountInputType,
+                    onTaxInputTypeChanged: _setTaxInputType,
+                    onTipInputTypeChanged: _setTipInputType,
+                    onDiscountInputTypeChanged: _setDiscountInputType,
+                  ),
 
-                const Divider(), // Divider before Items section
+                  const Divider(), // Divider before Items section
 
-                // --- Items Section ---
-                // DEBUG PRINT STATEMENTS
-                Builder(builder: (context) {
-                  // Use Builder to ensure context is available for print
-                  print('BillEditPage _isEditingMode: $_isEditingMode');
-                  print(
-                      'BillEditPage _participants: ${_participants.map((p) => 'Name: ${p.name}, ID: ${p.id}, Owed: ${p.amountOwed}').toList()}');
-                  return const SizedBox.shrink(); // Does not render anything
-                }),
-                BillItemsSection(
-                  key: ValueKey('items_${_items.hashCode}_$_isEditingMode'),
-                  initialItems: _items,
-                  enabled: _isEditingMode,
-                  onItemsChanged: _handleItemsChanged,
-                  showItemDetails:
-                      _showItemDetails, // Pass the visibility state
-                  allParticipants: _participants, // Pass the participants list
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
+                  // --- Items Section ---
+                  // DEBUG PRINT STATEMENTS
+                  Builder(builder: (context) {
+                    // Use Builder to ensure context is available for print
+                    print('BillEditPage _isEditingMode: $_isEditingMode');
+                    print(
+                        'BillEditPage _participants: ${_participants.map((p) => 'Name: ${p.name}, ID: ${p.id}, Owed: ${p.amountOwed}').toList()}');
+                    return const SizedBox.shrink(); // Does not render anything
+                  }),
+                  BillItemsSection(
+                    key: ValueKey('items_${_items.hashCode}_$_isEditingMode'),
+                    initialItems: _items,
+                    enabled: _isEditingMode,
+                    onItemsChanged: _handleItemsChanged,
+                    showItemDetails:
+                        _showItemDetails, // Pass the visibility state
+                    allParticipants:
+                        _participants, // Pass the participants list
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(),
 
-                // --- Participants Section ---
-                Text(l10n.billEditPageParticipantsSectionTitle,
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                BillParticipantsSection(
-                  // Use a ValueKey that primarily depends on whether the section is in editing mode.
-                  // This prevents unnecessary state recreation when only the participant list content changes.
-                  // The BillParticipantsSection itself will handle updates to its list via didUpdateWidget.
-                  key: ValueKey('bill_participants_section_${_isEditingMode}'),
-                  initialParticipants: _participants,
-                  enabled: _isEditingMode,
-                  currencyCode: _currencyController.text,
-                  billTotalAmount: _parseNum(_totalAmountController.text)
-                      ?.toDouble(), // Pass bill total for warning
-                  onParticipantsChanged: (updatedParticipants) {
-                    // This callback is for when names are edited, or participants are added/removed.
-                    // The list structure might change.
-                    if (!mounted) return;
-                    setState(() {
-                      _participants = List.from(updatedParticipants);
+                  // --- Participants Section ---
+                  Text(l10n.billEditPageParticipantsSectionTitle,
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  BillParticipantsSection(
+                    // Use a ValueKey that primarily depends on whether the section is in editing mode.
+                    // This prevents unnecessary state recreation when only the participant list content changes.
+                    // The BillParticipantsSection itself will handle updates to its list via didUpdateWidget.
+                    key:
+                        ValueKey('bill_participants_section_${_isEditingMode}'),
+                    initialParticipants: _participants,
+                    enabled: _isEditingMode,
+                    currencyCode: _currencyController.text,
+                    billTotalAmount: _parseNum(_totalAmountController.text)
+                        ?.toDouble(), // Pass bill total for warning
+                    onParticipantsChanged: (updatedParticipants) {
+                      // This callback is for when names are edited, or participants are added/removed.
+                      // The list structure might change.
+                      if (!mounted) return;
+                      setState(() {
+                        _participants = List.from(updatedParticipants);
 
-                      // After participants are updated, filter out removed participants from items
-                      final updatedItems = _items.map((item) {
-                        final validItemParticipants = item.participants
-                            .where((itemParticipant) => updatedParticipants.any(
-                                (p) => p.id == itemParticipant.participantId))
-                            .toList();
-                        final validParticipantIds = validItemParticipants
-                            .map((p) => p.participantId)
-                            .toList();
+                        // After participants are updated, filter out removed participants from items
+                        final updatedItems = _items.map((item) {
+                          final validItemParticipants = item.participants
+                              .where((itemParticipant) =>
+                                  updatedParticipants.any((p) =>
+                                      p.id == itemParticipant.participantId))
+                              .toList();
+                          final validParticipantIds = validItemParticipants
+                              .map((p) => p.participantId)
+                              .toList();
 
-                        return item.copyWith(
-                          participants: validItemParticipants,
-                          participantIds: validParticipantIds,
-                        );
-                      }).toList();
-                      _items = updatedItems;
-                      _recalculateAndCompareTotal();
-                    });
-                  },
-                  onParticipantsUpdated: (updatedParticipantsWithColors) {
-                    // This callback is specifically for when BPS updates colors or other internal
-                    // states that BillEditPage needs to be aware of for its children (like BillItemsSection).
-                    if (!mounted) return;
+                          return item.copyWith(
+                            participants: validItemParticipants,
+                            participantIds: validParticipantIds,
+                          );
+                        }).toList();
+                        _items = updatedItems;
+                        _recalculateAndCompareTotal();
+                      });
+                    },
+                    onParticipantsUpdated: (updatedParticipantsWithColors) {
+                      // This callback is specifically for when BPS updates colors or other internal
+                      // states that BillEditPage needs to be aware of for its children (like BillItemsSection).
+                      if (!mounted) return;
 
-                    // Check if there's an actual change to avoid unnecessary rebuilds
-                    bool changed = false;
-                    if (_participants.length !=
-                        updatedParticipantsWithColors.length) {
-                      changed = true;
-                    } else {
-                      for (int i = 0; i < _participants.length; i++) {
-                        if (_participants[i].id !=
-                                updatedParticipantsWithColors[i].id ||
-                            _participants[i].name !=
-                                updatedParticipantsWithColors[i].name ||
-                            _participants[i].color !=
-                                updatedParticipantsWithColors[i].color ||
-                            _participants[i].amountOwed !=
-                                updatedParticipantsWithColors[i].amountOwed) {
-                          changed = true;
-                          break;
+                      // Check if there's an actual change to avoid unnecessary rebuilds
+                      bool changed = false;
+                      if (_participants.length !=
+                          updatedParticipantsWithColors.length) {
+                        changed = true;
+                      } else {
+                        for (int i = 0; i < _participants.length; i++) {
+                          if (_participants[i].id !=
+                                  updatedParticipantsWithColors[i].id ||
+                              _participants[i].name !=
+                                  updatedParticipantsWithColors[i].name ||
+                              _participants[i].color !=
+                                  updatedParticipantsWithColors[i].color ||
+                              _participants[i].amountOwed !=
+                                  updatedParticipantsWithColors[i].amountOwed) {
+                            changed = true;
+                            break;
+                          }
                         }
                       }
-                    }
 
-                    if (changed) {
-                      print(
-                          "[BillEditPage] onParticipantsUpdated from BPS. Updating _participants and rebuilding.");
-                      setState(() {
-                        // Crucially update _participants here so BillItemsSection gets the colored list
-                        _participants =
-                            List.from(updatedParticipantsWithColors);
-                      });
-                    } else {
-                      print(
-                          "[BillEditPage] onParticipantsUpdated from BPS. No effective change detected in _participants list content, not forcing setState.");
-                    }
-                  },
-                ),
-                const SizedBox(
-                    height: 24), // Add spacing after participants section
-                // Action Buttons Section
-                if (_isEditingMode) ...[
+                      if (changed) {
+                        print(
+                            "[BillEditPage] onParticipantsUpdated from BPS. Updating _participants and rebuilding.");
+                        setState(() {
+                          // Crucially update _participants here so BillItemsSection gets the colored list
+                          _participants =
+                              List.from(updatedParticipantsWithColors);
+                        });
+                      } else {
+                        print(
+                            "[BillEditPage] onParticipantsUpdated from BPS. No effective change detected in _participants list content, not forcing setState.");
+                      }
+                    },
+                  ),
+                  const SizedBox(
+                      height: 24), // Add spacing after participants section
+
+                  // Action Buttons Section - Only in editing mode
                   OutlinedButton(
                     onPressed: _splitEqually,
                     child: Text(l10n.billEditPageSplitEquallyButtonLabel(
@@ -1586,55 +1592,417 @@ class _BillEditPageState extends State<BillEditPage> {
                     ),
                     child: Text(l10n.billEditPageResultButtonLabel),
                   ),
+                  const SizedBox(height: 24),
                 ] else ...[
-                  // In Review Mode, show an "Edit" button at the bottom
-                  ElevatedButton(
-                    onPressed: _toggleEditMode, // Call toggle edit mode
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    child: Text(l10n.billEditPageEditButtonLabel),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                const Divider(),
+                  // REVIEW MODE - Show clean, read-only bill receipt
+                  // Summary Section - Bill interface at the top
+                  if (_finalBillJsonString != null) ...[
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor,
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Bill Header
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _descriptionController.text.isNotEmpty
+                                          ? _descriptionController.text
+                                          : 'Bill Receipt',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                Theme.of(context).primaryColor,
+                                          ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _dateController.text,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Colors.grey[600],
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _currencyController.text,
+                                  style: TextStyle(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
 
-                // --- Final Bill JSON Data (Show only when not editing and JSON exists) ---
-                if (!_isEditingMode && _finalBillJsonString != null) ...[
-                  JsonExpansionTile(
-                    title: l10n.billEditPageFinalJsonTileTitle,
-                    jsonString: _finalBillJsonString!,
-                    initiallyExpanded: false,
+                          const SizedBox(height: 20),
+                          const Divider(),
+
+                          // Items Summary
+                          if (_items.isNotEmpty) ...[
+                            Text(
+                              'Items',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            ...(_items.map((item) => Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 6),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '${item.quantity}x ${item.description}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _formatCurrencyValue(
+                                                item.totalPrice),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      // Hiển thị các chấm tròn màu sắc cho người tham gia
+                                      if (item.participantIds.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const SizedBox(
+                                                width: 8), // Indent nhẹ
+                                            ...item.participantIds
+                                                .map((participantId) {
+                                              // Tìm participant tương ứng để lấy màu
+                                              final participant =
+                                                  _participants.firstWhere(
+                                                (p) => p.id == participantId,
+                                                orElse: () => ParticipantEntity(
+                                                    id: participantId,
+                                                    name: '',
+                                                    color: Theme.of(context)
+                                                        .primaryColor),
+                                              );
+
+                                              return Container(
+                                                margin: const EdgeInsets.only(
+                                                    right: 6),
+                                                width: 8,
+                                                height: 8,
+                                                decoration: BoxDecoration(
+                                                  color: participant.color ??
+                                                      Theme.of(context)
+                                                          .primaryColor,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ))),
+                            const SizedBox(height: 12),
+                            const Divider(),
+                          ],
+
+                          // Additional costs
+                          Builder(builder: (context) {
+                            final additionalCosts = _getActualAdditionalCosts();
+                            final itemsSubtotal = _items.fold(
+                                0.0, (sum, item) => sum + item.totalPrice);
+
+                            return Column(
+                              children: [
+                                // Subtotal
+                                if (_items.isNotEmpty) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Subtotal',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                      Text(
+                                        _formatCurrencyValue(itemsSubtotal),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+
+                                // Tax
+                                if (_showTax &&
+                                    additionalCosts['tax']! > 0) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Tax',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                      Text(
+                                        _formatCurrencyValue(
+                                            additionalCosts['tax']),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+
+                                // Tip
+                                if (_showTip &&
+                                    additionalCosts['tip']! > 0) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Tip',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                      Text(
+                                        _formatCurrencyValue(
+                                            additionalCosts['tip']),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+
+                                // Discount
+                                if (_showDiscount &&
+                                    additionalCosts['discount']! > 0) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Discount',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.green[600],
+                                            ),
+                                      ),
+                                      Text(
+                                        '-${_formatCurrencyValue(additionalCosts['discount'])}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.green[600],
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+
+                                const Divider(thickness: 2),
+                                const SizedBox(height: 8),
+
+                                // Total
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'TOTAL',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      '${_currencyController.text} ${_formatCurrencyValue(_parseNum(_totalAmountController.text))}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                Theme.of(context).primaryColor,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          }),
+
+                          // Participants summary
+                          if (_participants.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            const Divider(),
+                            Text(
+                              'Split Between',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+
+                            // Show participants warning only (no duplicate participant cards)
+                            BillParticipantsSection(
+                              key: ValueKey(
+                                  'bill_participants_section_warning_${_isEditingMode}'),
+                              initialParticipants: _participants,
+                              enabled: false, // Read-only in review mode
+                              currencyCode: _currencyController.text,
+                              billTotalAmount:
+                                  _parseNum(_totalAmountController.text)
+                                      ?.toDouble(),
+                              onParticipantsChanged: (updatedParticipants) {
+                                // No-op in review mode
+                              },
+                              onParticipantsUpdated:
+                                  (updatedParticipantsWithColors) {
+                                // No-op in review mode
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Buttons Section - At the bottom in review mode
+                  // Edit Button - styled to match Ask Bill Bot
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      label: Text(
+                        l10n.billEditPageEditButtonLabel,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                      onPressed: _toggleEditMode,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
                   ),
+
+                  // Ask Bill Bot Button
+                  if (_finalBillJsonString != null) ...[
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                        label: Text(
+                          l10n.billEditPageAskBillBotButtonLabel,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w500),
+                        ),
+                        onPressed: () {
+                          context.push(AppRoutes.chatbot,
+                              extra: _finalBillJsonString);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 24),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
                 ],
-
-                // --- Bill Bot Button (Show only when not editing) ---
-                if (!_isEditingMode && _finalBillJsonString != null) ...[
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.chat_bubble_outline),
-                    label: Text(l10n.billEditPageAskBillBotButtonLabel),
-                    onPressed: () {
-                      context.push(AppRoutes.chatbot,
-                          extra: _finalBillJsonString);
-                    },
-                    style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 15)),
-                  ),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                ],
-
-                // --- Raw OCR Text ---
-                if (widget.historicalBillToEdit == null ||
-                    (widget.historicalBillToEdit?.rawOcrJson != null &&
-                        _ocrTextController.text.isNotEmpty))
-                  JsonExpansionTile(
-                    title: l10n.billEditPageRawJsonTileTitle,
-                    jsonString: _ocrTextController.text,
-                    initiallyExpanded: false,
-                  ),
-                const SizedBox(height: 16),
               ],
             ],
           ),
