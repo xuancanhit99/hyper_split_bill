@@ -15,7 +15,8 @@ class ChatbotPage extends StatefulWidget {
   State<ChatbotPage> createState() => _ChatbotPageState();
 }
 
-class _ChatbotPageState extends State<ChatbotPage> {
+class _ChatbotPageState extends State<ChatbotPage>
+    with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController =
       ScrollController(); // To scroll to bottom
@@ -23,6 +24,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
   List<String> _suggestions = []; // List for suggestions
   bool _isLoading = false; // To track bot response loading
   bool _isChatInitializing = true; // Flag to ensure init runs once
+
+  // Animation controllers for modern UI
+  late AnimationController _typingAnimationController;
+  late Animation<double> _typingAnimation;
 
   // Get UseCase instance
   late final SendChatMessageUseCase _sendChatMessageUseCase;
@@ -32,6 +37,17 @@ class _ChatbotPageState extends State<ChatbotPage> {
     super.initState();
     _sendChatMessageUseCase =
         sl<SendChatMessageUseCase>(); // Get instance from GetIt
+
+    // Initialize animation controller for typing indicator
+    _typingAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _typingAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+          parent: _typingAnimationController, curve: Curves.easeInOut),
+    );
+
     // _initializeChat(); // Moved to didChangeDependencies
   }
 
@@ -49,6 +65,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _typingAnimationController.dispose();
     super.dispose();
   }
 
@@ -69,12 +86,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
     print("ChatbotPage initialized with Bill JSON:\n${widget.billJson}");
     setState(() {
       _isLoading = true; // Show loading for initial message
-      _messages.add(ChatMessageEntity(
-          sender: ChatMessageSender.bot,
-          text: AppLocalizations.of(context)!
-              .chatbotPageAnalyzingMessage, // Use l10n
-          timestamp: DateTime.now()));
     });
+    _typingAnimationController.repeat(); // Start typing animation
     _scrollToBottom();
 
     // Call the UseCase with an empty message to get initial suggestions/greeting
@@ -87,8 +100,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
     setState(() {
       _isLoading = false;
-      // Remove the "Analyzing..." message
-      _messages.removeLast();
+      _typingAnimationController.stop(); // Stop typing animation
 
       result.fold(
         (failure) {
@@ -128,6 +140,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
       _suggestions = []; // Clear suggestions while bot is thinking
     });
     _messageController.clear();
+    _typingAnimationController.repeat(); // Start typing animation
     _scrollToBottom();
 
     print("User sent message: $messageText");
@@ -144,6 +157,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
     setState(() {
       _isLoading = false; // Hide loading
+      _typingAnimationController.stop(); // Stop typing animation
       result.fold(
         (failure) {
           _messages.add(ChatMessageEntity(
@@ -176,130 +190,512 @@ class _ChatbotPageState extends State<ChatbotPage> {
   Widget build(BuildContext context) {
     // Get the localization instance
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      // Modern AppBar with gradient
       appBar: AppBar(
-        title: Text(l10n.chatbotPageTitle), // Use l10n
-      ),
-      body: SafeArea(
-        // Added SafeArea
-        child: Column(
-          children: [
-            // --- Chat Messages Area ---
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(8.0),
-                itemCount: _messages.length, // Use actual message list length
-                itemBuilder: (context, index) {
-                  final message = _messages[index]; // Get actual message
-                  return _buildMessageBubble(
-                      message); // Use helper to build bubble
-                },
-              ),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.primaryColor,
+                theme.primaryColor.withOpacity(0.8),
+              ],
             ),
-            const Divider(height: 1.0),
-
-            // --- Suggestions Area ---
-            if (_suggestions.isNotEmpty &&
-                !_isLoading) // Show only when not loading
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                child: Wrap(
-                  spacing: 8.0,
-                  runSpacing: 4.0,
-                  alignment: WrapAlignment.center, // Center suggestions
-                  children: _suggestions
-                      .map((s) => ActionChip(
-                            label: Text(s),
-                            onPressed: () => _onSuggestionTap(s),
-                            tooltip: l10n
-                                .chatbotPageSuggestionTooltip(s), // Use l10n
-                          ))
-                      .toList(),
-                ),
-              ),
-            if (_suggestions.isNotEmpty && !_isLoading)
-              const Divider(
-                  height: 1.0), // Divider above input if suggestions shown
-
-            // --- Input Area ---
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        // Remove const
-                        hintText: l10n.chatbotPageInputHint, // Use l10n
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12.0, vertical: 8.0), // Adjust padding
-                      ),
-                      textInputAction: TextInputAction.send, // Add send action
-                      onSubmitted: _isLoading
-                          ? null
-                          : (_) =>
-                              _sendMessage(), // Send on submit, disable if loading
-                      enabled: !_isLoading, // Disable input field when loading
-                    ),
+          ),
+        ),
+        title: Row(
+          children: [
+            // Bot avatar in AppBar
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
-                  const SizedBox(width: 8.0),
-                  // Show loading indicator or send button
-                  _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2)) // Loading indicator
-                      : IconButton(
-                          icon: const Icon(Icons.send),
-                          onPressed: _sendMessage,
-                          tooltip:
-                              l10n.chatbotPageSendButtonTooltip, // Use l10n
-                        ),
                 ],
               ),
+              child: Icon(
+                Icons.smart_toy_outlined,
+                size: 20,
+                color: theme.primaryColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.chatbotPageTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Bill Bot Assistant',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
             ),
           ],
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      // Chat background with subtle pattern
+      body: Container(
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.grey[50],
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // --- Chat Messages Area ---
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: _messages.length + (_isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    // Show typing indicator when loading
+                    if (index == _messages.length && _isLoading) {
+                      return _buildTypingIndicator();
+                    }
+
+                    final message = _messages[index];
+                    return _buildModernMessageBubble(message, index);
+                  },
+                ),
+              ),
+
+              // --- Suggestions Area ---
+              if (_suggestions.isNotEmpty && !_isLoading)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
+                        child: Text(
+                          'Quick replies',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: theme.textTheme.bodySmall?.color
+                                ?.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _suggestions.map((suggestion) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 8.0),
+                              child: _buildSuggestionChip(suggestion, theme),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+
+              // --- Modern Input Area ---
+              _buildModernInputArea(l10n, theme),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Helper widget to build message bubbles
-  Widget _buildMessageBubble(ChatMessageEntity message) {
+  // Modern message bubble with animation and avatar
+  Widget _buildModernMessageBubble(ChatMessageEntity message, int index) {
     bool isUser = message.sender == ChatMessageSender.user;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
-        decoration: BoxDecoration(
-          // Custom blue for user, theme color for bot
-          color: isUser
-              ? const Color(0xFF0084FF) // Facebook Messenger blue
-              : Theme.of(context).colorScheme.secondaryContainer,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16.0),
-            topRight: const Radius.circular(16.0),
-            bottomLeft: isUser ? const Radius.circular(16.0) : Radius.zero,
-            bottomRight: isUser ? Radius.zero : const Radius.circular(16.0),
+    final theme = Theme.of(context);
+
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: 300 + (index * 50)),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                mainAxisAlignment:
+                    isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Bot avatar (only for bot messages)
+                  if (!isUser) ...[
+                    Container(
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.smart_toy_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+
+                  // Message bubble
+                  Flexible(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.75,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: isUser
+                            ? LinearGradient(
+                                colors: [
+                                  theme.primaryColor,
+                                  theme.primaryColor.withOpacity(0.8),
+                                ],
+                              )
+                            : null,
+                        color: isUser ? null : theme.colorScheme.surface,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(18),
+                          topRight: const Radius.circular(18),
+                          bottomLeft: isUser
+                              ? const Radius.circular(18)
+                              : const Radius.circular(4),
+                          bottomRight: isUser
+                              ? const Radius.circular(4)
+                              : const Radius.circular(18),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            message.text,
+                            style: TextStyle(
+                              color: isUser
+                                  ? Colors.white
+                                  : theme.textTheme.bodyMedium?.color,
+                              fontSize: 16,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatTime(message.timestamp),
+                            style: TextStyle(
+                              color: isUser
+                                  ? Colors.white.withOpacity(0.7)
+                                  : theme.textTheme.bodySmall?.color
+                                      ?.withOpacity(0.6),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // User avatar (only for user messages)
+                  if (isUser) ...[
+                    Container(
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.only(left: 8),
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.primaryColor.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.person_outline,
+                        color: theme.primaryColor,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            // White text for user bubble, theme color for bot
-            color: isUser
-                ? Colors.white
-                : Theme.of(context).colorScheme.onSecondaryContainer,
+        );
+      },
+    );
+  }
+
+  // Modern suggestion chip
+  Widget _buildSuggestionChip(String suggestion, ThemeData theme) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onSuggestionTap(suggestion),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.primaryColor.withOpacity(0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            suggestion,
+            style: TextStyle(
+              color: theme.primaryColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),
     );
+  }
+
+  // Modern input area
+  Widget _buildModernInputArea(AppLocalizations l10n, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: theme.dividerColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: l10n.chatbotPageInputHint,
+                  hintStyle: TextStyle(
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 12.0,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.chat_bubble_outline,
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                    size: 20,
+                  ),
+                ),
+                textInputAction: TextInputAction.send,
+                onSubmitted: _isLoading ? null : (_) => _sendMessage(),
+                enabled: !_isLoading,
+                maxLines: null,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12.0),
+          // Modern send button
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _isLoading
+                    ? [Colors.grey, Colors.grey]
+                    : [theme.primaryColor, theme.primaryColor.withOpacity(0.8)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (_isLoading ? Colors.grey : theme.primaryColor)
+                      .withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _isLoading ? null : _sendMessage,
+                borderRadius: BorderRadius.circular(24),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Typing indicator for when bot is responding
+  Widget _buildTypingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          // Bot avatar
+          Container(
+            width: 32,
+            height: 32,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.smart_toy_outlined,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          // Typing animation
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: AnimatedBuilder(
+              animation: _typingAnimation,
+              builder: (context, child) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTypingDot(0),
+                    const SizedBox(width: 4),
+                    _buildTypingDot(1),
+                    const SizedBox(width: 4),
+                    _buildTypingDot(2),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Individual typing dot with animation
+  Widget _buildTypingDot(int index) {
+    final delay = index * 0.2;
+    final animationValue = (_typingAnimation.value + delay) % 1.0;
+    final scale = (animationValue < 0.5)
+        ? 0.4 + (animationValue * 1.2)
+        : 1.0 - ((animationValue - 0.5) * 1.2);
+
+    return Transform.scale(
+      scale: scale.clamp(0.4, 1.0),
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          color:
+              Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+
+  // Helper to format timestamp
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'now';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    }
   }
 }

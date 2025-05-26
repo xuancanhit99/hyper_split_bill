@@ -1922,25 +1922,55 @@ class _BillEditPageState extends State<BillEditPage> {
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
+                            const SizedBox(height: 8),
 
-                            // Show warnings only (before the styled participant cards)
-                            BillParticipantsSection(
-                              key: ValueKey(
-                                  'bill_participants_section_warning_${_isEditingMode}'),
-                              initialParticipants: _participants,
-                              enabled: false, // Read-only in review mode
-                              currencyCode: _currencyController.text,
-                              billTotalAmount:
+                            // Show warnings only inline
+                            Builder(builder: (context) {
+                              final totalOwed = _participants.fold(
+                                  0.0,
+                                  (sum, participant) =>
+                                      sum + (participant.amountOwed ?? 0.0));
+                              final billTotal =
                                   _parseNum(_totalAmountController.text)
-                                      ?.toDouble(),
-                              onParticipantsChanged: (updatedParticipants) {
-                                // No-op in review mode
-                              },
-                              onParticipantsUpdated:
-                                  (updatedParticipantsWithColors) {
-                                // No-op in review mode
-                              },
-                            ),
+                                          ?.toDouble() ??
+                                      0.0;
+                              final tolerance =
+                                  0.01; // Small tolerance for floating point comparison
+
+                              if ((totalOwed - billTotal).abs() > tolerance) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    border: Border.all(
+                                        color: Colors.orange.withOpacity(0.3)),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_outlined,
+                                          color: Colors.orange[700], size: 20),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          AppLocalizations.of(context)!
+                                              .billEditPageWarningUnallocatedCost(
+                                            _formatCurrencyValue(totalOwed),
+                                            _formatCurrencyValue(billTotal),
+                                          ),
+                                          style: TextStyle(
+                                            color: Colors.orange[700],
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            }),
 
                             const SizedBox(height: 12),
                             ...(_participants.map((participant) => Container(

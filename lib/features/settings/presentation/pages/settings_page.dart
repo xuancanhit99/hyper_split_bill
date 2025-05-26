@@ -588,14 +588,20 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: BorderRadius.circular(16),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.warning,
               color: Colors.orange,
-              size: 28,
+              size: 24,
             ),
-            const SizedBox(width: 12),
-            Text('Experimental Feature'),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Experimental',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -603,18 +609,16 @@ class _SettingsPageState extends State<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Gemini OCR is currently in experimental development phase.',
+              'Gemini OCR is experimental and may be unreliable.',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 12),
-            Text('⚠️ May produce inaccurate results'),
-            const SizedBox(height: 8),
-            Text('⚠️ Might fail to process some images'),
-            const SizedBox(height: 8),
-            Text('⚠️ Still being optimized and improved'),
+            Text('• May produce errors'),
+            const SizedBox(height: 4),
+            Text('• Still in development'),
             const SizedBox(height: 12),
             Text(
-              'We recommend using Grok for reliable bill processing.',
+              'Grok is recommended for reliable results.',
               style: TextStyle(
                 color: Colors.grey[600],
                 fontStyle: FontStyle.italic,
@@ -634,6 +638,7 @@ class _SettingsPageState extends State<SettingsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -646,7 +651,7 @@ class _SettingsPageState extends State<SettingsPage> {
               _settingsService.setSelectedOcrService(serviceType);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('⚠️ Gemini OCR enabled - Experimental feature'),
+                  content: Text('⚠️ Gemini OCR enabled'),
                   backgroundColor: Colors.orange,
                 ),
               );

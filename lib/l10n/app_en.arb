@@ -495,5 +495,30 @@
   "billEditPageErrorUnknown": "An unknown error occurred.",
   "@billEditPageErrorUnknown": {
     "description": "Generic error message for unknown errors on the bill edit page."
+  },
+
+  "historicalBillTileUnnamedBill": "Unnamed Bill",
+  "@historicalBillTileUnnamedBill": {
+    "description": "Default name shown for bills without a description in the history list."
+  },
+  "historicalBillTileDeleteTooltip": "Delete bill from history",
+  "@historicalBillTileDeleteTooltip": {
+    "description": "Tooltip for the delete button on historical bill tiles."
+  },
+  "historicalBillTileBillDateLabel": "Bill Date",
+  "@historicalBillTileBillDateLabel": {
+    "description": "Label for the bill date field in historical bill tiles."
+  },
+  "historicalBillTileSavedLabel": "Saved",
+  "@historicalBillTileSavedLabel": {
+    "description": "Label for the saved date field in historical bill tiles."
+  },
+  "historicalBillTileTotalLabel": "Total",
+  "@historicalBillTileTotalLabel": {
+    "description": "Label for the total amount field in historical bill tiles."
+  },
+  "historicalBillTileSplitDetailsLabel": "Split Details",
+  "@historicalBillTileSplitDetailsLabel": {
+    "description": "Label for the split details section in historical bill tiles."
   }
 }

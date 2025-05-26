@@ -438,5 +438,87 @@
   "settingsPageThemeLight": "Светлая",
   "settingsPageThemeDark": "Темная",
   "settingsPageThemeSystem": "Системная",
-  "settingsPageThemeTooltip": "Переключить тему"
+  "settingsPageThemeTooltip": "Переключить тему",
+
+  "billHistoryPageTitle": "История счетов",
+  "billHistoryPageNoBills": "Счета в истории не найдены.",
+  "billHistoryPageErrorLoading": "Ошибка загрузки истории счетов: {error}",
+  "@billHistoryPageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billHistoryPageDeleteConfirmationTitle": "Подтвердить удаление",
+  "billHistoryPageDeleteConfirmationContent": "Вы уверены, что хотите удалить этот счет из истории? Это действие нельзя отменить.",
+  "billHistoryPageDeleteSuccess": "Счет удален из истории.",
+  "billHistoryPageDeleteFailure": "Не удалось удалить счет: {error}",
+  "@billHistoryPageDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billHistoryPageDetailsButton": "Детали",
+  "billHistoryPageDateLabel": "Дата",
+  "billHistoryPageTotalLabel": "Итого",
+  "billHistoryPageCreatedAtLabel": "Создан",
+
+  "billEditPageErrorNoDataSource": "Не предоставлен источник данных для редактирования счета.",
+  "@billEditPageErrorNoDataSource": {
+    "description": "Сообщение об ошибке когда BillEditPage открывается без необходимых данных."
+  },
+  "billEditPageNoRawOcrData": "Для этого исторического счета нет необработанных данных OCR.",
+  "@billEditPageNoRawOcrData": {
+    "description": "Сообщение, отображаемое в поле текста OCR, если у исторического счета нет необработанных данных OCR."
+  },
+  "billEditPageErrorLoadingHistorical": "Ошибка загрузки счета из истории: {error}",
+  "@billEditPageErrorLoadingHistorical": {
+    "description": "Сообщение об ошибке при неудачной загрузке счета из истории.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Тайм-аут сети"
+      }
+    }
+  },
+  "billEditPageUpdateTooltip": "Обновить счет",
+  "@billEditPageUpdateTooltip": {
+    "description": "Подсказка для кнопки сохранения/обновления при редактировании исторического счета."
+  },
+  "billEditPageUpdateButtonLabel": "Обновить счет",
+  "@billEditPageUpdateButtonLabel": {
+    "description": "Надпись для кнопки сохранения/обновления при редактировании исторического счета."
+  },
+  "billEditPageErrorUnknown": "Произошла неизвестная ошибка.",
+  "@billEditPageErrorUnknown": {
+    "description": "Общее сообщение об ошибке для неизвестных ошибок на странице редактирования счета."
+  },
+
+  "historicalBillTileUnnamedBill": "Безымянный счет",
+  "@historicalBillTileUnnamedBill": {
+    "description": "Имя по умолчанию, отображаемое для счетов без описания в списке истории."
+  },
+  "historicalBillTileDeleteTooltip": "Удалить счет из истории",
+  "@historicalBillTileDeleteTooltip": {
+    "description": "Подсказка для кнопки удаления на плитках исторических счетов."
+  },
+  "historicalBillTileBillDateLabel": "Дата счета",
+  "@historicalBillTileBillDateLabel": {
+    "description": "Надпись для поля даты счета в плитках исторических счетов."
+  },
+  "historicalBillTileSavedLabel": "Сохранен",
+  "@historicalBillTileSavedLabel": {
+    "description": "Надпись для поля даты сохранения в плитках исторических счетов."
+  },
+  "historicalBillTileTotalLabel": "Итого",
+  "@historicalBillTileTotalLabel": {
+    "description": "Надпись для поля общей суммы в плитках исторических счетов."
+  },
+  "historicalBillTileSplitDetailsLabel": "Детали разделения",
+  "@historicalBillTileSplitDetailsLabel": {
+    "description": "Надпись для раздела деталей разделения в плитках исторических счетов."
+  }
 }

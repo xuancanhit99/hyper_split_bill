@@ -439,5 +439,87 @@
   "settingsPageThemeLight": "Sáng",
   "settingsPageThemeDark": "Tối",
   "settingsPageThemeSystem": "Hệ thống",
-  "settingsPageThemeTooltip": "Chuyển đổi giao diện"
+  "settingsPageThemeTooltip": "Chuyển đổi giao diện",
+
+  "billHistoryPageTitle": "Lịch sử hóa đơn",
+  "billHistoryPageNoBills": "Không tìm thấy hóa đơn nào trong lịch sử.",
+  "billHistoryPageErrorLoading": "Lỗi tải lịch sử hóa đơn: {error}",
+  "@billHistoryPageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billHistoryPageDeleteConfirmationTitle": "Xác nhận xóa",
+  "billHistoryPageDeleteConfirmationContent": "Bạn có chắc chắn muốn xóa hóa đơn này khỏi lịch sử? Hành động này không thể hoàn tác.",
+  "billHistoryPageDeleteSuccess": "Đã xóa hóa đơn khỏi lịch sử.",
+  "billHistoryPageDeleteFailure": "Không thể xóa hóa đơn: {error}",
+  "@billHistoryPageDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billHistoryPageDetailsButton": "Chi tiết",
+  "billHistoryPageDateLabel": "Ngày",
+  "billHistoryPageTotalLabel": "Tổng cộng",
+  "billHistoryPageCreatedAtLabel": "Đã tạo",
+
+  "billEditPageErrorNoDataSource": "Không có nguồn dữ liệu để chỉnh sửa hóa đơn.",
+  "@billEditPageErrorNoDataSource": {
+    "description": "Thông báo lỗi khi BillEditPage được mở mà không có dữ liệu cần thiết."
+  },
+  "billEditPageNoRawOcrData": "Không có dữ liệu OCR thô cho hóa đơn lịch sử này.",
+  "@billEditPageNoRawOcrData": {
+    "description": "Thông báo hiển thị trong trường văn bản OCR nếu hóa đơn lịch sử không có dữ liệu OCR thô."
+  },
+  "billEditPageErrorLoadingHistorical": "Lỗi tải hóa đơn từ lịch sử: {error}",
+  "@billEditPageErrorLoadingHistorical": {
+    "description": "Thông báo lỗi khi tải hóa đơn từ lịch sử thất bại.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Hết thời gian kết nối"
+      }
+    }
+  },
+  "billEditPageUpdateTooltip": "Cập nhật hóa đơn",
+  "@billEditPageUpdateTooltip": {
+    "description": "Tooltip cho nút lưu/cập nhật khi chỉnh sửa hóa đơn lịch sử."
+  },
+  "billEditPageUpdateButtonLabel": "Cập nhật hóa đơn",
+  "@billEditPageUpdateButtonLabel": {
+    "description": "Nhãn cho nút lưu/cập nhật khi chỉnh sửa hóa đơn lịch sử."
+  },
+  "billEditPageErrorUnknown": "Đã xảy ra lỗi không xác định.",
+  "@billEditPageErrorUnknown": {
+    "description": "Thông báo lỗi chung cho các lỗi không xác định trên trang chỉnh sửa hóa đơn."
+  },
+
+  "historicalBillTileUnnamedBill": "Hóa đơn không tên",
+  "@historicalBillTileUnnamedBill": {
+    "description": "Tên mặc định hiển thị cho các hóa đơn không có mô tả trong danh sách lịch sử."
+  },
+  "historicalBillTileDeleteTooltip": "Xóa hóa đơn khỏi lịch sử",
+  "@historicalBillTileDeleteTooltip": {
+    "description": "Tooltip cho nút xóa trên tile hóa đơn lịch sử."
+  },
+  "historicalBillTileBillDateLabel": "Ngày hóa đơn",
+  "@historicalBillTileBillDateLabel": {
+    "description": "Nhãn cho trường ngày hóa đơn trong tile hóa đơn lịch sử."
+  },
+  "historicalBillTileSavedLabel": "Đã lưu",
+  "@historicalBillTileSavedLabel": {
+    "description": "Nhãn cho trường ngày lưu trong tile hóa đơn lịch sử."
+  },
+  "historicalBillTileTotalLabel": "Tổng cộng",
+  "@historicalBillTileTotalLabel": {
+    "description": "Nhãn cho trường tổng tiền trong tile hóa đơn lịch sử."
+  },
+  "historicalBillTileSplitDetailsLabel": "Chi tiết chia sẻ",
+  "@historicalBillTileSplitDetailsLabel": {
+    "description": "Nhãn cho phần chi tiết chia sẻ trong tile hóa đơn lịch sử."
+  }
 }
