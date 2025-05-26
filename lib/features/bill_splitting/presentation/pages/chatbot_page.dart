@@ -24,6 +24,7 @@ class _ChatbotPageState extends State<ChatbotPage>
   List<String> _suggestions = []; // List for suggestions
   bool _isLoading = false; // To track bot response loading
   bool _isChatInitializing = true; // Flag to ensure init runs once
+  bool _isDisposed = false; // Flag to check if widget is disposed
 
   // Animation controllers for modern UI
   late AnimationController _typingAnimationController;
@@ -55,7 +56,7 @@ class _ChatbotPageState extends State<ChatbotPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Initialize chat here where context is available
-    if (_isChatInitializing) {
+    if (_isChatInitializing && !_isDisposed) {
       _initializeChat();
       _isChatInitializing = false; // Ensure it only runs once
     }
@@ -63,6 +64,7 @@ class _ChatbotPageState extends State<ChatbotPage>
 
   @override
   void dispose() {
+    _isDisposed = true;
     _messageController.dispose();
     _scrollController.dispose();
     _typingAnimationController.dispose();
@@ -71,8 +73,10 @@ class _ChatbotPageState extends State<ChatbotPage>
 
   void _scrollToBottom() {
     // Scroll to the bottom after a short delay to allow the list to update
+    if (_isDisposed) return; // Safety check
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (_scrollController.hasClients && !_isDisposed) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
@@ -84,6 +88,8 @@ class _ChatbotPageState extends State<ChatbotPage>
 
   Future<void> _initializeChat() async {
     print("ChatbotPage initialized with Bill JSON:\n${widget.billJson}");
+    if (_isDisposed) return; // Safety check
+
     setState(() {
       _isLoading = true; // Show loading for initial message
     });
@@ -97,6 +103,8 @@ class _ChatbotPageState extends State<ChatbotPage>
       billContextJson: widget
           .billJson, // Use the original JSON (already filtered in BillEditPage)
     );
+
+    if (_isDisposed) return; // Safety check
 
     setState(() {
       _isLoading = false;
@@ -155,6 +163,8 @@ class _ChatbotPageState extends State<ChatbotPage>
           .billJson, // Pass the original bill context (already filtered in BillEditPage)
     );
 
+    if (_isDisposed) return; // Safety check
+
     setState(() {
       _isLoading = false; // Hide loading
       _typingAnimationController.stop(); // Stop typing animation
@@ -193,136 +203,142 @@ class _ChatbotPageState extends State<ChatbotPage>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      // Modern AppBar with gradient
-      appBar: AppBar(
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.primaryColor,
-                theme.primaryColor.withOpacity(0.8),
-              ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Perform any cleanup or navigation logic here if needed
+        return true;
+      },
+      child: Scaffold(
+        // Modern AppBar with gradient
+        appBar: AppBar(
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.primaryColor,
+                  theme.primaryColor.withOpacity(0.8),
+                ],
+              ),
             ),
           ),
-        ),
-        title: Row(
-          children: [
-            // Bot avatar in AppBar
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+          title: Row(
+            children: [
+              // Bot avatar in AppBar
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.smart_toy_outlined,
+                  size: 20,
+                  color: theme.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.chatbotPageTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Bill Bot Assistant',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.smart_toy_outlined,
-                size: 20,
-                color: theme.primaryColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            ],
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        // Chat background with subtle pattern
+        body: Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[900] : Colors.grey[50],
+          ),
+          child: SafeArea(
+            child: Column(
               children: [
-                Text(
-                  l10n.chatbotPageTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                // --- Chat Messages Area ---
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16.0),
+                    itemCount: _messages.length + (_isLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      // Show typing indicator when loading
+                      if (index == _messages.length && _isLoading) {
+                        return _buildTypingIndicator();
+                      }
+
+                      final message = _messages[index];
+                      return _buildModernMessageBubble(message, index);
+                    },
                   ),
                 ),
-                Text(
-                  'Bill Bot Assistant',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      // Chat background with subtle pattern
-      body: Container(
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : Colors.grey[50],
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // --- Chat Messages Area ---
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: _messages.length + (_isLoading ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    // Show typing indicator when loading
-                    if (index == _messages.length && _isLoading) {
-                      return _buildTypingIndicator();
-                    }
 
-                    final message = _messages[index];
-                    return _buildModernMessageBubble(message, index);
-                  },
-                ),
-              ),
-
-              // --- Suggestions Area ---
-              if (_suggestions.isNotEmpty && !_isLoading)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
-                        child: Text(
-                          'Quick replies',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: theme.textTheme.bodySmall?.color
-                                ?.withOpacity(0.7),
+                // --- Suggestions Area ---
+                if (_suggestions.isNotEmpty && !_isLoading)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
+                          child: Text(
+                            'Quick replies',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.7),
+                            ),
                           ),
                         ),
-                      ),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _suggestions.map((suggestion) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 8.0),
-                              child: _buildSuggestionChip(suggestion, theme),
-                            );
-                          }).toList(),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _suggestions.map((suggestion) {
+                              return Container(
+                                margin: const EdgeInsets.only(right: 8.0),
+                                child: _buildSuggestionChip(suggestion, theme),
+                              );
+                            }).toList(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
-                ),
 
-              // --- Modern Input Area ---
-              _buildModernInputArea(l10n, theme),
-            ],
+                // --- Modern Input Area ---
+                _buildModernInputArea(l10n, theme),
+              ],
+            ),
           ),
         ),
       ),
