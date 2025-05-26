@@ -209,7 +209,7 @@ class _HomePageState extends State<HomePage> {
                                   crossAxisCount: 2,
                                   crossAxisSpacing: 12.0,
                                   mainAxisSpacing: 12.0,
-                                  childAspectRatio: 0.8,
+                                  childAspectRatio: 1,
                                 ),
                                 itemCount: recentBills.length,
                                 itemBuilder: (context, index) {
